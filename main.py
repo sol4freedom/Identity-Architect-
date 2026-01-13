@@ -9,10 +9,6 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-from flatlib import setBackend
-
-# FORCE BACKUP ENGINE (Moshier)
-setBackend(const.BACKEND_MOSHIER)
 
 app = FastAPI()
 
@@ -62,8 +58,8 @@ def generate_reading(data: UserInput):
     print(f"Received: {data}")
 
     try:
-        # 1. GPS LOOKUP (With Patience!)
-        # timeout=10 means "Wait 10 seconds before giving up"
+        # 1. GPS LOOKUP (Fixed Timeout)
+        # We give it 10 seconds to find the city
         geolocator = Nominatim(user_agent="identity_architect_app", timeout=10)
         location = geolocator.geocode(data.city)
         
@@ -71,14 +67,23 @@ def generate_reading(data: UserInput):
             lat = location.latitude
             lon = location.longitude
         else:
-            # Fallback if city is misspelled or internet fails
-            lat = 51.48 
+            lat = 51.48
             lon = 0.00
             
-        # 2. CALCULATE CHART
+        # 2. CONFIGURE CHART (Safe Mode)
         date = Datetime(data.date.replace("-", "/"), data.time, data.tz)
         pos = GeoPos(lat, lon)
-        chart = Chart(date, pos, hsys=const.HOUSES_PLACIDUS)
+        
+        # CRITICAL FIX: We explicitly ask ONLY for planets.
+        # This prevents the "Moshier cannot calculate Asteroids" crash.
+        safe_objects = [
+            const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
+            const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO,
+            const.ASC, const.MC, const.HOUSE2
+        ]
+        
+        # We pass 'IDs=safe_objects' so it doesn't try to look for missing files
+        chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
         # 3. GET DATA
         sun = chart.get(const.SUN)
@@ -104,7 +109,7 @@ def generate_reading(data: UserInput):
         
         **Current Focus:** {data.struggle}
         
-        *(Generated using Moshier Geocentric Engine)*
+        *(Generated using Safe Mode Engine)*
         """
 
         return {"report": report_text}
@@ -112,78 +117,3 @@ def generate_reading(data: UserInput):
     except Exception as e:
         print(f"ERROR: {e}")
         return {"report": f"Calculation Error: {str(e)}"}
-    @validator('time', pre=True)
-    def clean_time(cls, v):
-        if "." in v: v = v.split(".")[0]
-        parts = v.split(":")
-        if len(parts) >= 2: return f"{parts[0]}:{parts[1]}"
-        return v
-
-@app.get("/")
-def home():
-    return {"message": "Server is Online"}
-
-# --- THE ASTROLOGY ENGINE ---
-@app.post("/calculate")
-def generate_reading(data: UserInput):
-    print(f"Received: {data}")
-
-    try:
-        # 1. GET GPS COORDINATES
-        geolocator = Nominatim(user_agent="identity_architect_app")
-        location = geolocator.geocode(data.city)
-        
-        if location:
-            lat = location.latitude
-            lon = location.longitude
-        else:
-            lat = 51.48
-            lon = 0.00
-            
-        # 2. CONFIGURE CHART
-        date = Datetime(data.date.replace("-", "/"), data.time, data.tz)
-        pos = GeoPos(lat, lon)
-        
-        # *** THE FIX: ONLY ASK FOR PLANETS (NO ASTEROIDS) ***
-        # This prevents the 'seas_18.se1' file error
-        safe_objects = [
-            const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
-            const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO,
-            const.ASC, const.MC
-        ]
-        
-        chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
-
-        # 3. GET DATA POINTS
-        sun = chart.get(const.SUN)
-        rising = chart.get(const.ASC)
-        midheaven = chart.get(const.MC)
-        house_2 = chart.get(const.HOUSE2)
-
-        # 4. GENERATE REPORT
-        report_text = f"""
-        **INTEGRATED SELF REPORT FOR {data.name.upper()}**
-        
-        **Your Cosmic Coordinates:**
-        📍 Location: {data.city} ({lat:.2f}, {lon:.2f})
-        
-        **The Core You:**
-        ☀️ **Sun Sign:** {sun.sign}
-        🏹 **Rising Sign:** {rising.sign}
-        
-        **Money & Career Codes:**
-        💼 **Career (Midheaven):** {midheaven.sign}
-        *The energy of your public legacy.*
-        
-        💰 **Money (2nd House):** {house_2.sign}
-        *Your natural path to resources.*
-        
-        **Current Focus:** {data.struggle}
-        """
-
-        return {"report": report_text}
-
-    except Exception as e:
-        print(f"ERROR: {e}")
-        return {"report": f"Calculation Error: {str(e)}"}
-
