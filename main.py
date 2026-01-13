@@ -6,7 +6,7 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-from geopy.geocoders import Nominatim # <--- The GPS Tool
+from geopy.geocoders import Nominatim
 
 app = FastAPI()
 
@@ -57,7 +57,6 @@ def generate_reading(data: UserInput):
 
     try:
         # 1. GET GPS COORDINATES
-        # We ask the internet: "Where is this city?"
         geolocator = Nominatim(user_agent="identity_architect_app")
         location = geolocator.geocode(data.city)
         
@@ -65,24 +64,30 @@ def generate_reading(data: UserInput):
             lat = location.latitude
             lon = location.longitude
         else:
-            # Fallback if city not found (Default to Greenwich)
             lat = 51.48
             lon = 0.00
             
         # 2. CONFIGURE CHART
-        # We feed the GPS (lat/lon) into the chart calculator
         date = Datetime(data.date.replace("-", "/"), data.time, data.tz)
         pos = GeoPos(lat, lon)
-        chart = Chart(date, pos, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
+        
+        # *** THE FIX: ONLY ASK FOR PLANETS (NO ASTEROIDS) ***
+        # This prevents the 'seas_18.se1' file error
+        safe_objects = [
+            const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
+            const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO,
+            const.ASC, const.MC
+        ]
+        
+        chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # 3. GET KEY DATA POINTS
+        # 3. GET DATA POINTS
         sun = chart.get(const.SUN)
-        rising = chart.get(const.ASC) # The Ascendant (Self)
-        midheaven = chart.get(const.MC) # The Midheaven (Career/Legacy)
-        house_2 = chart.get(const.HOUSE2) # Money/Assets
+        rising = chart.get(const.ASC)
+        midheaven = chart.get(const.MC)
+        house_2 = chart.get(const.HOUSE2)
 
-        # 4. GENERATE THE READOUT
-        # This is where we interpret the math for the user
+        # 4. GENERATE REPORT
         report_text = f"""
         **INTEGRATED SELF REPORT FOR {data.name.upper()}**
         
@@ -90,15 +95,15 @@ def generate_reading(data: UserInput):
         📍 Location: {data.city} ({lat:.2f}, {lon:.2f})
         
         **The Core You:**
-        ☀️ **Sun Sign:** {sun.sign} (Your Essence)
-        🏹 **Rising Sign:** {rising.sign} (Your Path)
+        ☀️ **Sun Sign:** {sun.sign}
+        🏹 **Rising Sign:** {rising.sign}
         
         **Money & Career Codes:**
         💼 **Career (Midheaven):** {midheaven.sign}
-        *This is the energy you are meant to bring to your public work.*
+        *The energy of your public legacy.*
         
         💰 **Money (2nd House):** {house_2.sign}
-        *This is the style in which you naturally generate resources.*
+        *Your natural path to resources.*
         
         **Current Focus:** {data.struggle}
         """
