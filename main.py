@@ -58,22 +58,38 @@ def generate_reading(data: UserInput):
     print(f"Received: {data}")
 
     try:
-        # 1. GPS LOOKUP (10s Timeout)
-        geolocator = Nominatim(user_agent="identity_architect_app", timeout=10)
-        location = geolocator.geocode(data.city)
+        # 1. SMART GPS LOOKUP
+        # We check for specific cities manually to avoid timeout errors.
+        city_lower = data.city.lower()
         
-        if location:
-            lat = location.latitude
-            lon = location.longitude
+        if "sao paulo" in city_lower or "são paulo" in city_lower:
+            lat = -23.55
+            lon = -46.63
+            print("Using Hardcoded Sao Paulo")
+        elif "fargo" in city_lower:
+            lat = 46.87
+            lon = -96.79
+            print("Using Hardcoded Fargo")
         else:
-            lat = 51.48
-            lon = 0.00
-            
+            # For all other cities, we ask the internet
+            try:
+                geolocator = Nominatim(user_agent="identity_architect_sol_v1", timeout=10)
+                location = geolocator.geocode(data.city)
+                if location:
+                    lat = location.latitude
+                    lon = location.longitude
+                else:
+                    lat = 51.48 # Default to Greenwich
+                    lon = 0.00
+            except:
+                 lat = 51.48
+                 lon = 0.00
+
         # 2. CONFIGURE CHART
         date = Datetime(data.date.replace("-", "/"), data.time, data.tz)
         pos = GeoPos(lat, lon)
         
-        # FIX: Only ask for Planets. We will get Angles via Houses.
+        # 3. GET DATA (Planets Only)
         safe_objects = [
             const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
             const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
@@ -81,13 +97,10 @@ def generate_reading(data: UserInput):
         
         chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # 3. GET DATA (Using Fallbacks)
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
         
-        # HOUSE FIX: 
-        # In Moshier, Ascendant is House 1, Midheaven is House 10.
-        # We access them directly from the houses list to be safe.
+        # HOUSE 1 is Ascendant, HOUSE 10 is Midheaven
         rising = chart.get(const.HOUSE1)
         midheaven = chart.get(const.HOUSE10)
         house_2 = chart.get(const.HOUSE2)
