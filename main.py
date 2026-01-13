@@ -27,6 +27,7 @@ class UserInput(BaseModel):
     struggle: str
     tz: Union[float, int, str, None] = None
 
+    # 1. TIMEZONE FIXER
     @validator('tz', pre=True)
     def parse_timezone(cls, v):
         if v is None: return 0
@@ -35,9 +36,22 @@ class UserInput(BaseModel):
         except:
             return 0
 
+    # 2. DATE FIXER
     @validator('date', pre=True)
     def clean_date(cls, v):
         if "T" in v: return v.split("T")[0]
+        return v
+
+    # 3. TIME FIXER (The New Magic Fix)
+    @validator('time', pre=True)
+    def clean_time(cls, v):
+        # If it comes in as "07:30:00.000", chop off the dot
+        if "." in v:
+            v = v.split(".")[0] 
+        # Ensure we just send HH:MM to be safe
+        parts = v.split(":")
+        if len(parts) >= 2:
+            return f"{parts[0]}:{parts[1]}"
         return v
 
 @app.get("/")
@@ -50,43 +64,35 @@ def generate_reading(data: UserInput):
     print(f"Received: {data}")
 
     try:
-        # 1. Parse Date and Time
-        # Format: 2024/01/01
-        date_parts = data.date.split("-")
-        year = int(date_parts[0])
-        month = int(date_parts[1])
-        day = int(date_parts[2])
-
-        # Format: 14:30
-        time_parts = data.time.split(":")
-        hour = int(time_parts[0])
-        minute = int(time_parts[1])
-
-        # 2. Configure Location & Time (Using 'flatlib')
-        # (For this test, we default to 0,0 lat/long if we don't have it yet)
+        # 1. Configure Location & Time
+        # We assume UTC (0 offset) for now to ensure stability
         date = Datetime(data.date.replace("-", "/"), data.time, data.tz)
         pos = GeoPos(0, 0) 
         
-        # 3. Calculate the Chart
+        # 2. Calculate the Chart
         chart = Chart(date, pos)
 
-        # 4. Get the Planets
+        # 3. Get the Planets
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
         mars = chart.get(const.MARS)
+        mercury = chart.get(const.MERCURY)
+        venus = chart.get(const.VENUS)
 
-        # 5. Generate the Report
+        # 4. Generate the Report
         report_text = f"""
         **INTEGRATED SELF REPORT FOR {data.name.upper()}**
         
         **Your Cosmic Blueprint:**
-        ☀️ **Sun Sign:** {sun.sign} (The Conscious Self)
-        🌙 **Moon Sign:** {moon.sign} (The Emotional Self)
-        🔥 **Mars Sign:** {mars.sign} (Your Drive & Passion)
+        ☀️ **Sun:** {sun.sign}
+        🌙 **Moon:** {moon.sign}
+        🔥 **Mars:** {mars.sign}
+        💬 **Mercury:** {mercury.sign}
+        ❤️ **Venus:** {venus.sign}
         
         **Current Focus:** {data.struggle}
         
-        This is a REAL calculation based on your birth date: {data.date}.
+        This chart was calculated for {data.date} at {data.time}.
         """
 
         return {"report": report_text}
