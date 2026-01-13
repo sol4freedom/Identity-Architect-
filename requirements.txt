@@ -5,6 +5,9 @@ python-multipart
 requests
 flatlib
 pyswisseph
+geopy
+
+
 
 
 
