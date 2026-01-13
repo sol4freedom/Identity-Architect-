@@ -58,35 +58,41 @@ def generate_reading(data: UserInput):
     print(f"Received: {data}")
 
     try:
-        # 1. SMART GPS LOOKUP
-        # We check for specific cities manually to avoid timeout errors.
+        # 1. SMART LOCATION & TIMEZONE
+        # We set both Coordinates AND Timezone manually for accuracy.
         city_lower = data.city.lower()
         
+        # Default values (overridden below)
+        lat = 51.48
+        lon = 0.00
+        tz_offset = data.tz  # Start with whatever Wix sent (usually 0)
+
         if "sao paulo" in city_lower or "são paulo" in city_lower:
             lat = -23.55
             lon = -46.63
-            print("Using Hardcoded Sao Paulo")
+            tz_offset = -3  # FIX: Set Sao Paulo to UTC-3
+            print("Using Hardcoded Sao Paulo (UTC-3)")
+            
         elif "fargo" in city_lower:
             lat = 46.87
             lon = -96.79
-            print("Using Hardcoded Fargo")
+            tz_offset = -5 # FIX: Set Fargo to UTC-5 (CDT)
+            print("Using Hardcoded Fargo (UTC-5)")
+            
         else:
-            # For all other cities, we ask the internet
+            # Fallback for other cities (using internet)
             try:
                 geolocator = Nominatim(user_agent="identity_architect_sol_v1", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat = location.latitude
                     lon = location.longitude
-                else:
-                    lat = 51.48 # Default to Greenwich
-                    lon = 0.00
             except:
-                 lat = 51.48
-                 lon = 0.00
+                 pass # Keep defaults if fails
 
         # 2. CONFIGURE CHART
-        date = Datetime(data.date.replace("-", "/"), data.time, data.tz)
+        # We pass the 'tz_offset' here to correct the time
+        date = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         
         # 3. GET DATA (Planets Only)
@@ -110,7 +116,8 @@ def generate_reading(data: UserInput):
         **INTEGRATED SELF REPORT FOR {data.name.upper()}**
         
         **Your Cosmic Coordinates:**
-        📍 {data.city} ({lat:.2f}, {lon:.2f})
+        📍 {data.city} (Lat: {lat:.2f}, Lon: {lon:.2f})
+        ⏰ Timezone Used: UTC {tz_offset}
         
         **The Core You:**
         ☀️ **Sun:** {sun.sign} ({sun.lon:.2f}°)
