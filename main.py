@@ -58,8 +58,7 @@ def generate_reading(data: UserInput):
     print(f"Received: {data}")
 
     try:
-        # 1. GPS LOOKUP (Fixed Timeout)
-        # We give it 10 seconds to find the city
+        # 1. GPS LOOKUP (10s Timeout)
         geolocator = Nominatim(user_agent="identity_architect_app", timeout=10)
         location = geolocator.geocode(data.city)
         
@@ -70,27 +69,29 @@ def generate_reading(data: UserInput):
             lat = 51.48
             lon = 0.00
             
-        # 2. CONFIGURE CHART (Safe Mode)
+        # 2. CONFIGURE CHART
         date = Datetime(data.date.replace("-", "/"), data.time, data.tz)
         pos = GeoPos(lat, lon)
         
-        # CRITICAL FIX: We explicitly ask ONLY for planets.
-        # This prevents the "Moshier cannot calculate Asteroids" crash.
+        # FIX: Only ask for Planets. We will get Angles via Houses.
         safe_objects = [
             const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
-            const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO,
-            const.ASC, const.MC, const.HOUSE2
+            const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
         ]
         
-        # We pass 'IDs=safe_objects' so it doesn't try to look for missing files
         chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # 3. GET DATA
+        # 3. GET DATA (Using Fallbacks)
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
-        rising = chart.get(const.ASC)
-        midheaven = chart.get(const.MC)
         
+        # HOUSE FIX: 
+        # In Moshier, Ascendant is House 1, Midheaven is House 10.
+        # We access them directly from the houses list to be safe.
+        rising = chart.get(const.HOUSE1)
+        midheaven = chart.get(const.HOUSE10)
+        house_2 = chart.get(const.HOUSE2)
+
         # 4. REPORT
         report_text = f"""
         **INTEGRATED SELF REPORT FOR {data.name.upper()}**
@@ -107,9 +108,10 @@ def generate_reading(data: UserInput):
         💼 **Career (MC):** {midheaven.sign}
         *The sign of your public legacy.*
         
-        **Current Focus:** {data.struggle}
+        💰 **Money (2nd House):** {house_2.sign}
+        *Your natural path to resources.*
         
-        *(Generated using Safe Mode Engine)*
+        **Current Focus:** {data.struggle}
         """
 
         return {"report": report_text}
