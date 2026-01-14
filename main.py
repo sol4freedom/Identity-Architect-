@@ -8,6 +8,10 @@ from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
 
+# *** THE MISSING PIECE RESTORED ***
+from flatlib import setBackend
+setBackend(const.BACKEND_MOSHIER)
+
 app = FastAPI()
 
 app.add_middleware(
@@ -19,7 +23,6 @@ app.add_middleware(
 )
 
 # --- THE RAVE MANDALA (Degree to Gene Key) ---
-# Order of Gates starting from Aries 0°
 RAVE_ORDER = [
     25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 
     62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 
@@ -28,9 +31,8 @@ RAVE_ORDER = [
 ]
 
 def get_gene_key(degree):
-    # Each gate is exactly 5.625 degrees
+    if degree is None: return 0
     index = int(degree / 5.625)
-    # Handle wrap-around just in case
     if index >= 64: index = 0
     return RAVE_ORDER[index]
 
@@ -88,7 +90,7 @@ def generate_reading(data: UserInput):
                     lat, lon = location.latitude, location.longitude
             except: pass
 
-        # 2. CALCULATE ASTROLOGY
+        # 2. CALCULATE ASTROLOGY (SAFE MODE)
         date = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         safe_objects = [const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO]
@@ -101,16 +103,13 @@ def generate_reading(data: UserInput):
         house2 = chart.get(const.HOUSE2)
 
         # 3. CALCULATE GENE KEYS
-        # Life's Work = Sun Position
         lifes_work_key = get_gene_key(sun.lon)
         
-        # Evolution = Earth Position (Sun + 180 degrees)
+        # Evolution = Earth (Sun + 180)
         earth_lon = (sun.lon + 180) % 360
         evolution_key = get_gene_key(earth_lon)
 
         # 4. PREPARE THE ELEGANT HTML REPORT
-        # We use HTML styles (colors, fonts, spacing) to make it look professional.
-        
         report_html = f"""
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
             
