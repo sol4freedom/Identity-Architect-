@@ -12,7 +12,7 @@ from flatlib import const
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- DATA LIBRARIES ---
+# --- DATA LIBRARIES (COMPRESSED) ---
 RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
 
 KEY_LORE = {
@@ -150,21 +150,176 @@ class UserInput(BaseModel):
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        # --- TIMEZONE FIX ---
+        # GEOLOCATION & TIMEZONE FIX
         lat, lon, tz = 51.48, 0.0, data.tz
-        # Nov in Sao Paulo is DST (-2), Nov in Fargo is Standard (-6)
+        
+        # BRAZIL SUMMER TIME FIX
         if "sao paulo" in data.city.lower() or "são paulo" in data.city.lower(): 
-            lat, lon, tz = -23.55, -46.63, -2.0 
+            lat, lon = -23.55, -46.63
+            # Check month for DST (Roughly Oct-Feb in Brazil 90s)
+            month = int(data.date.split("-")[1])
+            if month >= 10 or month <= 2:
+                tz = -2.0 # Summer Time
+            else:
+                tz = -3.0 # Standard Time
+                
         elif "fargo" in data.city.lower(): 
             lat, lon, tz = 46.87, -96.79, -6.0 
         else:
             try:
-                geo = Nominatim(user_agent="ia_v18", timeout=5).geocode(data.city)
+                geo = Nominatim(user_agent="ia_v17", timeout=5).geocode(data.city)
                 if geo: lat, lon = geo.latitude, geo.longitude
             except: pass
 
+        # CALCULATIONS
         dt = Datetime(data.date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
         
-        objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
+        objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
+        rising = chart.get(const.HOUSE1)
+
+        d_dt = datetime.datetime.strptime(data.date, "%Y-%m-%d") - datetime.timedelta(days=88)
+        d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
+        d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
+
+        lp = calculate_life_path(data.date)
+        hd = get_hd_profile(objs['Sun'].lon, d_sun.lon)
+        keys = {
+            'lw': get_key_data(objs['Sun'].lon),
+            'evo': get_key_data((objs['Sun'].lon + 180) % 360),
+            'rad': get_key_data(d_sun.lon),
+            'pur': get_key_data((d_sun.lon + 180) % 360),
+            'att': get_key_data(d_moon.lon)
+        }
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap');
+            :root {{ --gold: #D4AF37; --bg: #fff; --card: #F9F9F9; --text: #2D2D2D; }}
+            body {{ 
+                font-family: 'Lato', sans-serif; 
+                background: var(--bg); 
+                color: var(--text); 
+                padding: 20px; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }}
+            .box {{ max-width: 700px; margin: 0 auto; background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid #ddd; }}
+            h2, h3 {{ font-family: 'Cinzel', serif; color: var(--gold); text-transform: uppercase; margin: 0 0 10px 0; }}
+            .section {{ border-left: 3px solid var(--gold); padding: 15px; margin-bottom: 25px; background: #fff; }}
+            .vib {{ background: #E6E6FA; text-align: center; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #D8BFD8; }}
+            .item {{ margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px; }}
+            .item:last-child {{ border: none; }}
+            .label {{ font-weight: bold; color: #333; display: block; }}
+            .desc {{ font-size: 0.9em; color: #555; font-style: italic; }}
+            .highlight {{ color: #C71585; font-weight: bold; }}
+            
+            /* The Vault Fix */
+            .vault-section {{
+                background-color: #222 !important; 
+                color: #fff !important; 
+                padding: 20px; 
+                border-radius: 8px; 
+                margin-bottom: 20px;
+                border-left: 4px solid var(--gold);
+            }}
+            .vault-section h3 {{ color: #FF4500; margin-top: 0; }}
+            .vault-label {{ color: #fff; font-weight: bold; display: block; }}
+            .vault-desc {{ color: #ccc; font-size: 0.9em; font-style: italic; }}
+            .vault-highlight {{ color: #FFD700; }}
+
+            @media print {{
+                button {{ display: none; }}
+                body {{ padding: 0; }}
+                .box {{ border: none; }}
+            }}
+        </style>
+        </head>
+        <body>
+            <div class="box">
+                <div style="text-align:center; margin-bottom:30px; border-bottom:1px solid var(--gold); padding-bottom:20px;">
+                    <h2>The Integrated Self</h2>
+                    <span style="font-size:12px; color:#888;">PREPARED FOR {data.name.upper()}</span>
+                </div>
+
+                <div class="vib">
+                    <span style="font-size:10px; letter-spacing:2px; color:#666;">THE VIBRATION (LIFE PATH)</span>
+                    <h3 style="color:#483D8B;">{lp['number']}: {lp['name']}</h3>
+                    <p style="font-size:14px; color:#555;">"{lp['desc']}"</p>
+                </div>
+
+                <div class="section">
+                    <h3 style="color:#4A4A4A;">🗝️ The Core ID</h3>
+                    <div class="item"><span class="label">🎭 Profile: <span style="color:#4A4A4A;">{hd['name']}</span></span></div>
+                    <div class="item">
+                        <span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span>
+                        <span class="desc">"{keys['lw']['story']}"</span>
+                    </div>
+                    <div class="item">
+                        <span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span>
+                        <span class="desc">"{keys['evo']['story']}"</span>
+                    </div>
+                    <div class="item">
+                        <span class="label">🏹 Rising: {rising.sign}</span>
+                        <span class="desc">"{generate_desc('Rising', rising.sign)}"</span>
+                    </div>
+                </div>
+
+                <div class="section" style="border-color: #4682B4;">
+                    <h3 style="color:#4682B4;">The Boardroom</h3>
+                    <div class="item"><span class="label">🤝 Broker: {objs['Mercury'].sign}</span><span class="desc">"{generate_desc('Mercury', objs['Mercury'].sign)}"</span></div>
+                    <div class="item"><span class="label">👔 CEO: {objs['Saturn'].sign}</span><span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
+                    <div class="item"><span class="label">💰 Mogul: {objs['Jupiter'].sign}</span><span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
+                </div>
+
+                <div class="section" style="border-color: #2E8B57;">
+                    <h3 style="color:#2E8B57;">The Sanctuary</h3>
+                    <div class="item"><span class="label">❤️ Heart: {objs['Moon'].sign}</span><span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
+                    <div class="item"><span class="label">🎨 Muse: {objs['Venus'].sign}</span><span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
+                    <div class="item"><span class="label">🌫️ Dreamer: {objs['Neptune'].sign}</span><span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
+                </div>
+
+                <div class="section" style="border-color: #CD5C5C;">
+                    <h3 style="color:#CD5C5C;">The Streets</h3>
+                    <div class="item"><span class="label">🔥 Hustle: {objs['Mars'].sign}</span><span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
+                    <div class="item"><span class="label">⚡ Disruptor: {objs['Uranus'].sign}</span><span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
+                    <div class="item"><span class="label">🕵️ Kingpin: {objs['Pluto'].sign}</span><span class="desc">"{generate_desc('Pluto', objs['Pluto'].sign)}"</span></div>
+                </div>
+
+                <div class="vault-section">
+                    <h3>🔒 The Vault</h3>
+                    <div class="item" style="border-bottom: 1px solid #444;">
+                        <span class="vault-label">⚡ Aura: <span class="vault-highlight">{keys['rad']['name']}</span></span>
+                        <span class="vault-desc">"{keys['rad']['story']}"</span>
+                    </div>
+                    <div class="item" style="border-bottom: 1px solid #444;">
+                        <span class="vault-label">⚓ Root: <span class="vault-highlight">{keys['pur']['name']}</span></span>
+                        <span class="vault-desc">"{keys['pur']['story']}"</span>
+                    </div>
+                    <div class="item" style="border-bottom: none;">
+                        <span class="vault-label">🧲 Magnet: <span class="vault-highlight">{keys['att']['name']}</span></span>
+                        <span class="vault-desc">"{keys['att']['story']}"</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.print()" style="background-color: #D4AF37; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: 'Cinzel', serif;">
+                        📥 SAVE MY CODE
+                    </button>
+                </div>
+
+                <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; font-size: 10px; color: #999; text-align: center;">
+                    Technical Data: {data.city} | {data.date} {data.time} | Lat: {lat}, Lon: {lon}, TZ: {tz}
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        return {"report": html}
+    except Exception as e:
+        return {"report": f"<div style='color:red; padding:20px;'>Error: {str(e)}</div>"}
