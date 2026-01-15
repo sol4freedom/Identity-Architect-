@@ -8,3 +8,4 @@ geopy==2.4.1
 pyswisseph==2.8.0.post1
 timezonefinder==6.2.0
 pytz==2023.3.post1
+numpy==1.26.2
