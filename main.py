@@ -7,9 +7,9 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-
-# --- BACKEND CONFIG ---
 from flatlib.config import setBackend
+
+# --- CONFIGURE BACKEND (Prevents Crash) ---
 setBackend(const.BACKEND_MOSHIER)
 
 app = FastAPI()
@@ -84,7 +84,7 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v1", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v2", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
@@ -94,14 +94,16 @@ def generate_reading(data: UserInput):
         date = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         
-        # We fetch ALL planets now
+        # Request all planets
         safe_objects = [
             const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
             const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
         ]
+        
+        # Generate Chart
         chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # Get the Objects
+        # Retrieve Planets
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
         mercury = chart.get(const.MERCURY)
@@ -113,66 +115,70 @@ def generate_reading(data: UserInput):
         neptune = chart.get(const.NEPTUNE)
         pluto = chart.get(const.PLUTO)
         
+        # Retrieve Angles (Using House method to prevent crashes)
         rising = chart.get(const.HOUSE1)
-        mc = chart.get(const.HOUSE10)
-
+        
         # 3. CALCULATE GENE KEYS
         lifes_work_key = get_gene_key(sun.lon)
         evolution_key = get_gene_key((sun.lon + 180) % 360)
 
         # 4. GENERATE THE "NEIGHBORHOOD" HTML REPORT
-        report_html = f"""
-        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
+        # Using a safer multi-line string format
+        report_html = (
+            f'<div style="font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">'
+            f'<div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px;">'
+            f'<h2 style="color: #D4AF37; margin: 0; letter-spacing: 2px;">THE INTEGRATED SELF</h2>'
+            f'<span style="font-size: 14px; color: #888;">PREPARED FOR {data.name.upper()}</span>'
+            f'</div>'
             
-            <div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px;">
-                <h2 style="color: #D4AF37; margin: 0; letter-spacing: 2px;">THE INTEGRATED SELF</h2>
-                <span style="font-size: 14px; color: #888;">PREPARED FOR {data.name.upper()}</span>
-            </div>
+            f''
+            f'<div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">'
+            f'<h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE CODES</h3>'
+            f'<p><strong>🧬 Life\'s Work:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {lifes_work_key}</span> ({sun.sign})</p>'
+            f'<p><strong>🌍 Evolution:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {evolution_key}</span></p>'
+            f'<p><strong>🏹 Rising Sign:</strong> {rising.sign} ({INTERPRETATIONS.get(rising.sign)})</p>'
+            f'</div>'
 
-            <div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE CODES</h3>
-                <p><strong>🧬 Life's Work:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {lifes_work_key}</span> ({sun.sign})</p>
-                <p><strong>🌍 Evolution:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {evolution_key}</span></p>
-                <p><strong>🏹 Rising Sign:</strong> {rising.sign} ({INTERPRETATIONS.get(rising.sign)})</p>
-            </div>
+            f''
+            f'<div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">'
+            f'<h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>'
+            f'<span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>'
+            f'<ul style="list-style: none; padding: 0; margin-top: 10px;">'
+            f'<li>🤝 <strong>The Broker (Mercury):</strong> {mercury.sign}</li>'
+            f'<li>👔 <strong>The CEO (Saturn):</strong> {saturn.sign}</li>'
+            f'<li>💰 <strong>The Mogul (Jupiter):</strong> {jupiter.sign}</li>'
+            f'</ul>'
+            f'</div>'
 
-            <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
-                <h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
-                <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li>🤝 <strong>The Broker (Mercury):</strong> {mercury.sign}</li>
-                    <li>👔 <strong>The CEO (Saturn):</strong> {saturn.sign}</li>
-                    <li>💰 <strong>The Mogul (Jupiter):</strong> {jupiter.sign}</li>
-                </ul>
-            </div>
+            f''
+            f'<div style="border-left: 5px solid #27AE60; padding-left: 15px; margin-bottom: 20px;">'
+            f'<h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>'
+            f'<span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>'
+            f'<ul style="list-style: none; padding: 0; margin-top: 10px;">'
+            f'<li>❤️ <strong>The Heart (Moon):</strong> {moon.sign}</li>'
+            f'<li>🎨 <strong>The Muse (Venus):</strong> {venus.sign}</li>'
+            f'<li>🌫️ <strong>The Dreamer (Neptune):</strong> {neptune.sign}</li>'
+            f'</ul>'
+            f'</div>'
 
-            <div style="border-left: 5px solid #27AE60; padding-left: 15px; margin-bottom: 20px;">
-                <h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
-                <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li>❤️ <strong>The Heart (Moon):</strong> {moon.sign}</li>
-                    <li>🎨 <strong>The Muse (Venus):</strong> {venus.sign}</li>
-                    <li>🌫️ <strong>The Dreamer (Neptune):</strong> {neptune.sign}</li>
-                </ul>
-            </div>
+            f''
+            f'<div style="border-left: 5px solid #C0392B; padding-left: 15px; margin-bottom: 20px;">'
+            f'<h3 style="color: #C0392B; margin: 0;">THE STREETS</h3>'
+            f'<span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>'
+            f'<ul style="list-style: none; padding: 0; margin-top: 10px;">'
+            f'<li>🔥 <strong>The Hustle (Mars):</strong> {mars.sign}</li>'
+            f'<li>⚡ <strong>The Disruptor (Uranus):</strong> {uranus.sign}</li>'
+            f'<li>🕵️ <strong>The Kingpin (Pluto):</strong> {pluto.sign}</li>'
+            f'</ul>'
+            f'</div>'
 
-            <div style="border-left: 5px solid #C0392B; padding-left: 15px; margin-bottom: 20px;">
-                <h3 style="color: #C0392B; margin: 0;">THE STREETS</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>
-                <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li>🔥 <strong>The Hustle (Mars):</strong> {mars.sign}</li>
-                    <li>⚡ <strong>The Disruptor (Uranus):</strong> {uranus.sign}</li>
-                    <li>🕵️ <strong>The Kingpin (Pluto):</strong> {pluto.sign}</li>
-                </ul>
-            </div>
-
-            <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
-                <p><strong>Current Struggle:</strong> {data.struggle}</p>
-                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {INTERPRETATIONS.get(rising.sign)}.</em></p>
-            </div>
-
-        </div>
-        """
+            f''
+            f'<div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">'
+            f'<p><strong>Current Struggle:</strong> {data.struggle}</p>'
+            f'<p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {INTERPRETATIONS.get(rising.sign)}.</em></p>'
+            f'</div>'
+            f'</div>'
+        )
 
         return {"report": report_html}
 
