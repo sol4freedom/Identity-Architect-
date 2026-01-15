@@ -228,4 +228,94 @@ def generate_reading(data: UserInput):
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONSCIOUS INTENT</span>
                 
                 <p style="margin-top:10px;"><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work['name']}</span></p>
-                <p style="
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{lifes_work['story']}"</p>
+                
+                <p><strong>🌍 The Growth Edge:</strong> <span style="color: #C71585; font-weight: bold;">{evolution['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{evolution['story']}"</p>
+                
+                <p><strong>🏹 The Path (Rising):</strong> {rising.sign}</p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px;">"{get_sign_desc(rising.sign)}"</p>
+            </div>
+
+            <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li style="margin-bottom: 8px;">
+                        🤝 <strong>The Broker:</strong> {mercury.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(mercury.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        👔 <strong>The CEO:</strong> {saturn.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(saturn.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        💰 <strong>The Mogul:</strong> {jupiter.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(jupiter.sign)}</em></span>
+                    </li>
+                </ul>
+            </div>
+
+            <div style="border-left: 5px solid #27AE60; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li style="margin-bottom: 8px;">
+                        ❤️ <strong>The Heart:</strong> {moon.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(moon.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        🎨 <strong>The Muse:</strong> {venus.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(venus.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        🌫️ <strong>The Dreamer:</strong> {neptune.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(neptune.sign)}</em></span>
+                    </li>
+                </ul>
+            </div>
+
+            <div style="border-left: 5px solid #C0392B; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #C0392B; margin: 0;">THE STREETS</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li style="margin-bottom: 8px;">
+                        🔥 <strong>The Hustle:</strong> {mars.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(mars.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        ⚡ <strong>The Disruptor:</strong> {uranus.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(uranus.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        🕵️ <strong>The Kingpin:</strong> {pluto.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(pluto.sign)}</em></span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div style="background-color: #222; color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #FF4500; margin-top: 0;">🔒 THE VAULT</h3>
+                <span style="font-size: 12px; color: #aaa; letter-spacing: 1px;">UNCONSCIOUS BLUEPRINT</span>
+                
+                <p style="margin-top:10px;"><strong>⚡ The Aura:</strong> <span style="color: #FFD700; font-weight: bold;">{radiance['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px; margin-bottom: 15px;">"{radiance['story']}"</p>
+                
+                <p><strong>⚓ The Root:</strong> <span style="color: #FFD700; font-weight: bold;">{purpose['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px; margin-bottom: 15px;">"{purpose['story']}"</p>
+                
+                <p><strong>🧲 The Magnet:</strong> <span style="color: #FFD700; font-weight: bold;">{attraction['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px;">"{attraction['story']}"</p>
+            </div>
+
+            <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
+                <p><strong>Current Struggle:</strong> {data.struggle}</p>
+                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {get_sign_desc(rising.sign)}.</em></p>
+            </div>
+        </div>
+        """
+
+        return {"report": report_html}
+
+    except Exception as e:
+        return {"report": f"<p style='color:red'>Calculation Error: {str(e)}</p>"}
