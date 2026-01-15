@@ -111,7 +111,6 @@ NUMEROLOGY_LORE = {
     22: {"name": "The Master Builder", "desc": "Turning massive dreams into reality."},
     33: {"name": "The Master Teacher", "desc": "Uplifting humanity through compassion."}
 }
-
 # --- HELPER FUNCTIONS ---
 def get_key_data(degree):
     if degree is None: return {"name": "Unknown", "story": ""}
