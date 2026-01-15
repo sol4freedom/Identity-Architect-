@@ -104,6 +104,34 @@ def get_key_data(degree):
     data = KEY_LORE.get(key_number, {"name": f"Key {key_number}", "story": ""})
     return {"number": key_number, "name": data["name"], "story": data["story"]}
 
+# --- NUMEROLOGY ENGINE (NEW!) ---
+NUMEROLOGY_LORE = {
+    1: {"name": "The Pioneer", "desc": "You are a self-starter here to lead with independence and originality."},
+    2: {"name": "The Diplomat", "desc": "You are a peacemaker who thrives on partnership and balance."},
+    3: {"name": "The Creator", "desc": "You are an artist here to express joy, optimism, and communication."},
+    4: {"name": "The Builder", "desc": "You are the foundation, here to build lasting stability through hard work."},
+    5: {"name": "The Adventurer", "desc": "You are a free spirit here to experience change, freedom, and variety."},
+    6: {"name": "The Nurturer", "desc": "You are the caretaker, focusing on responsibility, home, and healing."},
+    7: {"name": "The Seeker", "desc": "You are the analyst, searching for deep spiritual and intellectual truth."},
+    8: {"name": "The Powerhouse", "desc": "You are the executive, mastering abundance, authority, and success."},
+    9: {"name": "The Humanist", "desc": "You are the compassionate soul, here to serve humanity and let go."},
+    11: {"name": "The Illuminator", "desc": "A Master Number. You channel intuition to inspire others."},
+    22: {"name": "The Master Builder", "desc": "A Master Number. You turn massive dreams into concrete reality."},
+    33: {"name": "The Master Teacher", "desc": "A Master Number. You uplift humanity through selfless compassion."}
+}
+
+def calculate_life_path(date_str):
+    # Standard YYYY-MM-DD
+    digits = [int(d) for d in date_str if d.isdigit()]
+    total = sum(digits)
+    
+    # Reduce, but keep 11, 22, 33
+    while total > 9 and total not in [11, 22, 33]:
+        total = sum(int(d) for d in str(total))
+    
+    data = NUMEROLOGY_LORE.get(total, {"name": "The Mystery", "desc": "A unique vibration."})
+    return {"number": total, "name": data["name"], "desc": data["desc"]}
+
 # --- THE SMART GRAMMAR ENGINE (CONTEXT AWARE) ---
 
 # 1. PLANET ACTIONS (The "Verb")
@@ -121,16 +149,11 @@ PLANET_ACTIONS = {
 }
 
 # 2. SIGN STYLES (The "Adverb" - Context Aware)
-# Each sign now has 3 flavors: 
-# 'boardroom' (Business/Logic), 'sanctuary' (Love/Feeling), 'streets' (Power/Drive)
-
 def get_sign_style(sign, planet):
-    # Map planets to their 'Neighborhood' context
-    context = "boardroom" # default
+    context = "boardroom"
     if planet in ["Moon", "Venus", "Neptune"]: context = "sanctuary"
     if planet in ["Mars", "Uranus", "Pluto"]: context = "streets"
     
-    # The Master Library of Nuance
     library = {
         "Aries": {
             "boardroom": "bold, pioneering initiative.",
@@ -194,7 +217,6 @@ def get_sign_style(sign, planet):
         }
     }
     
-    # Fetch the style based on sign and context
     sign_data = library.get(sign, {"boardroom": "energy.", "sanctuary": "energy.", "streets": "energy."})
     return sign_data.get(context, "cosmic energy.")
 
@@ -243,7 +265,7 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v9", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v10", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
@@ -284,20 +306,29 @@ def generate_reading(data: UserInput):
         d_sun = design_chart.get(const.SUN)
         d_moon = design_chart.get(const.MOON)
         
-        # 4. GET RICH ARCHETYPE DATA
+        # 4. CALCULATE LIFE PATH (NUMEROLOGY)
+        life_path = calculate_life_path(data.date)
+        
+        # 5. GET RICH ARCHETYPE DATA
         lifes_work = get_key_data(sun.lon)
         evolution = get_key_data((sun.lon + 180) % 360)
         radiance = get_key_data(d_sun.lon)
         purpose = get_key_data((d_sun.lon + 180) % 360)
         attraction = get_key_data(d_moon.lon)
 
-        # 5. GENERATE REPORT (USING CONTEXT AWARE ENGINE)
+        # 6. GENERATE REPORT (Integrated)
         report_html = f"""
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
             
             <div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px;">
                 <h2 style="color: #D4AF37; margin: 0; letter-spacing: 2px;">THE INTEGRATED SELF</h2>
                 <span style="font-size: 14px; color: #888;">PREPARED FOR {data.name.upper()}</span>
+            </div>
+            
+            <div style="background-color: #E6E6FA; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                <span style="font-size: 12px; color: #666; letter-spacing: 1px;">THE VIBRATION (LIFE PATH)</span>
+                <h3 style="color: #483D8B; margin: 5px 0;">{life_path['number']}: {life_path['name']}</h3>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-bottom: 0;">"{life_path['desc']}"</p>
             </div>
             
             <div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
