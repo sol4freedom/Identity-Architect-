@@ -7,10 +7,16 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-from flatlib.config import setBackend
 
-# --- CONFIGURE BACKEND (Prevents Crash) ---
-setBackend(const.BACKEND_MOSHIER)
+# --- THE FIX: Correct Import Location ---
+try:
+    from flatlib.ephem import setBackend
+    setBackend(const.BACKEND_MOSHIER)
+    print("Backend set to Moshier")
+except ImportError:
+    print("Could not import setBackend - utilizing default")
+except Exception as e:
+    print(f"Backend setup error: {e}")
 
 app = FastAPI()
 
@@ -94,16 +100,14 @@ def generate_reading(data: UserInput):
         date = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         
-        # Request all planets
         safe_objects = [
             const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
             const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
         ]
         
-        # Generate Chart
         chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # Retrieve Planets
+        # Get Objects
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
         mercury = chart.get(const.MERCURY)
@@ -115,15 +119,13 @@ def generate_reading(data: UserInput):
         neptune = chart.get(const.NEPTUNE)
         pluto = chart.get(const.PLUTO)
         
-        # Retrieve Angles (Using House method to prevent crashes)
         rising = chart.get(const.HOUSE1)
         
         # 3. CALCULATE GENE KEYS
         lifes_work_key = get_gene_key(sun.lon)
         evolution_key = get_gene_key((sun.lon + 180) % 360)
 
-        # 4. GENERATE THE "NEIGHBORHOOD" HTML REPORT
-        # Using a safer multi-line string format
+        # 4. GENERATE REPORT
         report_html = (
             f'<div style="font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">'
             f'<div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px;">'
