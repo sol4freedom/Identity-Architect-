@@ -12,9 +12,15 @@ from flatlib import const
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- DATA LIBRARIES (COMPRESSED) ---
-RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
+# --- GENE KEYS MAPPING ---
+RAVE_ORDER = [
+    25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 
+    62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 
+    1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 
+    37, 63, 22, 36
+]
 
+# --- ARCHETYPE LIBRARY ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles."},
     2: {"name": "The Receptive", "story": "The Divine Feminine. You are the architectural blueprint that guides raw energy."},
@@ -82,19 +88,152 @@ KEY_LORE = {
     64: {"name": "The Confusion", "story": "Illumination. You process images until they resolve into light."}
 }
 
+# --- THE MEGA MATRIX ---
 MEGA_MATRIX = {
-    "Aries": {"Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline and initiative.", "Jupiter": "Wealth via bold risks and pioneering.", "Moon": "Safety in independence and action.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of being the hero.", "Mars": "Explosive, head-first drive.", "Uranus": "Disrupts via individualistic rebellion.", "Pluto": "Asserting self to destroy barriers.", "Rising": "Undeniable courage and energy."},
-    "Taurus": {"Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets and steady growth.", "Moon": "Safety in comfort and stability.", "Venus": "Sensory love, touch, and loyalty.", "Neptune": "Dreams of material abundance.", "Mars": "Unstoppable, rhythmic momentum.", "Uranus": "Revolutionizing values and resources.", "Pluto": "Transformation of self-worth.", "Rising": "Calm, grounded reliability."},
-    "Gemini": {"Mercury": "Brilliant, agile processing.", "Saturn": "Structuring the intellect.", "Jupiter": "Luck via networking and curiosity.", "Moon": "Safety in conversation.", "Venus": "Mental love, wit, and banter.", "Neptune": "Dreams of telepathic connection.", "Mars": "Versatile, scattered drive.", "Uranus": "Disrupts the narrative.", "Pluto": "Psychological reprogramming.", "Rising": "Youthful, curious engagement."},
-    "Cancer": {"Mercury": "Intuitive, memory-based speech.", "Saturn": "Responsibility to the clan.", "Jupiter": "Wealth via real estate or care.", "Moon": "Safety in a protective shell.", "Venus": "Caretaking and emotional safety.", "Neptune": "Dreams of the perfect home.", "Mars": "Defensive, fierce protection.", "Uranus": "Revolutionizing the family unit.", "Pluto": "Ancestral healing.", "Rising": "Gentle, receptive aura."},
-    "Leo": {"Mercury": "Dramatic, expressive storytelling.", "Saturn": "Disciplined creativity.", "Jupiter": "Luck via visibility and confidence.", "Moon": "Safety in being appreciated.", "Venus": "Grand, performative romance.", "Neptune": "Dreams of artistic fame.", "Mars": "Drive fueled by honor and pride.", "Uranus": "Disrupts the ego.", "Pluto": "Death and rebirth of the identity.", "Rising": "Warm, charismatic presence."},
-    "Virgo": {"Mercury": "Precise, analytical logic.", "Saturn": "Mastery of craft and service.", "Jupiter": "Expansion via refining details.", "Moon": "Safety in routine and order.", "Venus": "Devoted, practical love.", "Neptune": "Dreams of perfect healing.", "Mars": "Efficient, calculated action.", "Uranus": "Revolutionizing work and health.", "Pluto": "Deep purification.", "Rising": "Modest, sharp, put-together."},
-    "Libra": {"Mercury": "Diplomatic, balanced negotiation.", "Saturn": "Structuring fair contracts.", "Jupiter": "Wealth via partnerships.", "Moon": "Safety in harmony and pairing.", "Venus": "Aesthetic, harmonious love.", "Neptune": "Dreams of the soulmate.", "Mars": "Strategic, social alliances.", "Uranus": "Disrupts relationship norms.", "Pluto": "Transformation via mirroring.", "Rising": "Graceful, social intelligence."},
-    "Scorpio": {"Mercury": "Detective mind, seeking secrets.", "Saturn": "Mastery of self-control.", "Jupiter": "Expansion via research or hidden power.", "Moon": "Safety in deep, absolute trust.", "Venus": "Intense, soul-merging fusion.", "Neptune": "Dreams of the mysteries.", "Mars": "Relentless, sheer will.", "Uranus": "Disrupts taboos.", "Pluto": "Total metamorphosis.", "Rising": "Magnetic, intense mystery."},
-    "Sagittarius": {"Mercury": "Broad-minded philosophy.", "Saturn": "Structuring a belief system.", "Jupiter": "Luck via travel and truth.", "Moon": "Safety in freedom and movement.", "Venus": "Adventurous, honest love.", "Neptune": "Dreams of nirvana.", "Mars": "Crusading for a cause.", "Uranus": "Disrupts dogma.", "Pluto": "Death of old beliefs.", "Rising": "Jovial, optimistic adventure."},
-    "Capricorn": {"Mercury": "Pragmatic, executive thinking.", "Saturn": "Building enduring institutions.", "Jupiter": "Success via hierarchy and career.", "Moon": "Safety in control and achievement.", "Venus": "Committed, serious status.", "Neptune": "Dissolving structures for spirit.", "Mars": "Disciplined, long-game drive.", "Uranus": "Disrupts the government.", "Pluto": "Exposing systemic corruption.", "Rising": "Authoritative, capable maturity."},
-    "Aquarius": {"Mercury": "Genius, non-linear innovation.", "Saturn": "Structuring the future.", "Jupiter": "Luck via networks and tech.", "Moon": "Safety in detachment.", "Venus": "Unconventional, free love.", "Neptune": "Dreams of utopia.", "Mars": "Rebellious, humanitarian drive.", "Uranus": "Awakening the collective.", "Pluto": "Power to the people.", "Rising": "Unique, aloof brilliance."},
-    "Pisces": {"Mercury": "Poetic, symbolic thinking.", "Saturn": "Giving form to chaos.", "Jupiter": "Expansion via compassion.", "Moon": "Safety in solitude.", "Venus": "Unconditional, spiritual love.", "Neptune": "Dissolving into oneness.", "Mars": "Fluid, elusive adaptability.", "Uranus": "Disrupts reality itself.", "Pluto": "Transformation of the soul.", "Rising": "Dreamy, empathetic softness."}
+    "Aries": {
+        "Mercury": "Direct, rapid-fire communication.", 
+        "Saturn": "Self-reliant discipline and initiative.", 
+        "Jupiter": "Wealth via bold risks and pioneering.", 
+        "Moon": "Safety in independence and action.", 
+        "Venus": "Passionate, spontaneous love.", 
+        "Neptune": "Dreams of being the hero.", 
+        "Mars": "Explosive, head-first drive.", 
+        "Uranus": "Disrupts via individualistic rebellion.", 
+        "Pluto": "Asserting self to destroy barriers.", 
+        "Rising": "Undeniable courage and energy."
+    },
+    "Taurus": {
+        "Mercury": "Deliberate, methodical thinking.", 
+        "Saturn": "Building legacy through patience.", 
+        "Jupiter": "Compounding assets and steady growth.", 
+        "Moon": "Safety in comfort and stability.", 
+        "Venus": "Sensory love, touch, and loyalty.", 
+        "Neptune": "Dreams of material abundance.", 
+        "Mars": "Unstoppable, rhythmic momentum.", 
+        "Uranus": "Revolutionizing values and resources.", 
+        "Pluto": "Transformation of self-worth.", 
+        "Rising": "Calm, grounded reliability."
+    },
+    "Gemini": {
+        "Mercury": "Brilliant, agile processing.", 
+        "Saturn": "Structuring the intellect.", 
+        "Jupiter": "Luck via networking and curiosity.", 
+        "Moon": "Safety in conversation.", 
+        "Venus": "Mental love, wit, and banter.", 
+        "Neptune": "Dreams of telepathic connection.", 
+        "Mars": "Versatile, scattered drive.", 
+        "Uranus": "Disrupts the narrative.", 
+        "Pluto": "Psychological reprogramming.", 
+        "Rising": "Youthful, curious engagement."
+    },
+    "Cancer": {
+        "Mercury": "Intuitive, memory-based speech.", 
+        "Saturn": "Responsibility to the clan.", 
+        "Jupiter": "Wealth via real estate or care.", 
+        "Moon": "Safety in a protective shell.", 
+        "Venus": "Caretaking and emotional safety.", 
+        "Neptune": "Dreams of the perfect home.", 
+        "Mars": "Defensive, fierce protection.", 
+        "Uranus": "Revolutionizing the family unit.", 
+        "Pluto": "Ancestral healing.", 
+        "Rising": "Gentle, receptive aura."
+    },
+    "Leo": {
+        "Mercury": "Dramatic, expressive storytelling.", 
+        "Saturn": "Disciplined creativity.", 
+        "Jupiter": "Luck via visibility and confidence.", 
+        "Moon": "Safety in being appreciated.", 
+        "Venus": "Grand, performative romance.", 
+        "Neptune": "Dreams of artistic fame.", 
+        "Mars": "Drive fueled by honor and pride.", 
+        "Uranus": "Disrupts the ego.", 
+        "Pluto": "Death and rebirth of the identity.", 
+        "Rising": "Warm, charismatic presence."
+    },
+    "Virgo": {
+        "Mercury": "Precise, analytical logic.", 
+        "Saturn": "Mastery of craft and service.", 
+        "Jupiter": "Expansion via refining details.", 
+        "Moon": "Safety in routine and order.", 
+        "Venus": "Devoted, practical love.", 
+        "Neptune": "Dreams of perfect healing.", 
+        "Mars": "Efficient, calculated action.", 
+        "Uranus": "Revolutionizing work and health.", 
+        "Pluto": "Deep purification.", 
+        "Rising": "Modest, sharp, put-together."
+    },
+    "Libra": {
+        "Mercury": "Diplomatic, balanced negotiation.", 
+        "Saturn": "Structuring fair contracts.", 
+        "Jupiter": "Wealth via partnerships.", 
+        "Moon": "Safety in harmony and pairing.", 
+        "Venus": "Aesthetic, harmonious love.", 
+        "Neptune": "Dreams of the soulmate.", 
+        "Mars": "Strategic, social alliances.", 
+        "Uranus": "Disrupts relationship norms.", 
+        "Pluto": "Transformation via mirroring.", 
+        "Rising": "Graceful, social intelligence."
+    },
+    "Scorpio": {
+        "Mercury": "Detective mind, seeking secrets.", 
+        "Saturn": "Mastery of self-control.", 
+        "Jupiter": "Expansion via research or hidden power.", 
+        "Moon": "Safety in deep, absolute trust.", 
+        "Venus": "Intense, soul-merging fusion.", 
+        "Neptune": "Dreams of the mysteries.", 
+        "Mars": "Relentless, sheer will.", 
+        "Uranus": "Disrupts taboos.", 
+        "Pluto": "Total metamorphosis.", 
+        "Rising": "Magnetic, intense mystery."
+    },
+    "Sagittarius": {
+        "Mercury": "Broad-minded philosophy.", 
+        "Saturn": "Structuring a belief system.", 
+        "Jupiter": "Luck via travel and truth.", 
+        "Moon": "Safety in freedom and movement.", 
+        "Venus": "Adventurous, honest love.", 
+        "Neptune": "Dreams of nirvana.", 
+        "Mars": "Crusading for a cause.", 
+        "Uranus": "Disrupts dogma.", 
+        "Pluto": "Death of old beliefs.", 
+        "Rising": "Jovial, optimistic adventure."
+    },
+    "Capricorn": {
+        "Mercury": "Pragmatic, executive thinking.", 
+        "Saturn": "Building enduring institutions.", 
+        "Jupiter": "Success via hierarchy and career.", 
+        "Moon": "Safety in control and achievement.", 
+        "Venus": "Committed, serious status.", 
+        "Neptune": "Dissolving structures for spirit.", 
+        "Mars": "Disciplined, long-game drive.", 
+        "Uranus": "Disrupts the government.", 
+        "Pluto": "Exposing systemic corruption.", 
+        "Rising": "Authoritative, capable maturity."
+    },
+    "Aquarius": {
+        "Mercury": "Genius, non-linear innovation.", 
+        "Saturn": "Structuring the future.", 
+        "Jupiter": "Luck via networks and tech.", 
+        "Moon": "Safety in detachment.", 
+        "Venus": "Unconventional, free love.", 
+        "Neptune": "Dreams of utopia.", 
+        "Mars": "Rebellious, humanitarian drive.", 
+        "Uranus": "Awakening the collective.", 
+        "Pluto": "Power to the people.", 
+        "Rising": "Unique, aloof brilliance."
+    },
+    "Pisces": {
+        "Mercury": "Poetic, symbolic thinking.", 
+        "Saturn": "Giving form to chaos.", 
+        "Jupiter": "Expansion via compassion.", 
+        "Moon": "Safety in solitude.", 
+        "Venus": "Unconditional, spiritual love.", 
+        "Neptune": "Dissolving into oneness.", 
+        "Mars": "Fluid, elusive adaptability.", 
+        "Uranus": "Disrupts reality itself.", 
+        "Pluto": "Transformation of the soul.", 
+        "Rising": "Dreamy, empathetic softness."
+    }
 }
 
 NUMEROLOGY_LORE = {
@@ -112,6 +251,8 @@ NUMEROLOGY_LORE = {
     33: {"name": "The Master Teacher", "desc": "Uplifting humanity through compassion."}
 }
 
+Step 2: The Body (Logic & Report)
+Paste this DIRECTLY BELOW Step 1.
 # --- HELPER FUNCTIONS ---
 def get_key_data(degree):
     if degree is None: return {"name": "Unknown", "story": ""}
@@ -150,10 +291,9 @@ class UserInput(BaseModel):
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        # GEOLOCATION & TIMEZONE FIX
+        # --- BRAZIL SUMMER TIME FIX ---
         lat, lon, tz = 51.48, 0.0, data.tz
         
-        # BRAZIL SUMMER TIME FIX
         if "sao paulo" in data.city.lower() or "são paulo" in data.city.lower(): 
             lat, lon = -23.55, -46.63
             # Check month for DST (Roughly Oct-Feb in Brazil 90s)
@@ -162,12 +302,11 @@ def generate_reading(data: UserInput):
                 tz = -2.0 # Summer Time
             else:
                 tz = -3.0 # Standard Time
-                
         elif "fargo" in data.city.lower(): 
             lat, lon, tz = 46.87, -96.79, -6.0 
         else:
             try:
-                geo = Nominatim(user_agent="ia_v17", timeout=5).geocode(data.city)
+                geo = Nominatim(user_agent="ia_v18", timeout=5).geocode(data.city)
                 if geo: lat, lon = geo.latitude, geo.longitude
             except: pass
 
@@ -193,6 +332,7 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
+        # --- THE REPORT (WITH CSS FIXES) ---
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -219,7 +359,7 @@ def generate_reading(data: UserInput):
             .desc {{ font-size: 0.9em; color: #555; font-style: italic; }}
             .highlight {{ color: #C71585; font-weight: bold; }}
             
-            /* The Vault Fix */
+            /* THE VAULT VISIBILITY FIX */
             .vault-section {{
                 background-color: #222 !important; 
                 color: #fff !important; 
@@ -228,10 +368,10 @@ def generate_reading(data: UserInput):
                 margin-bottom: 20px;
                 border-left: 4px solid var(--gold);
             }}
-            .vault-section h3 {{ color: #FF4500; margin-top: 0; }}
-            .vault-label {{ color: #fff; font-weight: bold; display: block; }}
-            .vault-desc {{ color: #ccc; font-size: 0.9em; font-style: italic; }}
-            .vault-highlight {{ color: #FFD700; }}
+            .vault-section h3 {{ color: #FF4500 !important; margin-top: 0; }}
+            .vault-label {{ color: #fff !important; font-weight: bold; display: block; }}
+            .vault-desc {{ color: #ccc !important; font-size: 0.9em; font-style: italic; }}
+            .vault-highlight {{ color: #FFD700 !important; }}
 
             @media print {{
                 button {{ display: none; }}
@@ -307,6 +447,11 @@ def generate_reading(data: UserInput):
                     </div>
                 </div>
 
+                <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
+                    <p><strong>Current Struggle:</strong> {data.struggle}</p>
+                    <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</em></p>
+                </div>
+                
                 <div style="text-align: center; margin-top: 20px;">
                     <button onclick="window.print()" style="background-color: #D4AF37; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-family: 'Cinzel', serif;">
                         📥 SAVE MY CODE
@@ -314,7 +459,7 @@ def generate_reading(data: UserInput):
                 </div>
 
                 <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; font-size: 10px; color: #999; text-align: center;">
-                    Technical Data: {data.city} | {data.date} {data.time} | Lat: {lat}, Lon: {lon}, TZ: {tz}
+                    Debug: {data.city} | {data.date} {data.time} | TZ: {tz} (Sao Paulo DST Fix Applied)
                 </div>
             </div>
         </body>
@@ -323,3 +468,4 @@ def generate_reading(data: UserInput):
         return {"report": html}
     except Exception as e:
         return {"report": f"<div style='color:red; padding:20px;'>Error: {str(e)}</div>"}
+
