@@ -1,7 +1,10 @@
-fastapi
-uvicorn
-pydantic
-python-multipart
-requests
-flatlib
-geopy
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.2
+python-multipart==0.0.6
+requests==2.31.0
+flatlib==0.2.3
+geopy==2.4.1
+pyswisseph==2.8.0.post1
+timezonefinder==6.2.0
+pytz==2023.3.post1
