@@ -28,7 +28,7 @@ RAVE_ORDER = [
     37, 63, 22, 36
 ]
 
-# --- THE 64 ARCHETYPES (NAME + STORY) ---
+# --- THE 64 ARCHETYPES (KEY LORE) ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles when the old ways go stale."},
     2: {"name": "The Receptive", "story": "The Divine Feminine. You are the architectural blueprint that guides raw energy into form."},
@@ -104,21 +104,104 @@ def get_key_data(degree):
     data = KEY_LORE.get(key_number, {"name": f"Key {key_number}", "story": ""})
     return {"number": key_number, "name": data["name"], "story": data["story"]}
 
-# --- SIGN LORE (BOARDROOM/STREETS) ---
-SIGN_LORE = {
-    "Aries": {"title": "The Pioneer", "desc": "Leading with courage and impulse."},
-    "Taurus": {"title": "The Builder", "desc": "Grounding energy into lasting value."},
-    "Gemini": {"title": "The Messenger", "desc": "Connecting ideas and networks."},
-    "Cancer": {"title": "The Nurturer", "desc": "Protecting the core and the clan."},
-    "Leo": {"title": "The Creator", "desc": "Radiating self-expression and command."},
-    "Virgo": {"title": "The Editor", "desc": "Refining the systems for perfection."},
-    "Libra": {"title": "The Diplomat", "desc": "Balancing forces to find harmony."},
-    "Scorpio": {"title": "The Alchemist", "desc": "Transforming through intensity and depth."},
-    "Sagittarius": {"title": "The Explorer", "desc": "Seeking truth and expansion."},
-    "Capricorn": {"title": "The Architect", "desc": "Building structures that stand the test of time."},
-    "Aquarius": {"title": "The Futurist", "desc": "Innovating for the collective good."},
-    "Pisces": {"title": "The Guide", "desc": "Dissolving boundaries to tap into the mystic."}
+# --- THE SMART GRAMMAR ENGINE (CONTEXT AWARE) ---
+
+# 1. PLANET ACTIONS (The "Verb")
+PLANET_ACTIONS = {
+    "Mercury": "Negotiates deals using",
+    "Saturn": "Builds legacy through",
+    "Jupiter": "Expands wealth via",
+    "Moon": "Finds safety in",
+    "Venus": "Seduces and attracts with",
+    "Neptune": "Dreams of",
+    "Mars": "Conquers obstacles with",
+    "Uranus": "Disrupts the system using",
+    "Pluto": "Transforms power through",
+    "Rising": "Navigates the world with"
 }
+
+# 2. SIGN STYLES (The "Adverb" - Context Aware)
+# Each sign now has 3 flavors: 
+# 'boardroom' (Business/Logic), 'sanctuary' (Love/Feeling), 'streets' (Power/Drive)
+
+def get_sign_style(sign, planet):
+    # Map planets to their 'Neighborhood' context
+    context = "boardroom" # default
+    if planet in ["Moon", "Venus", "Neptune"]: context = "sanctuary"
+    if planet in ["Mars", "Uranus", "Pluto"]: context = "streets"
+    
+    # The Master Library of Nuance
+    library = {
+        "Aries": {
+            "boardroom": "bold, pioneering initiative.",
+            "sanctuary": "passionate, direct honesty.",
+            "streets": "raw, explosive speed."
+        },
+        "Taurus": {
+            "boardroom": "unshakeable consistency and value.",
+            "sanctuary": "luxurious comfort and sensual touch.",
+            "streets": "stubborn, immovable force."
+        },
+        "Gemini": {
+            "boardroom": "agile networking and brilliant logic.",
+            "sanctuary": "playful wit and curiosity.",
+            "streets": "sharp, street-smart adaptability."
+        },
+        "Cancer": {
+            "boardroom": "protective intuition and resource hoarding.",
+            "sanctuary": "deep, nurturing emotional bonds.",
+            "streets": "fierce defense of the home turf."
+        },
+        "Leo": {
+            "boardroom": "commanding leadership and charisma.",
+            "sanctuary": "generous, warm-hearted loyalty.",
+            "streets": "undeniable presence and dominance."
+        },
+        "Virgo": {
+            "boardroom": "flawless efficiency and analysis.",
+            "sanctuary": "devoted acts of service.",
+            "streets": "calculated, precise maneuvering."
+        },
+        "Libra": {
+            "boardroom": "strategic partnerships and diplomacy.",
+            "sanctuary": "romantic harmony and aesthetic beauty.",
+            "streets": "balancing the scales of justice."
+        },
+        "Scorpio": {
+            "boardroom": "penetrating insight and research.",
+            "sanctuary": "intense, soul-merging intimacy.",
+            "streets": "ruthless, transformative power."
+        },
+        "Sagittarius": {
+            "boardroom": "limitless vision and expansion.",
+            "sanctuary": "adventurous, free-spirited truth.",
+            "streets": "wild, untamed exploration."
+        },
+        "Capricorn": {
+            "boardroom": "masterful ambition and hierarchy.",
+            "sanctuary": "reliable, traditional commitment.",
+            "streets": "cold, hard discipline."
+        },
+        "Aquarius": {
+            "boardroom": "innovative systems and future-tech.",
+            "sanctuary": "unique, accepting friendship.",
+            "streets": "radical rebellion against the norm."
+        },
+        "Pisces": {
+            "boardroom": "imaginative vision and empathy.",
+            "sanctuary": "boundless, mystical love.",
+            "streets": "fluid, elusive adaptability."
+        }
+    }
+    
+    # Fetch the style based on sign and context
+    sign_data = library.get(sign, {"boardroom": "energy.", "sanctuary": "energy.", "streets": "energy."})
+    return sign_data.get(context, "cosmic energy.")
+
+def generate_desc(planet_name, sign_name):
+    action = PLANET_ACTIONS.get(planet_name, "Expresses energy via")
+    style = get_sign_style(sign_name, planet_name)
+    return f"{action} {style}"
 
 # --- INPUT DATA ---
 class UserInput(BaseModel):
@@ -160,7 +243,7 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v7", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v9", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
@@ -202,19 +285,13 @@ def generate_reading(data: UserInput):
         d_moon = design_chart.get(const.MOON)
         
         # 4. GET RICH ARCHETYPE DATA
-        # We now get an object back: {name: "The Creator", story: "Entropy..."}
         lifes_work = get_key_data(sun.lon)
         evolution = get_key_data((sun.lon + 180) % 360)
-        
         radiance = get_key_data(d_sun.lon)
         purpose = get_key_data((d_sun.lon + 180) % 360)
         attraction = get_key_data(d_moon.lon)
 
-        # Helper to get sign lore safely
-        def get_sign_desc(sign_name):
-            return SIGN_LORE.get(sign_name, {"desc": ""})["desc"]
-
-        # 5. GENERATE REPORT (With Rich Stories)
+        # 5. GENERATE REPORT (USING CONTEXT AWARE ENGINE)
         report_html = f"""
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
             
@@ -234,7 +311,7 @@ def generate_reading(data: UserInput):
                 <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{evolution['story']}"</p>
                 
                 <p><strong>🏹 The Path (Rising):</strong> {rising.sign}</p>
-                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px;">"{get_sign_desc(rising.sign)}"</p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px;">"{generate_desc('Rising', rising.sign)}"</p>
             </div>
 
             <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
@@ -243,15 +320,15 @@ def generate_reading(data: UserInput):
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
                     <li style="margin-bottom: 8px;">
                         🤝 <strong>The Broker:</strong> {mercury.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(mercury.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Mercury', mercury.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
                         👔 <strong>The CEO:</strong> {saturn.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(saturn.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Saturn', saturn.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
                         💰 <strong>The Mogul:</strong> {jupiter.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(jupiter.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Jupiter', jupiter.sign)}</em></span>
                     </li>
                 </ul>
             </div>
@@ -262,15 +339,15 @@ def generate_reading(data: UserInput):
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
                     <li style="margin-bottom: 8px;">
                         ❤️ <strong>The Heart:</strong> {moon.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(moon.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Moon', moon.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
                         🎨 <strong>The Muse:</strong> {venus.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(venus.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Venus', venus.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
                         🌫️ <strong>The Dreamer:</strong> {neptune.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(neptune.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Neptune', neptune.sign)}</em></span>
                     </li>
                 </ul>
             </div>
@@ -281,15 +358,15 @@ def generate_reading(data: UserInput):
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
                     <li style="margin-bottom: 8px;">
                         🔥 <strong>The Hustle:</strong> {mars.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(mars.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Mars', mars.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
                         ⚡ <strong>The Disruptor:</strong> {uranus.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(uranus.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Uranus', uranus.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
                         🕵️ <strong>The Kingpin:</strong> {pluto.sign}<br>
-                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(pluto.sign)}</em></span>
+                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Pluto', pluto.sign)}</em></span>
                     </li>
                 </ul>
             </div>
@@ -310,7 +387,7 @@ def generate_reading(data: UserInput):
 
             <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
                 <p><strong>Current Struggle:</strong> {data.struggle}</p>
-                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {get_sign_desc(rising.sign)}.</em></p>
+                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</em></p>
             </div>
         </div>
         """
