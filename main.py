@@ -104,6 +104,32 @@ def get_key_data(degree):
     data = KEY_LORE.get(key_number, {"name": f"Key {key_number}", "story": ""})
     return {"number": key_number, "name": data["name"], "story": data["story"]}
 
+# --- HUMAN DESIGN PROFILE ENGINE ---
+def get_hd_profile(p_degree, d_degree):
+    # Calculate the Line (1-6)
+    # Each gate is 5.625 deg. Line is gate / 6 = 0.9375 deg.
+    def get_line(deg):
+        gate_progress = deg % 5.625
+        line_num = int(gate_progress / 0.9375) + 1
+        return line_num
+
+    p_line = get_line(p_degree)
+    d_line = get_line(d_degree)
+    
+    # Profile Names
+    profiles = {
+        "1/3": "Investigator/Martyr", "1/4": "Investigator/Opportunist",
+        "2/4": "Hermit/Opportunist", "2/5": "Hermit/Heretic",
+        "3/5": "Martyr/Heretic", "3/6": "Martyr/Role Model",
+        "4/6": "Opportunist/Role Model", "4/1": "Opportunist/Investigator",
+        "5/1": "Heretic/Investigator", "5/2": "Heretic/Hermit",
+        "6/2": "Role Model/Hermit", "6/3": "Role Model/Martyr"
+    }
+    
+    key = f"{p_line}/{d_line}"
+    name = profiles.get(key, f"{key} Profile")
+    return {"key": key, "name": name}
+
 # --- NUMEROLOGY ENGINE ---
 NUMEROLOGY_LORE = {
     1: {"name": "The Pioneer", "desc": "You are a self-starter here to lead with independence and originality."},
@@ -128,116 +154,158 @@ def calculate_life_path(date_str):
     data = NUMEROLOGY_LORE.get(total, {"name": "The Mystery", "desc": "A unique vibration."})
     return {"number": total, "name": data["name"], "desc": data["desc"]}
 
-# --- THE 4-LENS GRAMMAR ENGINE (NO DUPLICATES) ---
-
-# 1. PLANET ACTIONS (The "Verb")
-PLANET_ACTIONS = {
-    "Mercury": "Negotiates deals using",
-    "Saturn": "Builds legacy through",
-    "Jupiter": "Expands wealth via",
-    "Moon": "Finds emotional safety in",
-    "Venus": "Seduces and attracts with",
-    "Neptune": "Dreams of",
-    "Mars": "Conquers obstacles with",
-    "Uranus": "Disrupts the system using",
-    "Pluto": "Transforms power through",
-    "Rising": "Navigates the world with"
-}
-
-# 2. SIGN LENSES (The "Adjective")
-# Each sign now has 4 unique descriptions based on what kind of planet is asking.
-# Mental: Mercury, Uranus
-# Emotional: Moon, Venus, Neptune
-# Action: Mars, Pluto, Rising
-# Material: Saturn, Jupiter
-
-SIGN_LENSES = {
+# --- THE MEGA-MATRIX (ZERO DUPLICATES) ---
+# Each key is [Sign][Planet]
+MEGA_MATRIX = {
     "Aries": {
-        "mental": "sharp, instinctive decision-making",
-        "emotional": "passionate, direct honesty",
-        "action": "explosive, trailblazing speed",
-        "material": "bold, entrepreneurial risk-taking"
+        "Mercury": "Direct, rapid-fire communication that gets straight to the point.",
+        "Saturn": "Self-reliant discipline; you build structures by taking solo initiative.",
+        "Jupiter": "Wealth comes through bold risks and pioneering new markets.",
+        "Moon": "Emotional safety is found in independence and quick action.",
+        "Venus": "Love is a chase; you value passion, courage, and spontaneity.",
+        "Neptune": "Dreams of being the hero; spirituality is found in the spark of life.",
+        "Mars": "Explosive drive; you conquer obstacles with raw, head-first speed.",
+        "Uranus": "Disrupts through sudden, individualistic rebellion.",
+        "Pluto": "Transformation happens through asserting the self and destroying barriers.",
+        "Rising": "You enter the room with undeniable courage and energy."
     },
     "Taurus": {
-        "mental": "practical, methodical thought",
-        "emotional": "deep loyalty and sensual touch",
-        "action": "unstoppable, rhythmic momentum",
-        "material": "compounding assets and solid foundations"
+        "Mercury": "Deliberate, methodical thinking that focuses on practical value.",
+        "Saturn": "Building legacy through unshakeable patience and resource management.",
+        "Jupiter": "Expansion comes from compounding assets and slow, steady growth.",
+        "Moon": "Emotional safety is found in comfort, food, and stability.",
+        "Venus": "Love is sensory; you value loyalty, touch, and beauty.",
+        "Neptune": "Dreams of material abundance and earthly paradise.",
+        "Mars": "Drive is like a steamroller; slow to start, but unstoppable once moving.",
+        "Uranus": "Disrupts the economy and values; revolutionizing how we view resources.",
+        "Pluto": "Deep transformation of self-worth and attachment to the material.",
+        "Rising": "You project an aura of calm, grounded reliability."
     },
     "Gemini": {
-        "mental": "brilliant logic and rapid networking",
-        "emotional": "playful wit and curiosity",
-        "action": "agile, multitasking adaptability",
-        "material": "diverse income streams and trade"
+        "Mercury": "Brilliant, agile processing; you connect dots faster than anyone else.",
+        "Saturn": "Structuring the intellect; mastering the details of communication.",
+        "Jupiter": "Luck comes from networking, teaching, and endless curiosity.",
+        "Moon": "Emotional safety is found in conversation and understanding.",
+        "Venus": "Love is mental; you value wit, banter, and variety.",
+        "Neptune": "Dreams of a world connected by ideas and telepathy.",
+        "Mars": "Drive is scattered but versatile; you fight with words.",
+        "Uranus": "Disrupts the narrative; revolutionizing information flow.",
+        "Pluto": "Transformation of the mind; deep psychological reprogramming.",
+        "Rising": "You appear youthful, curious, and ready to engage."
     },
     "Cancer": {
-        "mental": "intuitive memory and gut instinct",
-        "emotional": "deep, protective nurturing",
-        "action": "tenacious, defensive maneuvering",
-        "material": "secure resource accumulation"
+        "Mercury": "Intuitive communication; you speak from memory and feeling.",
+        "Saturn": "Building emotional resilience; responsibility to the family/clan.",
+        "Jupiter": "Wealth comes through real estate, hospitality, or nurturing others.",
+        "Moon": "Emotional safety is the priority; you need a shell to retreat into.",
+        "Venus": "Love is caretaking; you value emotional safety and history.",
+        "Neptune": "Dreams of the perfect home and universal mothering.",
+        "Mars": "Drive is defensive; you fight fiercely to protect what is yours.",
+        "Uranus": "Disrupts the home life; revolutionizing the definition of family.",
+        "Pluto": "Deep ancestral healing and transformation of the emotional roots.",
+        "Rising": "You project a gentle, protective, and receptive aura."
     },
     "Leo": {
-        "mental": "creative self-expression",
-        "emotional": "warm-hearted, generous loyalty",
-        "action": "undeniable presence and dominance",
-        "material": "building a personal empire"
+        "Mercury": "Expressive, dramatic storytelling; you speak to entertain and lead.",
+        "Saturn": "Disciplined creativity; you build a personal brand or empire.",
+        "Jupiter": "Luck comes from confidence, visibility, and generosity.",
+        "Moon": "Emotional safety is found in appreciation and being seen.",
+        "Venus": "Love is a performance; you value romance, loyalty, and grand gestures.",
+        "Neptune": "Dreams of glamour, artistic fame, and shining light.",
+        "Mars": "Drive is fueled by pride; you fight for honor and recognition.",
+        "Uranus": "Disrupts the ego; revolutionizing creative expression.",
+        "Pluto": "Transformation of the heart; death and rebirth of the ego.",
+        "Rising": "You enter the room with warmth, charisma, and presence."
     },
     "Virgo": {
-        "mental": "precise analysis and optimization",
-        "emotional": "devoted acts of service",
-        "action": "efficient, calculated movement",
-        "material": "perfecting the details of the system"
+        "Mercury": "Precise, analytical logic; you see the flaw in every system.",
+        "Saturn": "Mastery of craft; you build through service and perfectionism.",
+        "Jupiter": "Expansion comes from refining details and improving health.",
+        "Moon": "Emotional safety is found in routine, order, and usefulness.",
+        "Venus": "Love is helpful; you value cleanliness, devotion, and practical support.",
+        "Neptune": "Dreams of healing and perfect order.",
+        "Mars": "Drive is efficient; you achieve goals through calculated steps.",
+        "Uranus": "Disrupts the workflow; revolutionizing work and health.",
+        "Pluto": "Deep purification; transformation through service and analysis.",
+        "Rising": "You appear modest, sharp, and put-together."
     },
     "Libra": {
-        "mental": "strategic diplomacy and mediation",
-        "emotional": "romantic harmony and aesthetics",
-        "action": "collaborative, balanced tactics",
-        "material": "profitable partnerships"
+        "Mercury": "Diplomatic negotiation; you weigh every side before speaking.",
+        "Saturn": "Structuring relationships; building lasting, fair contracts.",
+        "Jupiter": "Wealth comes through partnerships, law, or design.",
+        "Moon": "Emotional safety is found in harmony and having a partner.",
+        "Venus": "Love is an art form; you value aesthetics, balance, and peace.",
+        "Neptune": "Dreams of the perfect soulmate and universal harmony.",
+        "Mars": "Drive is strategic; you fight using social alliances and charm.",
+        "Uranus": "Disrupts relationships; revolutionizing how we relate.",
+        "Pluto": "Transformation through intense mirroring in relationships.",
+        "Rising": "You project grace, charm, and social intelligence."
     },
     "Scorpio": {
-        "mental": "investigative depth and research",
-        "emotional": "intense, soul-merging intimacy",
-        "action": "ruthless, regenerative power",
-        "material": "controlling shared resources"
+        "Mercury": "Detective mind; you investigate the secrets others hide.",
+        "Saturn": "Disciplined self-control; mastery over shared resources/debt.",
+        "Jupiter": "Expansion comes from research, psychology, or investments.",
+        "Moon": "Emotional safety requires deep, absolute trust and privacy.",
+        "Venus": "Love is distinct fusion; you value loyalty and intensity.",
+        "Neptune": "Dreams of merging souls and uncovering mysteries.",
+        "Mars": "Drive is relentless; you conquer through sheer will and strategy.",
+        "Uranus": "Disrupts the taboo; revolutionizing sex, death, and power.",
+        "Pluto": "Total metamorphosis; burning down the old to birth the new.",
+        "Rising": "You possess a magnetic, mysterious, and intense presence."
     },
     "Sagittarius": {
-        "mental": "philosophical truth-seeking",
-        "emotional": "free-spirited, adventurous optimism",
-        "action": "wild, limitless exploration",
-        "material": "international expansion"
+        "Mercury": "Broad-minded philosophy; you preach the big picture.",
+        "Saturn": "Structuring a belief system; hard-won wisdom.",
+        "Jupiter": "Luck comes from travel, publishing, and spiritual seeking.",
+        "Moon": "Emotional safety is found in freedom and movement.",
+        "Venus": "Love is an adventure; you value honesty and space.",
+        "Neptune": "Dreams of nirvana and expanding consciousness.",
+        "Mars": "Drive is crusading; you fight for a cause or belief.",
+        "Uranus": "Disrupts dogma; revolutionizing education and religion.",
+        "Pluto": "Transformation of truth; the death of old beliefs.",
+        "Rising": "You appear jovial, optimistic, and ready for adventure."
     },
     "Capricorn": {
-        "mental": "strategic, long-term planning",
-        "emotional": "reliable, traditional commitment",
-        "action": "disciplined, relentless grind",
-        "material": "climbing the hierarchy"
+        "Mercury": "Pragmatic, executive thinking; focusing on the bottom line.",
+        "Saturn": "The Master Builder; constructing enduring institutions.",
+        "Jupiter": "Expansion comes from career success and hierarchy.",
+        "Moon": "Emotional safety is found in control and achievement.",
+        "Venus": "Love is serious; you value status, commitment, and longevity.",
+        "Neptune": "Dreams of dissolving structures to find spiritual authority.",
+        "Mars": "Drive is disciplined; you play the long game to win.",
+        "Uranus": "Disrupts the government; revolutionizing corporate structures.",
+        "Pluto": "Transformation of the system; exposure of corruption.",
+        "Rising": "You project authority, maturity, and capability."
     },
     "Aquarius": {
-        "mental": "genius innovation and future-tech",
-        "emotional": "accepting, platonic friendship",
-        "action": "radical rebellion against the norm",
-        "material": "systems for the collective good"
+        "Mercury": "Genius, non-linear logic; thinking generations ahead.",
+        "Saturn": "Structuring the future; discipline in scientific pursuit.",
+        "Jupiter": "Luck comes from networks, technology, and humanitarianism.",
+        "Moon": "Emotional safety is found in detachment and friendship.",
+        "Venus": "Love is unconventional; you value freedom and intellect.",
+        "Neptune": "Dreams of utopia and the collective consciousness.",
+        "Mars": "Drive is rebellious; you fight for the underdog.",
+        "Uranus": "Disrupts everything; the awakener of the collective.",
+        "Pluto": "Transformation of society; power to the people.",
+        "Rising": "You appear unique, aloof, and intellectually brilliant."
     },
     "Pisces": {
-        "mental": "poetic imagination and symbols",
-        "emotional": "boundless, mystical empathy",
-        "action": "fluid, elusive adaptability",
-        "material": "manifesting dreams into reality"
+        "Mercury": "Poetic, symbolic thinking; communicating via images.",
+        "Saturn": "Structuring the spiritual; bringing form to chaos.",
+        "Jupiter": "Expansion comes from compassion, art, and spirituality.",
+        "Moon": "Emotional safety is found in solitude and merging with the divine.",
+        "Venus": "Love is unconditional; you value soul connections.",
+        "Neptune": "Dreams of dissolving into the ocean of oneness.",
+        "Mars": "Drive is fluid; you move like water to get what you need.",
+        "Uranus": "Disrupts reality; revolutionizing spirituality.",
+        "Pluto": "Transformation of the soul; letting go of everything.",
+        "Rising": "You project a dreamy, empathetic, and soft aura."
     }
 }
 
 def generate_desc(planet_name, sign_name):
-    # Determine which lens to use
-    lens = "action" # default
-    if planet_name in ["Mercury", "Uranus"]: lens = "mental"
-    if planet_name in ["Moon", "Venus", "Neptune"]: lens = "emotional"
-    if planet_name in ["Saturn", "Jupiter"]: lens = "material"
-    
-    action = PLANET_ACTIONS.get(planet_name, "Expresses energy via")
-    # Get the specific lens description for the sign
-    style = SIGN_LENSES.get(sign_name, {}).get(lens, "cosmic energy")
-    
-    return f"{action} {style}."
+    sign_data = MEGA_MATRIX.get(sign_name, {})
+    return sign_data.get(planet_name, f"Expresses {sign_name} energy.")
 
 # --- INPUT DATA ---
 class UserInput(BaseModel):
@@ -279,24 +347,18 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v11", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v12", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
             except: pass
 
-        # 2. CALCULATE ASTROLOGY (Personality/Black)
+        # 2. CALCULATE ASTROLOGY
         date_obj = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
-        
-        safe_objects = [
-            const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
-            const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
-        ]
-        
+        safe_objects = [const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO]
         chart = Chart(date_obj, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # Get Objects
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
         mercury = chart.get(const.MERCURY)
@@ -309,28 +371,29 @@ def generate_reading(data: UserInput):
         pluto = chart.get(const.PLUTO)
         rising = chart.get(const.HOUSE1)
         
-        # 3. CALCULATE DESIGN (Unconscious/Red)
+        # 3. CALCULATE DESIGN
         p_date = datetime.datetime.strptime(data.date, "%Y-%m-%d")
         d_date_obj = p_date - datetime.timedelta(days=88)
         d_date_str = d_date_obj.strftime("%Y/%m/%d")
-        
         design_date_flatlib = Datetime(d_date_str, data.time, tz_offset)
         design_chart = Chart(design_date_flatlib, pos, IDs=[const.SUN, const.MOON], hsys=const.HOUSES_PLACIDUS)
-        
         d_sun = design_chart.get(const.SUN)
         d_moon = design_chart.get(const.MOON)
         
-        # 4. CALCULATE LIFE PATH (NUMEROLOGY)
+        # 4. CALCULATE LIFE PATH
         life_path = calculate_life_path(data.date)
         
-        # 5. GET RICH ARCHETYPE DATA
+        # 5. CALCULATE HD PROFILE (NEW)
+        hd_profile = get_hd_profile(sun.lon, d_sun.lon)
+        
+        # 6. GET ARCHETYPES
         lifes_work = get_key_data(sun.lon)
         evolution = get_key_data((sun.lon + 180) % 360)
         radiance = get_key_data(d_sun.lon)
         purpose = get_key_data((d_sun.lon + 180) % 360)
         attraction = get_key_data(d_moon.lon)
 
-        # 6. GENERATE REPORT (Integrated)
+        # 7. GENERATE REPORT
         report_html = f"""
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
             
@@ -347,9 +410,8 @@ def generate_reading(data: UserInput):
             
             <div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE ID</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONSCIOUS INTENT</span>
-                
-                <p style="margin-top:10px;"><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work['name']}</span></p>
+                <p style="margin-top:10px;"><strong>🎭 Profile:</strong> <span style="color: #4A4A4A; font-weight: bold;">{hd_profile['name']}</span></p>
+                <p><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work['name']}</span></p>
                 <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{lifes_work['story']}"</p>
                 
                 <p><strong>🌍 The Growth Edge:</strong> <span style="color: #C71585; font-weight: bold;">{evolution['name']}</span></p>
@@ -364,15 +426,15 @@ def generate_reading(data: UserInput):
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
                     <li style="margin-bottom: 8px;">
-                        🤝 <strong>The Broker:</strong> {mercury.sign}<br>
+                        🤝 <strong>The Broker (Mercury in {mercury.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Mercury', mercury.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
-                        👔 <strong>The CEO:</strong> {saturn.sign}<br>
+                        👔 <strong>The CEO (Saturn in {saturn.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Saturn', saturn.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
-                        💰 <strong>The Mogul:</strong> {jupiter.sign}<br>
+                        💰 <strong>The Mogul (Jupiter in {jupiter.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Jupiter', jupiter.sign)}</em></span>
                     </li>
                 </ul>
@@ -383,15 +445,15 @@ def generate_reading(data: UserInput):
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
                     <li style="margin-bottom: 8px;">
-                        ❤️ <strong>The Heart:</strong> {moon.sign}<br>
+                        ❤️ <strong>The Heart (Moon in {moon.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Moon', moon.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
-                        🎨 <strong>The Muse:</strong> {venus.sign}<br>
+                        🎨 <strong>The Muse (Venus in {venus.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Venus', venus.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
-                        🌫️ <strong>The Dreamer:</strong> {neptune.sign}<br>
+                        🌫️ <strong>The Dreamer (Neptune in {neptune.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Neptune', neptune.sign)}</em></span>
                     </li>
                 </ul>
@@ -402,15 +464,15 @@ def generate_reading(data: UserInput):
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
                     <li style="margin-bottom: 8px;">
-                        🔥 <strong>The Hustle:</strong> {mars.sign}<br>
+                        🔥 <strong>The Hustle (Mars in {mars.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Mars', mars.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
-                        ⚡ <strong>The Disruptor:</strong> {uranus.sign}<br>
+                        ⚡ <strong>The Disruptor (Uranus in {uranus.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Uranus', uranus.sign)}</em></span>
                     </li>
                     <li style="margin-bottom: 8px;">
-                        🕵️ <strong>The Kingpin:</strong> {pluto.sign}<br>
+                        🕵️ <strong>The Kingpin (Pluto in {pluto.sign}):</strong><br>
                         <span style="font-size:12px; color:#666;"><em>{generate_desc('Pluto', pluto.sign)}</em></span>
                     </li>
                 </ul>
