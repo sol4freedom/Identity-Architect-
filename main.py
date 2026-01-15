@@ -2,21 +2,20 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from typing import Union
+import datetime 
 from geopy.geocoders import Nominatim
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
+from flatlib.ephem import setBackend
 
-# --- THE FIX: Correct Import Location ---
+# --- CONFIGURE BACKEND ---
 try:
-    from flatlib.ephem import setBackend
     setBackend(const.BACKEND_MOSHIER)
     print("Backend set to Moshier")
-except ImportError:
-    print("Could not import setBackend - utilizing default")
-except Exception as e:
-    print(f"Backend setup error: {e}")
+except:
+    pass
 
 app = FastAPI()
 
@@ -90,24 +89,25 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v2", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v3", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
             except: pass
 
-        # 2. CALCULATE ASTROLOGY
-        date = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
+        # 2. CALCULATE ASTROLOGY (Personality/Black)
+        date_obj = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         
+        # We need all planets for the neighborhoods
         safe_objects = [
             const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
             const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
         ]
         
-        chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
+        chart = Chart(date_obj, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # Get Objects
+        # Get Personality Objects
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
         mercury = chart.get(const.MERCURY)
@@ -118,16 +118,38 @@ def generate_reading(data: UserInput):
         uranus = chart.get(const.URANUS)
         neptune = chart.get(const.NEPTUNE)
         pluto = chart.get(const.PLUTO)
-        
         rising = chart.get(const.HOUSE1)
         
-        # 3. CALCULATE GENE KEYS
+        # 3. CALCULATE DESIGN (Unconscious/Red)
+        # We travel back roughly 88 days to find the Design Date
+        # (Standard Human Design approx calculation for MVP)
+        
+        # Convert string date to python date object
+        p_date = datetime.datetime.strptime(data.date, "%Y-%m-%d")
+        d_date_obj = p_date - datetime.timedelta(days=88)
+        d_date_str = d_date_obj.strftime("%Y/%m/%d")
+        
+        # Cast the Design Chart
+        design_date_flatlib = Datetime(d_date_str, data.time, tz_offset)
+        design_chart = Chart(design_date_flatlib, pos, IDs=[const.SUN, const.MOON], hsys=const.HOUSES_PLACIDUS)
+        
+        d_sun = design_chart.get(const.SUN)
+        d_moon = design_chart.get(const.MOON)
+        
+        # 4. CALCULATE ALL GENE KEYS
+        # Personality Keys
         lifes_work_key = get_gene_key(sun.lon)
         evolution_key = get_gene_key((sun.lon + 180) % 360)
+        
+        # Design Keys
+        radiance_key = get_gene_key(d_sun.lon)
+        purpose_key = get_gene_key((d_sun.lon + 180) % 360)
+        attraction_key = get_gene_key(d_moon.lon)
 
-        # 4. GENERATE REPORT
+        # 5. GENERATE THE FULL "4 NEIGHBORHOOD" REPORT
         report_html = (
             f'<div style="font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">'
+            
             f'<div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px;">'
             f'<h2 style="color: #D4AF37; margin: 0; letter-spacing: 2px;">THE INTEGRATED SELF</h2>'
             f'<span style="font-size: 14px; color: #888;">PREPARED FOR {data.name.upper()}</span>'
@@ -135,9 +157,10 @@ def generate_reading(data: UserInput):
             
             f''
             f'<div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">'
-            f'<h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE CODES</h3>'
-            f'<p><strong>🧬 Life\'s Work:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {lifes_work_key}</span> ({sun.sign})</p>'
-            f'<p><strong>🌍 Evolution:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {evolution_key}</span></p>'
+            f'<h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE PERSONALITY</h3>'
+            f'<span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONSCIOUS INTENT</span>'
+            f'<p style="margin-top:10px;"><strong>🧬 Life\'s Work (Sun):</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {lifes_work_key}</span> ({sun.sign})</p>'
+            f'<p><strong>🌍 Evolution (Earth):</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {evolution_key}</span></p>'
             f'<p><strong>🏹 Rising Sign:</strong> {rising.sign} ({INTERPRETATIONS.get(rising.sign)})</p>'
             f'</div>'
 
@@ -172,6 +195,15 @@ def generate_reading(data: UserInput):
             f'<li>⚡ <strong>The Disruptor (Uranus):</strong> {uranus.sign}</li>'
             f'<li>🕵️ <strong>The Kingpin (Pluto):</strong> {pluto.sign}</li>'
             f'</ul>'
+            f'</div>'
+            
+            f''
+            f'<div style="background-color: #222; color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">'
+            f'<h3 style="color: #FF4500; margin-top: 0;">🔒 THE VAULT (UNCONSCIOUS)</h3>'
+            f'<span style="font-size: 12px; color: #aaa; letter-spacing: 1px;">THE DESIGN BLUEPRINT</span>'
+            f'<p style="margin-top:10px;"><strong>⚡ Radiance (Body):</strong> <span style="color: #FFD700; font-weight: bold;">Gene Key {radiance_key}</span></p>'
+            f'<p><strong>⚓ Purpose (Grounding):</strong> <span style="color: #FFD700; font-weight: bold;">Gene Key {purpose_key}</span></p>'
+            f'<p><strong>🧲 Attraction Sphere:</strong> <span style="color: #FFD700; font-weight: bold;">Gene Key {attraction_key}</span></p>'
             f'</div>'
 
             f''
