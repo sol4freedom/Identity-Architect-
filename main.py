@@ -12,9 +12,21 @@ from flatlib import const
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+# --- 1. CITY DATABASE (The Table You Requested) ---
+# Format: "city": {lat, lon, standard_offset, hemisphere}
+CITY_DB = {
+    "sao paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
+    "são paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
+    "fargo":     {"lat": 46.87,  "lon": -96.79, "tz_std": -6.0, "hemisphere": "N"},
+    "minneapolis": {"lat": 44.97, "lon": -93.26, "tz_std": -6.0, "hemisphere": "N"},
+    "ashland":   {"lat": 42.19,  "lon": -122.70, "tz_std": -8.0, "hemisphere": "N"},
+    "new york":  {"lat": 40.71,  "lon": -74.00, "tz_std": -5.0, "hemisphere": "N"},
+    "london":    {"lat": 51.50,  "lon": -0.12,  "tz_std": 0.0,  "hemisphere": "N"}
+}
+
 RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
 
-# --- ARCHETYPE DEFINITIONS ---
+# --- ARCHETYPE LIBRARY ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness."}, 2: {"name": "The Receptive", "story": "The Divine Feminine blueprint."},
     3: {"name": "The Innovator", "story": "Chaos into Order."}, 4: {"name": "The Logic Master", "story": "The Answer to doubt."},
@@ -46,10 +58,9 @@ KEY_LORE = {
     55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
     57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality against authority."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
-    61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
+    61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision. of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
-
 MEGA_MATRIX = {
     "Aries": {"Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
     "Taurus": {"Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
@@ -73,7 +84,7 @@ NUMEROLOGY_LORE = {
     9: {"name": "The Humanist", "desc": "Serving humanity."}, 11: {"name": "The Illuminator", "desc": "Channeling intuition."},
     22: {"name": "The Master Builder", "desc": "Turning dreams into reality."}, 33: {"name": "The Master Teacher", "desc": "Uplifting via compassion."}
 }
-# --- HELPER FUNCTIONS ---
+
 def get_key_data(degree):
     if degree is None: return {"name": "Unknown", "story": ""}
     index = int(degree / 5.625)
@@ -97,6 +108,29 @@ def calculate_life_path(date_str):
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
 
+# --- THE SMART LOCATION RESOLVER ---
+def resolve_location(city_input, date_str):
+    city_clean = city_input.lower().strip()
+    data = CITY_DB.get(city_clean)
+    
+    if not data:
+        try:
+            geo = Nominatim(user_agent="ia_v25", timeout=5).geocode(city_input)
+            if geo: return geo.latitude, geo.longitude, 0.0 # Fallback
+        except: pass
+        return 51.48, 0.0, 0.0 # London Fallback
+
+    lat, lon, tz_std, hemi = data['lat'], data['lon'], data['tz_std'], data['hemisphere']
+    month = int(date_str.split("-")[1])
+    
+    is_dst = False
+    if hemi == "S": # Southern Hemisphere Summer (Oct-Feb)
+        if month >= 10 or month <= 2: is_dst = True
+    else: # Northern Hemisphere Summer (Mar-Oct)
+        if 3 <= month <= 10: is_dst = True
+        
+    final_tz = tz_std + 1.0 if is_dst else tz_std
+    return lat, lon, final_tz
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
     tz: Union[float, int, str, None] = None
@@ -106,28 +140,14 @@ class UserInput(BaseModel):
     def clean_date(cls, v): return v.split("T")[0] if "T" in v else v
     @validator('time', pre=True)
     def clean_time(cls, v): return v.split(".")[0] if "." in v else v
-# --- APP EXECUTION ---
+
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        lat, lon, tz = 51.48, 0.0, data.tz
-        # LOCATION LOGIC (Gemini Rising Fix)
-        if "sao paulo" in data.city.lower() or "são paulo" in data.city.lower(): 
-            lat, lon = -23.55, -46.63
-            month = int(data.date.split("-")[1])
-            # Oct-Feb is Summer Time (-2) in Brazil
-            if month >= 10 or month <= 2:
-                tz = -2.0 
-            else:
-                tz = -3.0
-        elif "fargo" in data.city.lower(): 
-            lat, lon, tz = 46.87, -96.79, -6.0 
-        else:
-            try:
-                geo = Nominatim(user_agent="ia_v23", timeout=5).geocode(data.city)
-                if geo: lat, lon = geo.latitude, geo.longitude
-            except: pass
+        # Use Smart Resolver for Timezone
+        lat, lon, tz = resolve_location(data.city, data.date)
 
+        # Astrology
         dt = Datetime(data.date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
@@ -135,6 +155,7 @@ def generate_reading(data: UserInput):
         objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
         rising = chart.get(const.HOUSE1)
 
+        # Human Design
         d_dt = datetime.datetime.strptime(data.date, "%Y-%m-%d") - datetime.timedelta(days=88)
         d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
         d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
@@ -147,7 +168,7 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # --- THE DESIGN (Restored to White Clean Look) ---
+        # The Report (White/Clean Style)
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -158,41 +179,28 @@ def generate_reading(data: UserInput):
             body {{ font-family: 'Source Sans Pro', sans-serif; background: #fff; color: #333; padding: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
             .box {{ max-width: 700px; margin: 0 auto; background: #FFF; padding: 40px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }}
             h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; text-transform: uppercase; margin: 0 0 10px 0; font-size: 28px; text-align: center; }}
-            h3 {{ font-family: 'Playfair Display', serif; font-size: 22px; margin: 0 0 15px 0; color: #222; }}
-            .sub {{ text-align: center; font-size: 12px; color: #999; margin-bottom: 30px; letter-spacing: 1px; }}
-            
             .vib {{ background: #F3E5F5; text-align: center; padding: 25px; border-radius: 12px; margin-bottom: 40px; }}
             .vib h3 {{ color: #7B1FA2; margin: 0; font-size: 24px; }}
-            .vib p {{ color: #6A1B9A; font-style: italic; margin-top: 10px; }}
-
             .section {{ border-left: 5px solid #ddd; padding: 15px 0 15px 25px; margin-bottom: 30px; }}
-            .boardroom {{ border-color: #4682B4; }}
-            .sanctuary {{ border-color: #2E8B57; }}
-            .streets {{ border-color: #CD5C5C; }}
-            
+            .boardroom {{ border-color: #4682B4; }} .sanctuary {{ border-color: #2E8B57; }} .streets {{ border-color: #CD5C5C; }}
             .item {{ margin-bottom: 12px; }}
             .label {{ font-weight: 600; color: #222; }}
             .desc {{ font-size: 0.95em; color: #555; }}
             .highlight {{ color: #C71585; font-weight: 600; }}
-
-            /* VAULT RESTORED: Black Box with White Text */
             .vault {{ background: #111; color: #fff; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #FFD700; }}
             .vault h3 {{ color: #FF4500; margin-top: 0; }}
             .vault .label {{ color: #fff; }}
             .vault .desc {{ color: #ccc; font-style: italic; }}
             .vault .highlight {{ color: #FFD700; }}
-
             .struggle {{ background: #F8F8F8; padding: 20px; border-radius: 8px; text-align: center; color: #666; margin-top: 30px; font-style: italic; }}
-            
             .btn {{ background-color: #D4AF37; color: white; border: none; padding: 15px 30px; font-size: 14px; border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 40px auto 0; }}
-            
             @media print {{ .btn {{ display: none; }} }}
         </style>
         </head>
         <body>
             <div class="box">
                 <h2>The Integrated Self</h2>
-                <div class="sub">PREPARED FOR {data.name.upper()}</div>
+                <div style="text-align:center; font-size:12px; color:#999; margin-bottom:30px;">PREPARED FOR {data.name.upper()}</div>
 
                 <div class="vib">
                     <div style="font-size:11px; letter-spacing:2px; margin-bottom:5px; text-transform:uppercase;">Life Path Vibration</div>
@@ -201,7 +209,7 @@ def generate_reading(data: UserInput):
                 </div>
 
                 <div class="section" style="border-color: #D4AF37;">
-                    <h3>🗝️ The Core ID</h3>
+                    <h3 style="color:#D4AF37; margin-top:0;">🗝️ The Core ID</h3>
                     <div class="item"><span class="label">🎭 Profile:</span> {hd['name']}</div>
                     <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
                     <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
@@ -209,21 +217,21 @@ def generate_reading(data: UserInput):
                 </div>
 
                 <div class="section boardroom">
-                    <h3 style="color:#4682B4;">The Boardroom</h3>
+                    <h3 style="color:#4682B4; margin-top:0;">The Boardroom</h3>
                     <div class="item"><span class="label">🤝 Broker (Mercury in {objs['Mercury'].sign})</span> <br><span class="desc">"{generate_desc('Mercury', objs['Mercury'].sign)}"</span></div>
                     <div class="item"><span class="label">👔 CEO (Saturn in {objs['Saturn'].sign})</span> <br><span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
                     <div class="item"><span class="label">💰 Mogul (Jupiter in {objs['Jupiter'].sign})</span> <br><span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
                 </div>
 
                 <div class="section sanctuary">
-                    <h3 style="color:#2E8B57;">The Sanctuary</h3>
+                    <h3 style="color:#2E8B57; margin-top:0;">The Sanctuary</h3>
                     <div class="item"><span class="label">❤️ Heart (Moon in {objs['Moon'].sign})</span> <br><span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
                     <div class="item"><span class="label">🎨 Muse (Venus in {objs['Venus'].sign})</span> <br><span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
                     <div class="item"><span class="label">🌫️ Dreamer (Neptune in {objs['Neptune'].sign})</span> <br><span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
                 </div>
 
                 <div class="section streets">
-                    <h3 style="color:#CD5C5C;">The Streets</h3>
+                    <h3 style="color:#CD5C5C; margin-top:0;">The Streets</h3>
                     <div class="item"><span class="label">🔥 Hustle (Mars in {objs['Mars'].sign})</span> <br><span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
                     <div class="item"><span class="label">⚡ Disruptor (Uranus in {objs['Uranus'].sign})</span> <br><span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
                     <div class="item"><span class="label">🕵️ Kingpin (Pluto in {objs['Pluto'].sign})</span> <br><span class="desc">"{generate_desc('Pluto', objs['Pluto'].sign)}"</span></div>
