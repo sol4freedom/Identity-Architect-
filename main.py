@@ -106,8 +106,6 @@ def get_key_data(degree):
 
 # --- HUMAN DESIGN PROFILE ENGINE ---
 def get_hd_profile(p_degree, d_degree):
-    # Calculate the Line (1-6)
-    # Each gate is 5.625 deg. Line is gate / 6 = 0.9375 deg.
     def get_line(deg):
         gate_progress = deg % 5.625
         line_num = int(gate_progress / 0.9375) + 1
@@ -116,7 +114,6 @@ def get_hd_profile(p_degree, d_degree):
     p_line = get_line(p_degree)
     d_line = get_line(d_degree)
     
-    # Profile Names
     profiles = {
         "1/3": "Investigator/Martyr", "1/4": "Investigator/Opportunist",
         "2/4": "Hermit/Opportunist", "2/5": "Hermit/Heretic",
@@ -155,7 +152,19 @@ def calculate_life_path(date_str):
     return {"number": total, "name": data["name"], "desc": data["desc"]}
 
 # --- THE MEGA-MATRIX (ZERO DUPLICATES) ---
-# Each key is [Sign][Planet]
+PLANET_ACTIONS = {
+    "Mercury": "Negotiates deals using",
+    "Saturn": "Builds legacy through",
+    "Jupiter": "Expands wealth via",
+    "Moon": "Finds safety in",
+    "Venus": "Seduces and attracts with",
+    "Neptune": "Dreams of",
+    "Mars": "Conquers obstacles with",
+    "Uranus": "Disrupts the system using",
+    "Pluto": "Transforms power through",
+    "Rising": "Navigates the world with"
+}
+
 MEGA_MATRIX = {
     "Aries": {
         "Mercury": "Direct, rapid-fire communication that gets straight to the point.",
@@ -255,7 +264,7 @@ MEGA_MATRIX = {
     },
     "Sagittarius": {
         "Mercury": "Broad-minded philosophy; you preach the big picture.",
-        "Saturn": "Structuring a belief system; hard-won wisdom.",
+        "Saturn": "Structuring the belief system; hard-won wisdom.",
         "Jupiter": "Luck comes from travel, publishing, and spiritual seeking.",
         "Moon": "Emotional safety is found in freedom and movement.",
         "Venus": "Love is an adventure; you value honesty and space.",
@@ -347,7 +356,7 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v12", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v13", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
@@ -383,7 +392,7 @@ def generate_reading(data: UserInput):
         # 4. CALCULATE LIFE PATH
         life_path = calculate_life_path(data.date)
         
-        # 5. CALCULATE HD PROFILE (NEW)
+        # 5. CALCULATE HD PROFILE
         hd_profile = get_hd_profile(sun.lon, d_sun.lon)
         
         # 6. GET ARCHETYPES
@@ -393,110 +402,233 @@ def generate_reading(data: UserInput):
         purpose = get_key_data((d_sun.lon + 180) % 360)
         attraction = get_key_data(d_moon.lon)
 
-        # 7. GENERATE REPORT
+        # 7. GENERATE REPORT (HIGH END CSS)
         report_html = f"""
-        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap');
             
-            <div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px;">
-                <h2 style="color: #D4AF37; margin: 0; letter-spacing: 2px;">THE INTEGRATED SELF</h2>
-                <span style="font-size: 14px; color: #888;">PREPARED FOR {data.name.upper()}</span>
-            </div>
+            :root {{
+                --gold: #D4AF37;
+                --gold-dim: #AA8C2C;
+                --bg-dark: #121212;
+                --card-bg: #1E1E1E;
+                --text-main: #E0E0E0;
+                --text-muted: #A0A0A0;
+                --accent-boardroom: #4682B4;
+                --accent-sanctuary: #2E8B57;
+                --accent-streets: #CD5C5C;
+            }}
+
+            body {{
+                font-family: 'Lato', sans-serif;
+                background-color: var(--bg-dark);
+                color: var(--text-main);
+                margin: 0;
+                padding: 20px;
+                line-height: 1.6;
+            }}
+
+            .container {{
+                max-width: 800px;
+                margin: 0 auto;
+                background-color: var(--card-bg);
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                border: 1px solid #333;
+            }}
+
+            h1, h2, h3 {{
+                font-family: 'Cinzel', serif;
+                color: var(--gold);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+            }}
+
+            .header {{
+                text-align: center;
+                border-bottom: 1px solid var(--gold-dim);
+                padding-bottom: 20px;
+                margin-bottom: 30px;
+            }}
+
+            .vibration-box {{
+                background: linear-gradient(135deg, #2c2c2c, #1a1a1a);
+                border: 1px solid var(--gold-dim);
+                padding: 20px;
+                text-align: center;
+                border-radius: 8px;
+                margin-bottom: 30px;
+            }}
+
+            .section-card {{
+                background: rgba(255, 255, 255, 0.03);
+                border-left: 4px solid var(--gold);
+                padding: 20px;
+                margin-bottom: 25px;
+                border-radius: 0 8px 8px 0;
+            }}
+
+            .boardroom {{ border-left-color: var(--accent-boardroom); }}
+            .sanctuary {{ border-left-color: var(--accent-sanctuary); }}
+            .streets {{ border-left-color: var(--accent-streets); }}
+            .vault {{ 
+                background: #000; 
+                border: 1px solid #333; 
+                border-left: 4px solid var(--gold);
+            }}
+
+            .list-item {{
+                margin-bottom: 15px;
+                border-bottom: 1px solid #333;
+                padding-bottom: 10px;
+            }}
             
-            <div style="background-color: #E6E6FA; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                <span style="font-size: 12px; color: #666; letter-spacing: 1px;">THE VIBRATION (LIFE PATH)</span>
-                <h3 style="color: #483D8B; margin: 5px 0;">{life_path['number']}: {life_path['name']}</h3>
-                <p style="font-size: 13px; font-style: italic; color: #555; margin-bottom: 0;">"{life_path['desc']}"</p>
-            </div>
+            .list-item:last-child {{ border-bottom: none; }}
+
+            .planet-name {{
+                font-weight: 700;
+                color: #fff;
+                display: block;
+                margin-bottom: 4px;
+            }}
+
+            .planet-desc {{
+                font-size: 0.95em;
+                color: var(--text-muted);
+                font-style: italic;
+            }}
+
+            .highlight {{ color: var(--gold); font-weight: bold; }}
             
-            <div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE ID</h3>
-                <p style="margin-top:10px;"><strong>🎭 Profile:</strong> <span style="color: #4A4A4A; font-weight: bold;">{hd_profile['name']}</span></p>
-                <p><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work['name']}</span></p>
-                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{lifes_work['story']}"</p>
-                
-                <p><strong>🌍 The Growth Edge:</strong> <span style="color: #C71585; font-weight: bold;">{evolution['name']}</span></p>
-                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{evolution['story']}"</p>
-                
-                <p><strong>🏹 The Path (Rising):</strong> {rising.sign}</p>
-                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px;">"{generate_desc('Rising', rising.sign)}"</p>
-            </div>
+            .struggle-box {{
+                margin-top: 40px;
+                padding: 20px;
+                background: rgba(212, 175, 55, 0.1);
+                border-radius: 8px;
+                text-align: center;
+                border: 1px solid var(--gold-dim);
+            }}
+        </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>The Integrated Self</h2>
+                    <span style="font-size: 14px; color: var(--gold-dim);">PREPARED FOR {data.name.upper()}</span>
+                </div>
 
-            <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
-                <h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
-                <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li style="margin-bottom: 8px;">
-                        🤝 <strong>The Broker (Mercury in {mercury.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Mercury', mercury.sign)}</em></span>
-                    </li>
-                    <li style="margin-bottom: 8px;">
-                        👔 <strong>The CEO (Saturn in {saturn.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Saturn', saturn.sign)}</em></span>
-                    </li>
-                    <li style="margin-bottom: 8px;">
-                        💰 <strong>The Mogul (Jupiter in {jupiter.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Jupiter', jupiter.sign)}</em></span>
-                    </li>
-                </ul>
-            </div>
+                <div class="vibration-box">
+                    <span style="font-size: 12px; color: var(--text-muted); letter-spacing: 2px;">THE VIBRATION (LIFE PATH)</span>
+                    <h3 style="margin: 10px 0;">{life_path['number']}: {life_path['name']}</h3>
+                    <p style="margin: 0; font-style: italic;">"{life_path['desc']}"</p>
+                </div>
 
-            <div style="border-left: 5px solid #27AE60; padding-left: 15px; margin-bottom: 20px;">
-                <h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
-                <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li style="margin-bottom: 8px;">
-                        ❤️ <strong>The Heart (Moon in {moon.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Moon', moon.sign)}</em></span>
-                    </li>
-                    <li style="margin-bottom: 8px;">
-                        🎨 <strong>The Muse (Venus in {venus.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Venus', venus.sign)}</em></span>
-                    </li>
-                    <li style="margin-bottom: 8px;">
-                        🌫️ <strong>The Dreamer (Neptune in {neptune.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Neptune', neptune.sign)}</em></span>
-                    </li>
-                </ul>
-            </div>
+                <div class="section-card">
+                    <h3>🗝️ The Core ID</h3>
+                    <p class="list-item">
+                        <span class="planet-name">🎭 Profile: <span class="highlight">{hd_profile['name']}</span></span>
+                    </p>
+                    <div class="list-item">
+                        <span class="planet-name">🧬 The Calling: <span class="highlight">{lifes_work['name']}</span></span>
+                        <span class="planet-desc">"{lifes_work['story']}"</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="planet-name">🌍 The Growth Edge: <span class="highlight">{evolution['name']}</span></span>
+                        <span class="planet-desc">"{evolution['story']}"</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="planet-name">🏹 The Path (Rising): {rising.sign}</span>
+                        <span class="planet-desc">"{generate_desc('Rising', rising.sign)}"</span>
+                    </div>
+                </div>
 
-            <div style="border-left: 5px solid #C0392B; padding-left: 15px; margin-bottom: 20px;">
-                <h3 style="color: #C0392B; margin: 0;">THE STREETS</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>
-                <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li style="margin-bottom: 8px;">
-                        🔥 <strong>The Hustle (Mars in {mars.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Mars', mars.sign)}</em></span>
-                    </li>
-                    <li style="margin-bottom: 8px;">
-                        ⚡ <strong>The Disruptor (Uranus in {uranus.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Uranus', uranus.sign)}</em></span>
-                    </li>
-                    <li style="margin-bottom: 8px;">
-                        🕵️ <strong>The Kingpin (Pluto in {pluto.sign}):</strong><br>
-                        <span style="font-size:12px; color:#666;"><em>{generate_desc('Pluto', pluto.sign)}</em></span>
-                    </li>
-                </ul>
-            </div>
-            
-            <div style="background-color: #222; color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="color: #FF4500; margin-top: 0;">🔒 THE VAULT</h3>
-                <span style="font-size: 12px; color: #aaa; letter-spacing: 1px;">UNCONSCIOUS BLUEPRINT</span>
-                
-                <p style="margin-top:10px;"><strong>⚡ The Aura:</strong> <span style="color: #FFD700; font-weight: bold;">{radiance['name']}</span></p>
-                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px; margin-bottom: 15px;">"{radiance['story']}"</p>
-                
-                <p><strong>⚓ The Root:</strong> <span style="color: #FFD700; font-weight: bold;">{purpose['name']}</span></p>
-                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px; margin-bottom: 15px;">"{purpose['story']}"</p>
-                
-                <p><strong>🧲 The Magnet:</strong> <span style="color: #FFD700; font-weight: bold;">{attraction['name']}</span></p>
-                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px;">"{attraction['story']}"</p>
-            </div>
+                <div class="section-card boardroom">
+                    <h3 style="color: var(--accent-boardroom)">The Boardroom</h3>
+                    <span style="font-size: 12px; color: var(--text-muted); letter-spacing: 1px;">STRATEGY & GROWTH</span>
+                    <div style="margin-top: 15px;">
+                        <div class="list-item">
+                            <span class="planet-name">🤝 The Broker (Mercury in {mercury.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Mercury', mercury.sign)}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">👔 The CEO (Saturn in {saturn.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Saturn', saturn.sign)}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">💰 The Mogul (Jupiter in {jupiter.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Jupiter', jupiter.sign)}"</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
-                <p><strong>Current Struggle:</strong> {data.struggle}</p>
-                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</em></p>
+                <div class="section-card sanctuary">
+                    <h3 style="color: var(--accent-sanctuary)">The Sanctuary</h3>
+                    <span style="font-size: 12px; color: var(--text-muted); letter-spacing: 1px;">CONNECTION & CARE</span>
+                    <div style="margin-top: 15px;">
+                        <div class="list-item">
+                            <span class="planet-name">❤️ The Heart (Moon in {moon.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Moon', moon.sign)}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">🎨 The Muse (Venus in {venus.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Venus', venus.sign)}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">🌫️ The Dreamer (Neptune in {neptune.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Neptune', neptune.sign)}"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card streets">
+                    <h3 style="color: var(--accent-streets)">The Streets</h3>
+                    <span style="font-size: 12px; color: var(--text-muted); letter-spacing: 1px;">POWER & DRIVE</span>
+                    <div style="margin-top: 15px;">
+                        <div class="list-item">
+                            <span class="planet-name">🔥 The Hustle (Mars in {mars.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Mars', mars.sign)}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">⚡ The Disruptor (Uranus in {uranus.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Uranus', uranus.sign)}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">🕵️ The Kingpin (Pluto in {pluto.sign})</span>
+                            <span class="planet-desc">"{generate_desc('Pluto', pluto.sign)}"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card vault">
+                    <h3>🔒 The Vault</h3>
+                    <span style="font-size: 12px; color: var(--text-muted); letter-spacing: 1px;">UNCONSCIOUS BLUEPRINT</span>
+                    <div style="margin-top: 15px;">
+                        <div class="list-item">
+                            <span class="planet-name">⚡ The Aura: <span class="highlight">{radiance['name']}</span></span>
+                            <span class="planet-desc">"{radiance['story']}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">⚓ The Root: <span class="highlight">{purpose['name']}</span></span>
+                            <span class="planet-desc">"{purpose['story']}"</span>
+                        </div>
+                        <div class="list-item">
+                            <span class="planet-name">🧲 The Magnet: <span class="highlight">{attraction['name']}</span></span>
+                            <span class="planet-desc">"{attraction['story']}"</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="struggle-box">
+                    <p><strong>Current Struggle:</strong> {data.struggle}</p>
+                    <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</em></p>
+                </div>
             </div>
-        </div>
+        </body>
+        </html>
         """
 
         return {"report": report_html}
