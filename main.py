@@ -8,8 +8,13 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
+from flatlib.ephem import setBackend
 
-# --- APP SETUP ---
+# --- CONFIGURE BACKEND (Try/Except for safety) ---
+try:
+    setBackend(const.BACKEND_MOSHIER)
+except: pass
+
 app = FastAPI()
 
 app.add_middleware(
@@ -20,7 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- GENE KEYS DATA ---
+# --- GENE KEYS MAPPING ---
 RAVE_ORDER = [
     25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 
     62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 
@@ -28,39 +33,97 @@ RAVE_ORDER = [
     37, 63, 22, 36
 ]
 
-# --- THE 64 ARCHETYPES (THE TRANSLATOR) ---
-KEY_NAMES = {
-    1: "The Creator", 2: "The Receptive", 3: "The Innovator", 4: "The Logic Master",
-    5: "The Fixer", 6: "The Peacemaker", 7: "The Leader", 8: "The Stylist",
-    9: "The Focuser", 10: "The Self", 11: "The Idealist", 12: "The Articulate",
-    13: "The Listener", 14: "The Power House", 15: "The Humanist", 16: "The Master",
-    17: "The Opinion", 18: "The Improver", 19: "The Sensitive", 20: "The Now",
-    21: "The Controller", 22: "The Grace", 23: "The Assimilator", 24: "The Rationalizer",
-    25: "The Spirit", 26: "The Egoist", 27: "The Nurturer", 28: "The Risk Taker",
-    29: "The Yes Man", 30: "The Passion", 31: "The Voice", 32: "The Conservative",
-    33: "The Reteller", 34: "The Power", 35: "The Progress", 36: "The Crisis",
-    37: "The Family", 38: "The Fighter", 39: "The Provocateur", 40: "The Aloneness",
-    41: "The Fantasy", 42: "The Finisher", 43: "The Insight", 44: "The Alert",
-    45: "The Gatherer", 46: "The Determination", 47: "The Realization", 48: "The Depth",
-    49: "The Catalyst", 50: "The Values", 51: "The Shock", 52: "The Stillness",
-    53: "The Starter", 54: "The Ambition", 55: "The Spirit", 56: "The Storyteller",
-    57: "The Intuitive", 58: "The Joy", 59: "The Sexual", 60: "The Limitation",
-    61: "The Mystery", 62: "The Detail", 63: "The Doubter", 64: "The Confusion"
+# --- THE 64 ARCHETYPES (NAME + STORY) ---
+# This dictionary holds the Definition and the "Micro-Story" for each key.
+KEY_LORE = {
+    1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles when the old ways go stale."},
+    2: {"name": "The Receptive", "story": "The Divine Feminine. You are the architectural blueprint that guides raw energy into form."},
+    3: {"name": "The Innovator", "story": "Chaos into Order. You are the mutant who changes the rules to push evolution forward."},
+    4: {"name": "The Logic Master", "story": "The Answer. You resolve doubt by finding the perfect pattern and explaining it to the world."},
+    5: {"name": "The Fixer", "story": "Patience into Timelessness. You wait for the right rhythm to align the world's habits."},
+    6: {"name": "The Peacemaker", "story": "Conflict into Peace. You use diplomacy and emotional intelligence to dissolve friction."},
+    7: {"name": "The Leader", "story": "Guidance. You do not force; you lead by representing the collective will of the people."},
+    8: {"name": "The Stylist", "story": "Mediocrity into Style. You are the individualist who inspires others just by being yourself."},
+    9: {"name": "The Focuser", "story": "The Power of the Small. You tame the chaotic mind by focusing on one critical detail at a time."},
+    10: {"name": "The Self", "story": "Being. You are here to master the art of simply being yourself without apology."},
+    11: {"name": "The Idealist", "story": "Ideas into Light. You catch the images from the darkness and bring them to the world."},
+    12: {"name": "The Articulate", "story": "The Channel. You master your mood to speak words that touch the soul."},
+    13: {"name": "The Listener", "story": "The Confidant. You hold the secrets of the past to guide the future."},
+    14: {"name": "The Power House", "story": "The Generator. You possess the unflagging energy to fuel the dreams of the collective."},
+    15: {"name": "The Humanist", "story": "Extremes into Flow. You accept all rhythms of humanity, from the dull to the wild."},
+    16: {"name": "The Master", "story": "The Virtuoso. You practice with enthusiasm until your skill becomes magical versatility."},
+    17: {"name": "The Opinion", "story": "The Eye. You see the pattern of the future and organize it into a logical view."},
+    18: {"name": "The Improver", "story": "Correction. You spot the flaw in the system so that it can be healed and perfected."},
+    19: {"name": "The Sensitive", "story": "Attunement. You feel the needs of the tribe before they are even spoken."},
+    20: {"name": "The Now", "story": "Presence. You bypass the thinking mind to act with pure, spontaneous clarity."},
+    21: {"name": "The Controller", "story": "Authority. You take control of the resources to ensure the tribe survives and thrives."},
+    22: {"name": "The Grace", "story": "Emotional Grace. You allow others to feel deeply by listening with an open heart."},
+    23: {"name": "The Assimilator", "story": "Simplicity. You strip away the noise to reveal the essential truth."},
+    24: {"name": "The Rationalizer", "story": "Invention. You revisit the past over and over until you find a new way forward."},
+    25: {"name": "The Spirit", "story": "Universal Love. You retain the innocence of the spirit despite the wounds of the world."},
+    26: {"name": "The Egoist", "story": "The Dealmaker. You use your willpower and charisma to direct resources where they are needed."},
+    27: {"name": "The Nurturer", "story": "Altruism. You care for the weak and ensure the heritage is passed down."},
+    28: {"name": "The Risk Taker", "story": "Immortality. You confront the fear of death to find a life worth living."},
+    29: {"name": "The Yes Man", "story": "Commitment. You say 'Yes' to the experience and persevere through the abyss."},
+    30: {"name": "The Passion", "story": "The Fire. You burn with a desire that cannot be quenched, teaching the world to feel."},
+    31: {"name": "The Voice", "story": "Influence. You speak the vision that the collective is waiting to hear."},
+    32: {"name": "The Conservative", "story": "Veneration. You assess what is valuable from the past to preserve it for the future."},
+    33: {"name": "The Reteller", "story": "Retreat. You withdraw to process the memory and return with wisdom."},
+    34: {"name": "The Power", "story": "Majesty. You are the pure, independent force of life expressing itself."},
+    35: {"name": "The Progress", "story": "Adventure. You are driven to taste every experience, knowing that change is the only constant."},
+    36: {"name": "The Crisis", "story": "Compassion. You survive the emotional storm to bring light to the darkness."},
+    37: {"name": "The Family", "story": "Equality. You build the community through friendship, bargains, and affection."},
+    38: {"name": "The Fighter", "story": "Honor. You fight the battles that give life meaning and purpose."},
+    39: {"name": "The Provocateur", "story": "Liberation. You poke the spirit of others to wake them up from their slumber."},
+    40: {"name": "The Aloneness", "story": "Resolve. You separate yourself from the group to regenerate your power."},
+    41: {"name": "The Fantasy", "story": "The Origin. You hold the seed of the dream that starts the entire cycle."},
+    42: {"name": "The Finisher", "story": "Growth. You maximize the cycle and bring it to a satisfying conclusion."},
+    43: {"name": "The Insight", "story": "Breakthrough. You hear the unique voice inside that changes the world's knowing."},
+    44: {"name": "The Alert", "story": "Teamwork. You smell the potential in people and align them for success."},
+    45: {"name": "The Gatherer", "story": "Synergy. You are the King/Queen who holds the resources together for the kingdom."},
+    46: {"name": "The Determination", "story": "Serendipity. You succeed by being in the right place at the right time with your body."},
+    47: {"name": "The Realization", "story": "Transmutation. You sort through the confusion of the past to find the epiphany."},
+    48: {"name": "The Depth", "story": "Wisdom. You look into the deep well of talent to bring fresh solutions."},
+    49: {"name": "The Catalyst", "story": "Revolution. You reject the old principles to establish a higher order."},
+    50: {"name": "The Values", "story": "Harmony. You act as the guardian of the tribe's laws and values."},
+    51: {"name": "The Shock", "story": "Initiation. You wake people up with thunder, forcing them to grow."},
+    52: {"name": "The Stillness", "story": "The Mountain. You hold your energy still until the perfect moment to act."},
+    53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new and evolve."},
+    54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward, seeking spiritual and material success."},
+    55: {"name": "The Spirit", "story": "Freedom. You accept the highs and lows of emotion to find the spirit within."},
+    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas and places to weave the collective myth."},
+    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the acoustic vibration of the now."},
+    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of making life better."},
+    59: {"name": "The Sexual", "story": "Intimacy. You break down barriers to create a union that produces life."},
+    60: {"name": "The Limitation", "story": "Realism. You accept the boundaries of form to let the magic transcend them."},
+    61: {"name": "The Mystery", "story": "Sanctity. You dive into the unknowable to bring back universal truth."},
+    62: {"name": "The Detail", "story": "Precision. You name the details to build a bridge of understanding."},
+    63: {"name": "The Doubter", "story": "Truth. You use critical logic to test the validity of the future."},
+    64: {"name": "The Confusion", "story": "Illumination. You process the images of the mind until they resolve into light."}
 }
 
-def get_gene_key_name(degree):
-    if degree is None: return "Unknown"
+def get_key_data(degree):
+    if degree is None: return {"name": "Unknown", "story": ""}
     index = int(degree / 5.625)
     if index >= 64: index = 0
     key_number = RAVE_ORDER[index]
-    return KEY_NAMES.get(key_number, f"Archetype {key_number}")
+    data = KEY_LORE.get(key_number, {"name": f"Key {key_number}", "story": ""})
+    return {"number": key_number, "name": data["name"], "story": data["story"]}
 
-# --- PLANET ARCHETYPES ---
-INTERPRETATIONS = {
-    "Aries": "The Pioneer", "Taurus": "The Builder", "Gemini": "The Messenger",
-    "Cancer": "The Nurturer", "Leo": "The Creator", "Virgo": "The Editor",
-    "Libra": "The Diplomat", "Scorpio": "The Alchemist", "Sagittarius": "The Explorer",
-    "Capricorn": "The Architect", "Aquarius": "The Futurist", "Pisces": "The Guide"
+# --- SIGN LORE (BOARDROOM/STREETS) ---
+SIGN_LORE = {
+    "Aries": {"title": "The Pioneer", "desc": "Leading with courage and impulse."},
+    "Taurus": {"title": "The Builder", "desc": "Grounding energy into lasting value."},
+    "Gemini": {"title": "The Messenger", "desc": "Connecting ideas and networks."},
+    "Cancer": {"title": "The Nurturer", "desc": "Protecting the core and the clan."},
+    "Leo": {"title": "The Creator", "desc": "Radiating self-expression and command."},
+    "Virgo": {"title": "The Editor", "desc": "Refining the systems for perfection."},
+    "Libra": {"title": "The Diplomat", "desc": "Balancing forces to find harmony."},
+    "Scorpio": {"title": "The Alchemist", "desc": "Transforming through intensity and depth."},
+    "Sagittarius": {"title": "The Explorer", "desc": "Seeking truth and expansion."},
+    "Capricorn": {"title": "The Architect", "desc": "Building structures that stand the test of time."},
+    "Aquarius": {"title": "The Futurist", "desc": "Innovating for the collective good."},
+    "Pisces": {"title": "The Guide", "desc": "Dissolving boundaries to tap into the mystic."}
 }
 
 # --- INPUT DATA ---
@@ -103,7 +166,7 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v6", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v7", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
@@ -113,7 +176,6 @@ def generate_reading(data: UserInput):
         date_obj = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         
-        # We define SAFE OBJECTS to prevent engine crashes
         safe_objects = [
             const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
             const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
@@ -140,21 +202,25 @@ def generate_reading(data: UserInput):
         d_date_str = d_date_obj.strftime("%Y/%m/%d")
         
         design_date_flatlib = Datetime(d_date_str, data.time, tz_offset)
-        # Only ask for Sun/Moon here to be safe
         design_chart = Chart(design_date_flatlib, pos, IDs=[const.SUN, const.MOON], hsys=const.HOUSES_PLACIDUS)
         
         d_sun = design_chart.get(const.SUN)
         d_moon = design_chart.get(const.MOON)
         
-        # 4. GET ARCHETYPE NAMES
-        lifes_work_name = get_gene_key_name(sun.lon)
-        evolution_name = get_gene_key_name((sun.lon + 180) % 360)
+        # 4. GET RICH ARCHETYPE DATA
+        # We now get an object back: {name: "The Creator", story: "Entropy..."}
+        lifes_work = get_key_data(sun.lon)
+        evolution = get_key_data((sun.lon + 180) % 360)
         
-        radiance_name = get_gene_key_name(d_sun.lon)
-        purpose_name = get_gene_key_name((d_sun.lon + 180) % 360)
-        attraction_name = get_gene_key_name(d_moon.lon)
+        radiance = get_key_data(d_sun.lon)
+        purpose = get_key_data((d_sun.lon + 180) % 360)
+        attraction = get_key_data(d_moon.lon)
 
-        # 5. GENERATE REPORT
+        # Helper to get sign lore safely
+        def get_sign_desc(sign_name):
+            return SIGN_LORE.get(sign_name, {"desc": ""})["desc"]
+
+        # 5. GENERATE REPORT (With Rich Stories)
         report_html = f"""
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
             
@@ -166,18 +232,33 @@ def generate_reading(data: UserInput):
             <div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE ID</h3>
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONSCIOUS INTENT</span>
-                <p style="margin-top:10px;"><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work_name}</span> ({sun.sign})</p>
-                <p><strong>🌍 The Growth Edge:</strong> <span style="color: #C71585; font-weight: bold;">{evolution_name}</span></p>
-                <p><strong>🏹 The Path:</strong> {rising.sign} ({INTERPRETATIONS.get(rising.sign)})</p>
+                
+                <p style="margin-top:10px;"><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{lifes_work['story']}"</p>
+                
+                <p><strong>🌍 The Growth Edge:</strong> <span style="color: #C71585; font-weight: bold;">{evolution['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{evolution['story']}"</p>
+                
+                <p><strong>🏹 The Path (Rising):</strong> {rising.sign}</p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px;">"{get_sign_desc(rising.sign)}"</p>
             </div>
 
             <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
                 <h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li>🤝 <strong>The Broker (Mercury):</strong> {mercury.sign}</li>
-                    <li>👔 <strong>The CEO (Saturn):</strong> {saturn.sign}</li>
-                    <li>💰 <strong>The Mogul (Jupiter):</strong> {jupiter.sign}</li>
+                    <li style="margin-bottom: 8px;">
+                        🤝 <strong>The Broker:</strong> {mercury.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(mercury.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        👔 <strong>The CEO:</strong> {saturn.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(saturn.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        💰 <strong>The Mogul:</strong> {jupiter.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(jupiter.sign)}</em></span>
+                    </li>
                 </ul>
             </div>
 
@@ -185,9 +266,18 @@ def generate_reading(data: UserInput):
                 <h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li>❤️ <strong>The Heart (Moon):</strong> {moon.sign}</li>
-                    <li>🎨 <strong>The Muse (Venus):</strong> {venus.sign}</li>
-                    <li>🌫️ <strong>The Dreamer (Neptune):</strong> {neptune.sign}</li>
+                    <li style="margin-bottom: 8px;">
+                        ❤️ <strong>The Heart:</strong> {moon.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(moon.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        🎨 <strong>The Muse:</strong> {venus.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(venus.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        🌫️ <strong>The Dreamer:</strong> {neptune.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(neptune.sign)}</em></span>
+                    </li>
                 </ul>
             </div>
 
@@ -195,23 +285,38 @@ def generate_reading(data: UserInput):
                 <h3 style="color: #C0392B; margin: 0;">THE STREETS</h3>
                 <span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li>🔥 <strong>The Hustle (Mars):</strong> {mars.sign}</li>
-                    <li>⚡ <strong>The Disruptor (Uranus):</strong> {uranus.sign}</li>
-                    <li>🕵️ <strong>The Kingpin (Pluto):</strong> {pluto.sign}</li>
+                    <li style="margin-bottom: 8px;">
+                        🔥 <strong>The Hustle:</strong> {mars.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(mars.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        ⚡ <strong>The Disruptor:</strong> {uranus.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(uranus.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        🕵️ <strong>The Kingpin:</strong> {pluto.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(pluto.sign)}</em></span>
+                    </li>
                 </ul>
             </div>
             
             <div style="background-color: #222; color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h3 style="color: #FF4500; margin-top: 0;">🔒 THE VAULT</h3>
                 <span style="font-size: 12px; color: #aaa; letter-spacing: 1px;">UNCONSCIOUS BLUEPRINT</span>
-                <p style="margin-top:10px;"><strong>⚡ The Aura (Radiance):</strong> <span style="color: #FFD700; font-weight: bold;">{radiance_name}</span></p>
-                <p><strong>⚓ The Root (Purpose):</strong> <span style="color: #FFD700; font-weight: bold;">{purpose_name}</span></p>
-                <p><strong>🧲 The Magnet:</strong> <span style="color: #FFD700; font-weight: bold;">{attraction_name}</span></p>
+                
+                <p style="margin-top:10px;"><strong>⚡ The Aura:</strong> <span style="color: #FFD700; font-weight: bold;">{radiance['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px; margin-bottom: 15px;">"{radiance['story']}"</p>
+                
+                <p><strong>⚓ The Root:</strong> <span style="color: #FFD700; font-weight: bold;">{purpose['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px; margin-bottom: 15px;">"{purpose['story']}"</p>
+                
+                <p><strong>🧲 The Magnet:</strong> <span style="color: #FFD700; font-weight: bold;">{attraction['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ccc; margin-top: -10px;">"{attraction['story']}"</p>
             </div>
 
             <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
                 <p><strong>Current Struggle:</strong> {data.struggle}</p>
-                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {INTERPRETATIONS.get(rising.sign)}.</em></p>
+                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {get_sign_desc(rising.sign)}.</em></p>
             </div>
         </div>
         """
