@@ -13,9 +13,7 @@ from flatlib.ephem import setBackend
 # --- CONFIGURE BACKEND ---
 try:
     setBackend(const.BACKEND_MOSHIER)
-    print("Backend set to Moshier")
-except:
-    pass
+except: pass
 
 app = FastAPI()
 
@@ -35,13 +33,36 @@ RAVE_ORDER = [
     37, 63, 22, 36
 ]
 
-def get_gene_key(degree):
-    if degree is None: return 0
+# --- THE 64 ARCHETYPES (THE TRANSLATOR) ---
+# Replaces "Gene Key X" with a descriptive title
+KEY_NAMES = {
+    1: "The Creator", 2: "The Receptive", 3: "The Innovator", 4: "The Logic Master",
+    5: "The Fixer", 6: "The Peacemaker", 7: "The Leader", 8: "The Stylist",
+    9: "The Focuser", 10: "The Self", 11: "The Idealist", 12: "The Articulate",
+    13: "The Listener", 14: "The Power House", 15: "The Humanist", 16: "The Master",
+    17: "The Opinion", 18: "The Improver", 19: "The Sensitive", 20: "The Now",
+    21: "The Controller", 22: "The Grace", 23: "The Assimilator", 24: "The Rationalizer",
+    25: "The Spirit", 26: "The Egoist", 27: "The Nurturer", 28: "The Risk Taker",
+    29: "The Yes Man", 30: "The Passion", 31: "The Voice", 32: "The Conservative",
+    33: "The Reteller", 34: "The Power", 35: "The Progress", 36: "The Crisis",
+    37: "The Family", 38: "The Fighter", 39: "The Provocateur", 40: "The Aloneness",
+    41: "The Fantasy", 42: "The Finisher", 43: "The Insight", 44: "The Alert",
+    45: "The Gatherer", 46: "The Determination", 47: "The Realization", 48: "The Depth",
+    49: "The Catalyst", 50: "The Values", 51: "The Shock", 52: "The Stillness",
+    53: "The Starter", 54: "The Ambition", 55: "The Spirit", 56: "The Storyteller",
+    57: "The Intuitive", 58: "The Joy", 59: "The Sexual", 60: "The Limitation",
+    61: "The Mystery", 62: "The Detail", 63: "The Doubter", 64: "The Confusion"
+}
+
+def get_gene_key_name(degree):
+    if degree is None: return "Unknown"
     index = int(degree / 5.625)
     if index >= 64: index = 0
-    return RAVE_ORDER[index]
+    key_number = RAVE_ORDER[index]
+    # Return just the name (e.g. "The Master") instead of "Gene Key 16"
+    return KEY_NAMES.get(key_number, f"Archetype {key_number}")
 
-# --- ARCHETYPE LIBRARY ---
+# --- PLANET ARCHETYPES ---
 INTERPRETATIONS = {
     "Aries": "The Pioneer", "Taurus": "The Builder", "Gemini": "The Messenger",
     "Cancer": "The Nurturer", "Leo": "The Creator", "Virgo": "The Editor",
@@ -89,7 +110,7 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v3", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v4", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
@@ -99,7 +120,6 @@ def generate_reading(data: UserInput):
         date_obj = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         
-        # We need all planets for the neighborhoods
         safe_objects = [
             const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
             const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
@@ -107,7 +127,7 @@ def generate_reading(data: UserInput):
         
         chart = Chart(date_obj, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
-        # Get Personality Objects
+        # Get Objects
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
         mercury = chart.get(const.MERCURY)
@@ -121,32 +141,25 @@ def generate_reading(data: UserInput):
         rising = chart.get(const.HOUSE1)
         
         # 3. CALCULATE DESIGN (Unconscious/Red)
-        # We travel back roughly 88 days to find the Design Date
-        # (Standard Human Design approx calculation for MVP)
-        
-        # Convert string date to python date object
         p_date = datetime.datetime.strptime(data.date, "%Y-%m-%d")
         d_date_obj = p_date - datetime.timedelta(days=88)
         d_date_str = d_date_obj.strftime("%Y/%m/%d")
         
-        # Cast the Design Chart
         design_date_flatlib = Datetime(d_date_str, data.time, tz_offset)
         design_chart = Chart(design_date_flatlib, pos, IDs=[const.SUN, const.MOON], hsys=const.HOUSES_PLACIDUS)
         
         d_sun = design_chart.get(const.SUN)
         d_moon = design_chart.get(const.MOON)
         
-        # 4. CALCULATE ALL GENE KEYS
-        # Personality Keys
-        lifes_work_key = get_gene_key(sun.lon)
-        evolution_key = get_gene_key((sun.lon + 180) % 360)
+        # 4. GET ARCHETYPE NAMES (No more Numbers!)
+        lifes_work_name = get_gene_key_name(sun.lon)
+        evolution_name = get_gene_key_name((sun.lon + 180) % 360)
         
-        # Design Keys
-        radiance_key = get_gene_key(d_sun.lon)
-        purpose_key = get_gene_key((d_sun.lon + 180) % 360)
-        attraction_key = get_gene_key(d_moon.lon)
+        radiance_name = get_gene_key_name(d_sun.lon)
+        purpose_name = get_gene_key_name((d_sun.lon + 180) % 360)
+        attraction_name = get_gene_key_name(d_moon.lon)
 
-        # 5. GENERATE THE FULL "4 NEIGHBORHOOD" REPORT
+        # 5. GENERATE REPORT (With Custom Category Names)
         report_html = (
             f'<div style="font-family: \'Helvetica Neue\', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">'
             
@@ -157,11 +170,11 @@ def generate_reading(data: UserInput):
             
             f''
             f'<div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">'
-            f'<h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE PERSONALITY</h3>'
+            f'<h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE ID</h3>'
             f'<span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONSCIOUS INTENT</span>'
-            f'<p style="margin-top:10px;"><strong>🧬 Life\'s Work (Sun):</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {lifes_work_key}</span> ({sun.sign})</p>'
-            f'<p><strong>🌍 Evolution (Earth):</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {evolution_key}</span></p>'
-            f'<p><strong>🏹 Rising Sign:</strong> {rising.sign} ({INTERPRETATIONS.get(rising.sign)})</p>'
+            f'<p style="margin-top:10px;"><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work_name}</span> ({sun.sign})</p>'
+            f'<p><strong>🌍 The Growth Edge:</strong> <span style="color: #C71585; font-weight: bold;">{evolution_name}</span></p>'
+            f'<p><strong>🏹 The Path:</strong> {rising.sign} ({INTERPRETATIONS.get(rising.sign)})</p>'
             f'</div>'
 
             f''
@@ -199,14 +212,13 @@ def generate_reading(data: UserInput):
             
             f''
             f'<div style="background-color: #222; color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">'
-            f'<h3 style="color: #FF4500; margin-top: 0;">🔒 THE VAULT (UNCONSCIOUS)</h3>'
-            f'<span style="font-size: 12px; color: #aaa; letter-spacing: 1px;">THE DESIGN BLUEPRINT</span>'
-            f'<p style="margin-top:10px;"><strong>⚡ Radiance (Body):</strong> <span style="color: #FFD700; font-weight: bold;">Gene Key {radiance_key}</span></p>'
-            f'<p><strong>⚓ Purpose (Grounding):</strong> <span style="color: #FFD700; font-weight: bold;">Gene Key {purpose_key}</span></p>'
-            f'<p><strong>🧲 Attraction Sphere:</strong> <span style="color: #FFD700; font-weight: bold;">Gene Key {attraction_key}</span></p>'
+            f'<h3 style="color: #FF4500; margin-top: 0;">🔒 THE VAULT</h3>'
+            f'<span style="font-size: 12px; color: #aaa; letter-spacing: 1px;">UNCONSCIOUS BLUEPRINT</span>'
+            f'<p style="margin-top:10px;"><strong>⚡ The Aura (Radiance):</strong> <span style="color: #FFD700; font-weight: bold;">{radiance_name}</span></p>'
+            f'<p><strong>⚓ The Root (Purpose):</strong> <span style="color: #FFD700; font-weight: bold;">{purpose_name}</span></p>'
+            f'<p><strong>🧲 The Magnet:</strong> <span style="color: #FFD700; font-weight: bold;">{attraction_name}</span></p>'
             f'</div>'
 
-            f''
             f'<div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">'
             f'<p><strong>Current Struggle:</strong> {data.struggle}</p>'
             f'<p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {INTERPRETATIONS.get(rising.sign)}.</em></p>'
