@@ -8,8 +8,8 @@ from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
 
-# *** THE MISSING PIECE RESTORED ***
-from flatlib import setBackend
+# *** THE FIX: Import from the correct location ***
+from flatlib.config import setBackend
 setBackend(const.BACKEND_MOSHIER)
 
 app = FastAPI()
@@ -90,7 +90,7 @@ def generate_reading(data: UserInput):
                     lat, lon = location.latitude, location.longitude
             except: pass
 
-        # 2. CALCULATE ASTROLOGY (SAFE MODE)
+        # 2. CALCULATE ASTROLOGY
         date = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
         safe_objects = [const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO]
