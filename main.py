@@ -2,8 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from typing import Union
-import datetime 
+import datetime
+import traceback
+# --- PROFESSIONAL TIMEZONE ENGINES ---
 from geopy.geocoders import Nominatim
+from timezonefinder import TimezoneFinder
+import pytz
+# -------------------------------------
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
@@ -12,8 +17,8 @@ from flatlib import const
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- 1. CITY DATABASE (The Table You Requested) ---
-# Format: "city": {lat, lon, standard_offset, hemisphere}
+# --- 1. BACKUP CITY DATABASE (Safety Net) ---
+# Used if the automatic engine fails.
 CITY_DB = {
     "sao paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
     "são paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
@@ -26,7 +31,7 @@ CITY_DB = {
 
 RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
 
-# --- ARCHETYPE LIBRARY ---
+# --- ARCHETYPES & STORIES ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness."}, 2: {"name": "The Receptive", "story": "The Divine Feminine blueprint."},
     3: {"name": "The Innovator", "story": "Chaos into Order."}, 4: {"name": "The Logic Master", "story": "The Answer to doubt."},
@@ -58,7 +63,7 @@ KEY_LORE = {
     55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
     57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality against authority."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
-    61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision. of language."},
+    61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
 MEGA_MATRIX = {
@@ -107,47 +112,62 @@ def calculate_life_path(date_str):
 
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
-
-# --- THE SMART LOCATION RESOLVER ---
-def resolve_location(city_input, date_str):
+# --- THE HYBRID TIMEZONE ENGINE (Robust) ---
+def resolve_location(city_input, date_str, time_str):
+    # 1. TRY BACKUP TABLE FIRST (For absolute safety)
     city_clean = city_input.lower().strip()
-    data = CITY_DB.get(city_clean)
     
-    if not data:
-        try:
-            geo = Nominatim(user_agent="ia_v25", timeout=5).geocode(city_input)
-            if geo: return geo.latitude, geo.longitude, 0.0 # Fallback
-        except: pass
-        return 51.48, 0.0, 0.0 # London Fallback
-
-    lat, lon, tz_std, hemi = data['lat'], data['lon'], data['tz_std'], data['hemisphere']
-    month = int(date_str.split("-")[1])
-    
-    is_dst = False
-    if hemi == "S": # Southern Hemisphere Summer (Oct-Feb)
-        if month >= 10 or month <= 2: is_dst = True
-    else: # Northern Hemisphere Summer (Mar-Oct)
-        if 3 <= month <= 10: is_dst = True
+    # Check if a known city key exists in the input (e.g. "minneapolis" inside "Minneapolis, MN")
+    found_backup = None
+    for key in CITY_DB:
+        if key in city_clean:
+            found_backup = CITY_DB[key]
+            break
+            
+    if found_backup:
+        # Calculate DST manually for known cities
+        lat, lon, tz_std, hemi = found_backup['lat'], found_backup['lon'], found_backup['tz_std'], found_backup['hemisphere']
+        month = int(date_str.split("-")[1])
+        is_dst = False
+        if hemi == "S": # Southern Hemisphere Summer (Oct-Feb)
+            if month >= 10 or month <= 2: is_dst = True
+        else: # Northern Hemisphere Summer (Mar-Oct)
+            if 3 <= month <= 10: is_dst = True # Approx DST rule
         
-    final_tz = tz_std + 1.0 if is_dst else tz_std
-    return lat, lon, final_tz
+        final_tz = tz_std + 1.0 if is_dst else tz_std
+        return lat, lon, final_tz, "Backup Table"
+
+    # 2. TRY AUTOMATIC DATABASE (If not in backup)
+    try:
+        geolocator = Nominatim(user_agent="ia_v29_hybrid", timeout=10)
+        location = geolocator.geocode(city_input)
+        
+        if location:
+            tf = TimezoneFinder()
+            tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+            if tz_str:
+                local_tz = pytz.timezone(tz_str)
+                naive_dt = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+                localized_dt = local_tz.localize(naive_dt)
+                offset = localized_dt.utcoffset().total_seconds() / 3600.0
+                return location.latitude, location.longitude, offset, "Automatic DB"
+    except Exception as e:
+        print(f"Auto-lookup failed: {e}")
+
+    # 3. FALLBACK (London)
+    return 51.50, -0.12, 0.0, "Default (Error)"
+
+# --- API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
-    tz: Union[float, int, str, None] = None
-    @validator('tz', pre=True)
-    def parse_tz(cls, v): return float(v) if v else 0
-    @validator('date', pre=True)
-    def clean_date(cls, v): return v.split("T")[0] if "T" in v else v
-    @validator('time', pre=True)
-    def clean_time(cls, v): return v.split(".")[0] if "." in v else v
 
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        # Use Smart Resolver for Timezone
-        lat, lon, tz = resolve_location(data.city, data.date)
+        # Resolve Location using Hybrid Engine
+        lat, lon, tz, source = resolve_location(data.city, data.date, data.time)
 
-        # Astrology
+        # Astrology Calc
         dt = Datetime(data.date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
@@ -155,7 +175,7 @@ def generate_reading(data: UserInput):
         objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
         rising = chart.get(const.HOUSE1)
 
-        # Human Design
+        # Design Calc
         d_dt = datetime.datetime.strptime(data.date, "%Y-%m-%d") - datetime.timedelta(days=88)
         d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
         d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
@@ -168,7 +188,7 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # The Report (White/Clean Style)
+        # REPORT GENERATION (Clean White Layout)
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -239,9 +259,9 @@ def generate_reading(data: UserInput):
 
                 <div class="vault">
                     <h3>🔒 The Vault</h3>
-                    <div class="item"><span class="label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <br><span class="desc">"{keys['rad']['story']}"</span></div>
-                    <div class="item"><span class="label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <br><span class="desc">"{keys['pur']['story']}"</span></div>
-                    <div class="item"><span class="label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <br><span class="desc">"{keys['att']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <br><span class="desc">"{keys['rad']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <br><span class="desc">"{keys['pur']['story']}"</span></div>
+                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <br><span class="desc">"{keys['att']['story']}"</span></div>
                 </div>
 
                 <div class="struggle">
@@ -250,11 +270,15 @@ def generate_reading(data: UserInput):
                 </div>
                 
                 <button onclick="window.print()" class="btn">📥 SAVE MY CODE</button>
-                <div style="text-align:center; font-size:10px; color:#ccc; margin-top:20px;">{data.city} | {data.date} | TZ: {tz}</div>
+                <div style="text-align:center; font-size:10px; color:#ccc; margin-top:20px;">
+                    {data.city} | {data.date} {data.time} | TZ Offset: {tz} (Source: {source})
+                </div>
             </div>
         </body>
         </html>
         """
         return {"report": html}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"report": f"<div style='color:red; padding:20px;'>Error: {str(e)}</div>"}
