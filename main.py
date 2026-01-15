@@ -206,51 +206,50 @@ def generate_reading(data: UserInput):
 
             <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
                 <h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li style="margin-bottom: 8px;">🤝 <strong>The Broker (Mercury in {objs['Mercury'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Mercury', objs['Mercury'].sign)}"</em></span></li>
-                    <li style="margin-bottom: 8px;">👔 <strong>The CEO (Saturn in {objs['Saturn'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Saturn', objs['Saturn'].sign)}"</em></span></li>
-                    <li style="margin-bottom: 8px;">💰 <strong>The Mogul (Jupiter in {objs['Jupiter'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">🤝 <strong>The Broker:</strong> {objs['Mercury'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Mercury', objs['Mercury'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">👔 <strong>The CEO:</strong> {objs['Saturn'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Saturn', objs['Saturn'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">💰 <strong>The Mogul:</strong> {objs['Jupiter'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</em></span></li>
                 </ul>
             </div>
 
             <div style="border-left: 5px solid #27AE60; padding-left: 15px; margin-bottom: 20px;">
                 <h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li style="margin-bottom: 8px;">❤️ <strong>The Heart (Moon in {objs['Moon'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Moon', objs['Moon'].sign)}"</em></span></li>
-                    <li style="margin-bottom: 8px;">🎨 <strong>The Muse (Venus in {objs['Venus'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Venus', objs['Venus'].sign)}"</em></span></li>
-                    <li style="margin-bottom: 8px;">🌫️ <strong>The Dreamer (Neptune in {objs['Neptune'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Neptune', objs['Neptune'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">❤️ <strong>The Heart:</strong> {objs['Moon'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Moon', objs['Moon'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">🎨 <strong>The Muse:</strong> {objs['Venus'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Venus', objs['Venus'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">🌫️ <strong>The Dreamer:</strong> {objs['Neptune'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Neptune', objs['Neptune'].sign)}"</em></span></li>
                 </ul>
             </div>
 
             <div style="border-left: 5px solid #C0392B; padding-left: 15px; margin-bottom: 20px;">
                 <h3 style="color: #C0392B; margin: 0;">THE STREETS</h3>
-                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>
                 <ul style="list-style: none; padding: 0; margin-top: 10px;">
-                    <li style="margin-bottom: 8px;">🔥 <strong>The Hustle (Mars in {objs['Mars'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Mars', objs['Mars'].sign)}"</em></span></li>
-                    <li style="margin-bottom: 8px;">⚡ <strong>The Disruptor (Uranus in {objs['Uranus'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Uranus', objs['Uranus'].sign)}"</em></span></li>
-                    <li style="margin-bottom: 8px;">🕵️ <strong>The Kingpin (Pluto in {objs['Pluto'].sign}):</strong><br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Pluto', objs['Pluto'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">🔥 <strong>The Hustle:</strong> {objs['Mars'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Mars', objs['Mars'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">⚡ <strong>The Disruptor:</strong> {objs['Uranus'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Uranus', objs['Uranus'].sign)}"</em></span></li>
+                    <li style="margin-bottom: 8px;">🕵️ <strong>The Kingpin:</strong> {objs['Pluto'].sign}<br><span style="font-size:12px; color:#666;"><em>"{generate_desc('Pluto', objs['Pluto'].sign)}"</em></span></li>
                 </ul>
             </div>
             
             <div style="background-color: #222; color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                 <h3 style="color: #FF4500; margin-top: 0;">🔒 THE VAULT</h3>
-                <span style="font-size: 12px; color: #aaa; letter-spacing: 1px;">UNCONSCIOUS BLUEPRINT</span>
-                
-                <p style="margin-top:10px;"><strong>⚡ The Aura:</strong> <span style="color: #FFD700; font-weight: bold;">{keys['rad']['name']}</span></p>
-                <p style="font-size: 13px; font-style: italic; color: #ddd; margin-top: -10px; margin-bottom: 15px;">"{keys['rad']['story']}"</p>
-                
-                <p><strong>⚓ The Root:</strong> <span style="color: #FFD700; font-weight: bold;">{keys['pur']['name']}</span></p>
-                <p style="font-size: 13px; font-style: italic; color: #ddd; margin-top: -10px; margin-bottom: 15px;">"{keys['pur']['story']}"</p>
-                
-                <p><strong>🧲 The Magnet:</strong> <span style="color: #FFD700; font-weight: bold;">{keys['att']['name']}</span></p>
+                <p style="margin-top:10px;"><strong>⚡ The Aura:</strong> <span style="color: #FFD700;">{keys['rad']['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ddd; margin-top: -10px;">"{keys['rad']['story']}"</p>
+                <p><strong>⚓ The Root:</strong> <span style="color: #FFD700;">{keys['pur']['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #ddd; margin-top: -10px;">"{keys['pur']['story']}"</p>
+                <p><strong>🧲 The Magnet:</strong> <span style="color: #FFD700;">{keys['att']['name']}</span></p>
                 <p style="font-size: 13px; font-style: italic; color: #ddd; margin-top: -10px;">"{keys['att']['story']}"</p>
             </div>
 
             <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
                 <p><strong>Current Struggle:</strong> {data.struggle}</p>
                 <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</em></p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="window.print()" style="background-color: #D4AF37; color: white; border: none; padding: 10px 20px; font-size: 14px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    📥 SAVE MY CODE
+                </button>
             </div>
         </div>
         """
