@@ -17,20 +17,6 @@ from flatlib import const
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- 1. BACKUP CITY DATABASE (Safety Net) ---
-# Used if the automatic engine fails.
-CITY_DB = {
-    "sao paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
-    "são paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
-    "fargo":     {"lat": 46.87,  "lon": -96.79, "tz_std": -6.0, "hemisphere": "N"},
-    "minneapolis": {"lat": 44.97, "lon": -93.26, "tz_std": -6.0, "hemisphere": "N"},
-    "ashland":   {"lat": 42.19,  "lon": -122.70, "tz_std": -8.0, "hemisphere": "N"},
-    "new york":  {"lat": 40.71,  "lon": -74.00, "tz_std": -5.0, "hemisphere": "N"},
-    "london":    {"lat": 51.50,  "lon": -0.12,  "tz_std": 0.0,  "hemisphere": "N"}
-}
-
-RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
-
 # --- ARCHETYPES & STORIES ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness."}, 2: {"name": "The Receptive", "story": "The Divine Feminine blueprint."},
@@ -66,6 +52,8 @@ KEY_LORE = {
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
+
+RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
 MEGA_MATRIX = {
     "Aries": {"Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
     "Taurus": {"Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
@@ -103,6 +91,9 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
+    # SAFETY CLEAN: STRIP TIME FROM DATE
+    if "T" in date_str: date_str = date_str.split("T")[0]
+    
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
     while total > 9 and total not in [11, 22, 33]:
@@ -112,62 +103,54 @@ def calculate_life_path(date_str):
 
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
-# --- THE HYBRID TIMEZONE ENGINE (Robust) ---
-def resolve_location(city_input, date_str, time_str):
-    # 1. TRY BACKUP TABLE FIRST (For absolute safety)
-    city_clean = city_input.lower().strip()
-    
-    # Check if a known city key exists in the input (e.g. "minneapolis" inside "Minneapolis, MN")
-    found_backup = None
-    for key in CITY_DB:
-        if key in city_clean:
-            found_backup = CITY_DB[key]
-            break
-            
-    if found_backup:
-        # Calculate DST manually for known cities
-        lat, lon, tz_std, hemi = found_backup['lat'], found_backup['lon'], found_backup['tz_std'], found_backup['hemisphere']
-        month = int(date_str.split("-")[1])
-        is_dst = False
-        if hemi == "S": # Southern Hemisphere Summer (Oct-Feb)
-            if month >= 10 or month <= 2: is_dst = True
-        else: # Northern Hemisphere Summer (Mar-Oct)
-            if 3 <= month <= 10: is_dst = True # Approx DST rule
-        
-        final_tz = tz_std + 1.0 if is_dst else tz_std
-        return lat, lon, final_tz, "Backup Table"
-
-    # 2. TRY AUTOMATIC DATABASE (If not in backup)
+# --- TIMEZONE ENGINE WITH FALLBACK ---
+def get_exact_timezone(city_name, date_str, time_str):
     try:
-        geolocator = Nominatim(user_agent="ia_v29_hybrid", timeout=10)
-        location = geolocator.geocode(city_input)
-        
-        if location:
-            tf = TimezoneFinder()
-            tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
-            if tz_str:
-                local_tz = pytz.timezone(tz_str)
-                naive_dt = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-                localized_dt = local_tz.localize(naive_dt)
-                offset = localized_dt.utcoffset().total_seconds() / 3600.0
-                return location.latitude, location.longitude, offset, "Automatic DB"
-    except Exception as e:
-        print(f"Auto-lookup failed: {e}")
+        # Fallbacks for specific sticky cities
+        if "minneapolis" in city_name.lower(): return 44.97, -93.26, -6.0
+        if "sao paulo" in city_name.lower() or "são paulo" in city_name.lower(): return -23.55, -46.63, -2.0 # Nov is Summer Time
 
-    # 3. FALLBACK (London)
-    return 51.50, -0.12, 0.0, "Default (Error)"
+        geolocator = Nominatim(user_agent="ia_final_v30", timeout=10)
+        location = geolocator.geocode(city_name)
+        if not location: return 51.50, -0.12, 0.0
+
+        tf = TimezoneFinder()
+        tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+        if not tz_str: return location.latitude, location.longitude, 0.0
+
+        local_tz = pytz.timezone(tz_str)
+        naive_dt = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        localized_dt = local_tz.localize(naive_dt)
+        offset = localized_dt.utcoffset().total_seconds() / 3600.0
+        
+        return location.latitude, location.longitude, offset
+    except Exception as e:
+        print(f"TZ Error: {e}")
+        return 51.50, -0.12, 0.0
 
 # --- API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
+    tz: Union[float, int, str, None] = None
+    
+    @validator('date', pre=True)
+    def clean_date_format(cls, v):
+        # THE FIX: If date comes in as '1992-11-06T08:00...', strip the time.
+        if isinstance(v, str) and "T" in v:
+            return v.split("T")[0]
+        return v
+
+    @validator('tz', pre=True)
+    def parse_tz(cls, v): return float(v) if v else 0
+    @validator('time', pre=True)
+    def clean_time(cls, v): return v.split(".")[0] if "." in v else v
 
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        # Resolve Location using Hybrid Engine
-        lat, lon, tz, source = resolve_location(data.city, data.date, data.time)
+        lat, lon, tz = get_exact_timezone(data.city, data.date, data.time)
 
-        # Astrology Calc
+        # Astrology
         dt = Datetime(data.date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
@@ -175,7 +158,7 @@ def generate_reading(data: UserInput):
         objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
         rising = chart.get(const.HOUSE1)
 
-        # Design Calc
+        # Design
         d_dt = datetime.datetime.strptime(data.date, "%Y-%m-%d") - datetime.timedelta(days=88)
         d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
         d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
@@ -188,7 +171,7 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # REPORT GENERATION (Clean White Layout)
+        # THE REPORT
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -271,7 +254,7 @@ def generate_reading(data: UserInput):
                 
                 <button onclick="window.print()" class="btn">📥 SAVE MY CODE</button>
                 <div style="text-align:center; font-size:10px; color:#ccc; margin-top:20px;">
-                    {data.city} | {data.date} {data.time} | TZ Offset: {tz} (Source: {source})
+                    {data.city} | {data.date} {data.time} | TZ Offset: {tz}
                 </div>
             </div>
         </body>
