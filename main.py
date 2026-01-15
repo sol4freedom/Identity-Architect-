@@ -119,7 +119,6 @@ SIGN_LORE = {
     "Aquarius": {"title": "The Futurist", "desc": "Innovating for the collective good."},
     "Pisces": {"title": "The Guide", "desc": "Dissolving boundaries to tap into the mystic."}
 }
-
 # --- INPUT DATA ---
 class UserInput(BaseModel):
     name: str
@@ -186,4 +185,84 @@ def generate_reading(data: UserInput):
         jupiter = chart.get(const.JUPITER)
         saturn = chart.get(const.SATURN)
         uranus = chart.get(const.URANUS)
-        neptune = chart.
+        neptune = chart.get(const.NEPTUNE)
+        pluto = chart.get(const.PLUTO)
+        rising = chart.get(const.HOUSE1)
+        
+        # 3. CALCULATE DESIGN (Unconscious/Red)
+        p_date = datetime.datetime.strptime(data.date, "%Y-%m-%d")
+        d_date_obj = p_date - datetime.timedelta(days=88)
+        d_date_str = d_date_obj.strftime("%Y/%m/%d")
+        
+        design_date_flatlib = Datetime(d_date_str, data.time, tz_offset)
+        design_chart = Chart(design_date_flatlib, pos, IDs=[const.SUN, const.MOON], hsys=const.HOUSES_PLACIDUS)
+        
+        d_sun = design_chart.get(const.SUN)
+        d_moon = design_chart.get(const.MOON)
+        
+        # 4. GET RICH ARCHETYPE DATA
+        # We now get an object back: {name: "The Creator", story: "Entropy..."}
+        lifes_work = get_key_data(sun.lon)
+        evolution = get_key_data((sun.lon + 180) % 360)
+        
+        radiance = get_key_data(d_sun.lon)
+        purpose = get_key_data((d_sun.lon + 180) % 360)
+        attraction = get_key_data(d_moon.lon)
+
+        # Helper to get sign lore safely
+        def get_sign_desc(sign_name):
+            return SIGN_LORE.get(sign_name, {"desc": ""})["desc"]
+
+        # 5. GENERATE REPORT (With Rich Stories)
+        report_html = f"""
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
+            
+            <div style="text-align: center; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; margin-bottom: 20px;">
+                <h2 style="color: #D4AF37; margin: 0; letter-spacing: 2px;">THE INTEGRATED SELF</h2>
+                <span style="font-size: 14px; color: #888;">PREPARED FOR {data.name.upper()}</span>
+            </div>
+            
+            <div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE ID</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONSCIOUS INTENT</span>
+                
+                <p style="margin-top:10px;"><strong>🧬 The Calling:</strong> <span style="color: #C71585; font-weight: bold;">{lifes_work['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{lifes_work['story']}"</p>
+                
+                <p><strong>🌍 The Growth Edge:</strong> <span style="color: #C71585; font-weight: bold;">{evolution['name']}</span></p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px; margin-bottom: 15px;">"{evolution['story']}"</p>
+                
+                <p><strong>🏹 The Path (Rising):</strong> {rising.sign}</p>
+                <p style="font-size: 13px; font-style: italic; color: #555; margin-top: -10px;">"{get_sign_desc(rising.sign)}"</p>
+            </div>
+
+            <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li style="margin-bottom: 8px;">
+                        🤝 <strong>The Broker:</strong> {mercury.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(mercury.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        👔 <strong>The CEO:</strong> {saturn.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(saturn.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        💰 <strong>The Mogul:</strong> {jupiter.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(jupiter.sign)}</em></span>
+                    </li>
+                </ul>
+            </div>
+
+            <div style="border-left: 5px solid #27AE60; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li style="margin-bottom: 8px;">
+                        ❤️ <strong>The Heart:</strong> {moon.sign}<br>
+                        <span style="font-size:12px; color:#666;"><em>{get_sign_desc(moon.sign)}</em></span>
+                    </li>
+                    <li style="margin-bottom: 8px;">
+                        🎨 <strong>The Muse:</strong> {venus.sign}<br>
+                        <span style="font-size:12px;
