@@ -104,7 +104,7 @@ def get_key_data(degree):
     data = KEY_LORE.get(key_number, {"name": f"Key {key_number}", "story": ""})
     return {"number": key_number, "name": data["name"], "story": data["story"]}
 
-# --- NUMEROLOGY ENGINE (NEW!) ---
+# --- NUMEROLOGY ENGINE ---
 NUMEROLOGY_LORE = {
     1: {"name": "The Pioneer", "desc": "You are a self-starter here to lead with independence and originality."},
     2: {"name": "The Diplomat", "desc": "You are a peacemaker who thrives on partnership and balance."},
@@ -121,25 +121,21 @@ NUMEROLOGY_LORE = {
 }
 
 def calculate_life_path(date_str):
-    # Standard YYYY-MM-DD
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
-    
-    # Reduce, but keep 11, 22, 33
     while total > 9 and total not in [11, 22, 33]:
         total = sum(int(d) for d in str(total))
-    
     data = NUMEROLOGY_LORE.get(total, {"name": "The Mystery", "desc": "A unique vibration."})
     return {"number": total, "name": data["name"], "desc": data["desc"]}
 
-# --- THE SMART GRAMMAR ENGINE (CONTEXT AWARE) ---
+# --- THE 4-LENS GRAMMAR ENGINE (NO DUPLICATES) ---
 
 # 1. PLANET ACTIONS (The "Verb")
 PLANET_ACTIONS = {
     "Mercury": "Negotiates deals using",
     "Saturn": "Builds legacy through",
     "Jupiter": "Expands wealth via",
-    "Moon": "Finds safety in",
+    "Moon": "Finds emotional safety in",
     "Venus": "Seduces and attracts with",
     "Neptune": "Dreams of",
     "Mars": "Conquers obstacles with",
@@ -148,82 +144,100 @@ PLANET_ACTIONS = {
     "Rising": "Navigates the world with"
 }
 
-# 2. SIGN STYLES (The "Adverb" - Context Aware)
-def get_sign_style(sign, planet):
-    context = "boardroom"
-    if planet in ["Moon", "Venus", "Neptune"]: context = "sanctuary"
-    if planet in ["Mars", "Uranus", "Pluto"]: context = "streets"
-    
-    library = {
-        "Aries": {
-            "boardroom": "bold, pioneering initiative.",
-            "sanctuary": "passionate, direct honesty.",
-            "streets": "raw, explosive speed."
-        },
-        "Taurus": {
-            "boardroom": "unshakeable consistency and value.",
-            "sanctuary": "luxurious comfort and sensual touch.",
-            "streets": "stubborn, immovable force."
-        },
-        "Gemini": {
-            "boardroom": "agile networking and brilliant logic.",
-            "sanctuary": "playful wit and curiosity.",
-            "streets": "sharp, street-smart adaptability."
-        },
-        "Cancer": {
-            "boardroom": "protective intuition and resource hoarding.",
-            "sanctuary": "deep, nurturing emotional bonds.",
-            "streets": "fierce defense of the home turf."
-        },
-        "Leo": {
-            "boardroom": "commanding leadership and charisma.",
-            "sanctuary": "generous, warm-hearted loyalty.",
-            "streets": "undeniable presence and dominance."
-        },
-        "Virgo": {
-            "boardroom": "flawless efficiency and analysis.",
-            "sanctuary": "devoted acts of service.",
-            "streets": "calculated, precise maneuvering."
-        },
-        "Libra": {
-            "boardroom": "strategic partnerships and diplomacy.",
-            "sanctuary": "romantic harmony and aesthetic beauty.",
-            "streets": "balancing the scales of justice."
-        },
-        "Scorpio": {
-            "boardroom": "penetrating insight and research.",
-            "sanctuary": "intense, soul-merging intimacy.",
-            "streets": "ruthless, transformative power."
-        },
-        "Sagittarius": {
-            "boardroom": "limitless vision and expansion.",
-            "sanctuary": "adventurous, free-spirited truth.",
-            "streets": "wild, untamed exploration."
-        },
-        "Capricorn": {
-            "boardroom": "masterful ambition and hierarchy.",
-            "sanctuary": "reliable, traditional commitment.",
-            "streets": "cold, hard discipline."
-        },
-        "Aquarius": {
-            "boardroom": "innovative systems and future-tech.",
-            "sanctuary": "unique, accepting friendship.",
-            "streets": "radical rebellion against the norm."
-        },
-        "Pisces": {
-            "boardroom": "imaginative vision and empathy.",
-            "sanctuary": "boundless, mystical love.",
-            "streets": "fluid, elusive adaptability."
-        }
+# 2. SIGN LENSES (The "Adjective")
+# Each sign now has 4 unique descriptions based on what kind of planet is asking.
+# Mental: Mercury, Uranus
+# Emotional: Moon, Venus, Neptune
+# Action: Mars, Pluto, Rising
+# Material: Saturn, Jupiter
+
+SIGN_LENSES = {
+    "Aries": {
+        "mental": "sharp, instinctive decision-making",
+        "emotional": "passionate, direct honesty",
+        "action": "explosive, trailblazing speed",
+        "material": "bold, entrepreneurial risk-taking"
+    },
+    "Taurus": {
+        "mental": "practical, methodical thought",
+        "emotional": "deep loyalty and sensual touch",
+        "action": "unstoppable, rhythmic momentum",
+        "material": "compounding assets and solid foundations"
+    },
+    "Gemini": {
+        "mental": "brilliant logic and rapid networking",
+        "emotional": "playful wit and curiosity",
+        "action": "agile, multitasking adaptability",
+        "material": "diverse income streams and trade"
+    },
+    "Cancer": {
+        "mental": "intuitive memory and gut instinct",
+        "emotional": "deep, protective nurturing",
+        "action": "tenacious, defensive maneuvering",
+        "material": "secure resource accumulation"
+    },
+    "Leo": {
+        "mental": "creative self-expression",
+        "emotional": "warm-hearted, generous loyalty",
+        "action": "undeniable presence and dominance",
+        "material": "building a personal empire"
+    },
+    "Virgo": {
+        "mental": "precise analysis and optimization",
+        "emotional": "devoted acts of service",
+        "action": "efficient, calculated movement",
+        "material": "perfecting the details of the system"
+    },
+    "Libra": {
+        "mental": "strategic diplomacy and mediation",
+        "emotional": "romantic harmony and aesthetics",
+        "action": "collaborative, balanced tactics",
+        "material": "profitable partnerships"
+    },
+    "Scorpio": {
+        "mental": "investigative depth and research",
+        "emotional": "intense, soul-merging intimacy",
+        "action": "ruthless, regenerative power",
+        "material": "controlling shared resources"
+    },
+    "Sagittarius": {
+        "mental": "philosophical truth-seeking",
+        "emotional": "free-spirited, adventurous optimism",
+        "action": "wild, limitless exploration",
+        "material": "international expansion"
+    },
+    "Capricorn": {
+        "mental": "strategic, long-term planning",
+        "emotional": "reliable, traditional commitment",
+        "action": "disciplined, relentless grind",
+        "material": "climbing the hierarchy"
+    },
+    "Aquarius": {
+        "mental": "genius innovation and future-tech",
+        "emotional": "accepting, platonic friendship",
+        "action": "radical rebellion against the norm",
+        "material": "systems for the collective good"
+    },
+    "Pisces": {
+        "mental": "poetic imagination and symbols",
+        "emotional": "boundless, mystical empathy",
+        "action": "fluid, elusive adaptability",
+        "material": "manifesting dreams into reality"
     }
-    
-    sign_data = library.get(sign, {"boardroom": "energy.", "sanctuary": "energy.", "streets": "energy."})
-    return sign_data.get(context, "cosmic energy.")
+}
 
 def generate_desc(planet_name, sign_name):
+    # Determine which lens to use
+    lens = "action" # default
+    if planet_name in ["Mercury", "Uranus"]: lens = "mental"
+    if planet_name in ["Moon", "Venus", "Neptune"]: lens = "emotional"
+    if planet_name in ["Saturn", "Jupiter"]: lens = "material"
+    
     action = PLANET_ACTIONS.get(planet_name, "Expresses energy via")
-    style = get_sign_style(sign_name, planet_name)
-    return f"{action} {style}"
+    # Get the specific lens description for the sign
+    style = SIGN_LENSES.get(sign_name, {}).get(lens, "cosmic energy")
+    
+    return f"{action} {style}."
 
 # --- INPUT DATA ---
 class UserInput(BaseModel):
@@ -265,7 +279,7 @@ def generate_reading(data: UserInput):
             lat, lon, tz_offset = 46.87, -96.79, -5
         else:
             try:
-                geolocator = Nominatim(user_agent="identity_architect_sol_v10", timeout=10)
+                geolocator = Nominatim(user_agent="identity_architect_sol_v11", timeout=10)
                 location = geolocator.geocode(data.city)
                 if location:
                     lat, lon = location.latitude, location.longitude
