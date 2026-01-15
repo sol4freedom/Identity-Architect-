@@ -12,74 +12,53 @@ from flatlib import const
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- DATA LIBRARIES ---
+# --- 1. CITY DATABASE (Add new cities here) ---
+# Format: "city name": {"lat": latitude, "lon": longitude, "tz_std": standard_timezone, "hemisphere": "S" or "N"}
+CITY_DB = {
+    "sao paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
+    "são paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
+    "fargo":     {"lat": 46.87,  "lon": -96.79, "tz_std": -6.0, "hemisphere": "N"},
+    "ashland":   {"lat": 42.19,  "lon": -122.70, "tz_std": -8.0, "hemisphere": "N"},
+    "new york":  {"lat": 40.71,  "lon": -74.00, "tz_std": -5.0, "hemisphere": "N"},
+    "london":    {"lat": 51.50,  "lon": -0.12,  "tz_std": 0.0,  "hemisphere": "N"}
+}
+
+# --- 2. DATA LIBRARIES ---
 RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
 
 KEY_LORE = {
-    1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles."},
-    2: {"name": "The Receptive", "story": "The Divine Feminine. You are the architectural blueprint that guides raw energy."},
-    3: {"name": "The Innovator", "story": "Chaos into Order. You are the mutant who changes the rules."},
-    4: {"name": "The Logic Master", "story": "The Answer. You resolve doubt by finding the perfect pattern."},
-    5: {"name": "The Fixer", "story": "Patience into Timelessness. You wait for the right rhythm to align habits."},
-    6: {"name": "The Peacemaker", "story": "Conflict into Peace. You use emotional intelligence to dissolve friction."},
-    7: {"name": "The Leader", "story": "Guidance. You lead by representing the collective will."},
-    8: {"name": "The Stylist", "story": "Mediocrity into Style. You inspire others just by being yourself."},
-    9: {"name": "The Focuser", "story": "The Power of the Small. You tame chaos by focusing on one detail at a time."},
-    10: {"name": "The Self", "story": "Being. You master the art of simply being yourself without apology."},
-    11: {"name": "The Idealist", "story": "Ideas into Light. You catch images from the darkness and bring them to the world."},
-    12: {"name": "The Articulate", "story": "The Channel. You master your mood to speak words that touch the soul."},
-    13: {"name": "The Listener", "story": "The Confidant. You hold the secrets of the past to guide the future."},
-    14: {"name": "The Power House", "story": "The Generator. You possess the unflagging energy to fuel dreams."},
-    15: {"name": "The Humanist", "story": "Extremes into Flow. You accept all rhythms of humanity."},
-    16: {"name": "The Master", "story": "The Virtuoso. You practice with enthusiasm until skill becomes magic."},
-    17: {"name": "The Opinion", "story": "The Eye. You see the pattern of the future and organize it logically."},
-    18: {"name": "The Improver", "story": "Correction. You spot the flaw so it can be healed."},
-    19: {"name": "The Sensitive", "story": "Attunement. You feel the needs of the tribe before they are spoken."},
-    20: {"name": "The Now", "story": "Presence. You bypass the thinking mind to act with spontaneous clarity."},
-    21: {"name": "The Controller", "story": "Authority. You control resources to ensure the tribe thrives."},
-    22: {"name": "The Grace", "story": "Emotional Grace. You listen with an open heart."},
-    23: {"name": "The Assimilator", "story": "Simplicity. You strip away the noise to reveal the essential truth."},
-    24: {"name": "The Rationalizer", "story": "Invention. You revisit the past to find a new way forward."},
-    25: {"name": "The Spirit", "story": "Universal Love. You retain innocence despite the wounds of the world."},
-    26: {"name": "The Egoist", "story": "The Dealmaker. You use charisma to direct resources where needed."},
-    27: {"name": "The Nurturer", "story": "Altruism. You care for the weak and ensure heritage is passed down."},
-    28: {"name": "The Risk Taker", "story": "Immortality. You confront the fear of death to find a life worth living."},
-    29: {"name": "The Yes Man", "story": "Commitment. You say 'Yes' to the experience and persevere."},
-    30: {"name": "The Passion", "story": "The Fire. You burn with desire, teaching the world to feel."},
-    31: {"name": "The Voice", "story": "Influence. You speak the vision the collective is waiting to hear."},
-    32: {"name": "The Conservative", "story": "Veneration. You assess what is valuable from the past to preserve it."},
-    33: {"name": "The Reteller", "story": "Retreat. You withdraw to process memory and return with wisdom."},
-    34: {"name": "The Power", "story": "Majesty. You are the independent force of life expressing itself."},
-    35: {"name": "The Progress", "story": "Adventure. You are driven to taste every experience."},
-    36: {"name": "The Crisis", "story": "Compassion. You survive the emotional storm to bring light."},
-    37: {"name": "The Family", "story": "Equality. You build community through friendship and affection."},
-    38: {"name": "The Fighter", "story": "Honor. You fight the battles that give life meaning."},
-    39: {"name": "The Provocateur", "story": "Liberation. You poke the spirit of others to wake them up."},
-    40: {"name": "The Aloneness", "story": "Resolve. You separate yourself to regenerate your power."},
-    41: {"name": "The Fantasy", "story": "The Origin. You hold the seed of the dream that starts the cycle."},
-    42: {"name": "The Finisher", "story": "Growth. You maximize the cycle and bring it to a conclusion."},
-    43: {"name": "The Insight", "story": "Breakthrough. You hear the unique voice that changes knowing."},
-    44: {"name": "The Alert", "story": "Teamwork. You smell potential and align people for success."},
-    45: {"name": "The Gatherer", "story": "Synergy. You hold the resources together for the kingdom."},
-    46: {"name": "The Determination", "story": "Serendipity. You succeed by being in the right place at the right time."},
-    47: {"name": "The Realization", "story": "Transmutation. You sort through confusion to find the epiphany."},
-    48: {"name": "The Depth", "story": "Wisdom. You look into the deep well to bring fresh solutions."},
-    49: {"name": "The Catalyst", "story": "Revolution. You reject old principles to establish a higher order."},
-    50: {"name": "The Values", "story": "Harmony. You act as the guardian of the tribe's values."},
-    51: {"name": "The Shock", "story": "Initiation. You wake people up with thunder."},
-    52: {"name": "The Stillness", "story": "The Mountain. You hold energy still until the perfect moment."},
-    53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new."},
-    54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward seeking success."},
-    55: {"name": "The Spirit", "story": "Freedom. You accept high and low emotions to find the spirit."},
-    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas to weave the collective myth."},
-    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the vibration of the now."},
-    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
-    59: {"name": "The Sexual", "story": "Intimacy. You break down barriers to create union."},
-    60: {"name": "The Limitation", "story": "Realism. You accept boundaries to let magic transcend them."},
-    61: {"name": "The Mystery", "story": "Sanctity. You dive into the unknowable to bring back truth."},
-    62: {"name": "The Detail", "story": "Precision. You name the details to build understanding."},
-    63: {"name": "The Doubter", "story": "Truth. You use logic to test the validity of the future."},
-    64: {"name": "The Confusion", "story": "Illumination. You process images until they resolve into light."}
+    1: {"name": "The Creator", "story": "Entropy into Freshness."}, 2: {"name": "The Receptive", "story": "The Divine Feminine blueprint."},
+    3: {"name": "The Innovator", "story": "Chaos into Order."}, 4: {"name": "The Logic Master", "story": "The Answer to doubt."},
+    5: {"name": "The Fixer", "story": "Patience into Timelessness."}, 6: {"name": "The Peacemaker", "story": "Conflict into Peace."},
+    7: {"name": "The Leader", "story": "Guidance by will."}, 8: {"name": "The Stylist", "story": "Mediocrity into Style."},
+    9: {"name": "The Focuser", "story": "Power of the Small."}, 10: {"name": "The Self", "story": "The art of Being."},
+    11: {"name": "The Idealist", "story": "Ideas into Light."}, 12: {"name": "The Articulate", "story": "Channeling the soul."},
+    13: {"name": "The Listener", "story": "The Confidant of secrets."}, 14: {"name": "The Power House", "story": "Fueling dreams."},
+    15: {"name": "The Humanist", "story": "Extremes into Flow."}, 16: {"name": "The Master", "story": "Skill into Magic."},
+    17: {"name": "The Opinion", "story": "The logical Eye."}, 18: {"name": "The Improver", "story": "Healing the flaw."},
+    19: {"name": "The Sensitive", "story": "Attunement to needs."}, 20: {"name": "The Now", "story": "Spontaneous clarity."},
+    21: {"name": "The Controller", "story": "Authority and resources."}, 22: {"name": "The Grace", "story": "Emotional openness."},
+    23: {"name": "The Assimilator", "story": "Simplicity from noise."}, 24: {"name": "The Rationalizer", "story": "Invention from the past."},
+    25: {"name": "The Spirit", "story": "Universal Love."}, 26: {"name": "The Egoist", "story": "The Dealmaker."},
+    27: {"name": "The Nurturer", "story": "Altruism and care."}, 28: {"name": "The Risk Taker", "story": "Immortality through purpose."},
+    29: {"name": "The Yes Man", "story": "Commitment to experience."}, 30: {"name": "The Passion", "story": "The Fire of desire."},
+    31: {"name": "The Voice", "story": "Influential leadership."}, 32: {"name": "The Conservative", "story": "Preserving value."},
+    33: {"name": "The Reteller", "story": "Wisdom from retreat."}, 34: {"name": "The Power", "story": "Majesty of life."},
+    35: {"name": "The Progress", "story": "Adventure and change."}, 36: {"name": "The Crisis", "story": "Compassion in the storm."},
+    37: {"name": "The Family", "story": "Equality and friendship."}, 38: {"name": "The Fighter", "story": "Honor in the battle."},
+    39: {"name": "The Provocateur", "story": "Liberation through friction."}, 40: {"name": "The Aloneness", "story": "Resolve and regeneration."},
+    41: {"name": "The Fantasy", "story": "The Origin of the dream."}, 42: {"name": "The Finisher", "story": "Growth and conclusion."},
+    43: {"name": "The Insight", "story": "Breakthrough knowing."}, 44: {"name": "The Alert", "story": "Teamwork and smell."},
+    45: {"name": "The Gatherer", "story": "Synergy of the Kingdom."}, 46: {"name": "The Determination", "story": "Serendipity in the body."},
+    47: {"name": "The Realization", "story": "Transmutation of confusion."}, 48: {"name": "The Depth", "story": "Wisdom from the well."},
+    49: {"name": "The Catalyst", "story": "Revolution of principles."}, 50: {"name": "The Values", "story": "Harmony and tribal law."},
+    51: {"name": "The Shock", "story": "Initiation by thunder."}, 52: {"name": "The Stillness", "story": "The Mountain waiting."},
+    53: {"name": "The Starter", "story": "Abundance of beginnings."}, 54: {"name": "The Ambition", "story": "Ascension and drive."},
+    55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
+    57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality against authority."},
+    59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
+    61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
+    63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
 
 MEGA_MATRIX = {
@@ -98,20 +77,15 @@ MEGA_MATRIX = {
 }
 
 NUMEROLOGY_LORE = {
-    1: {"name": "The Pioneer", "desc": "A self-starter leading with independence."},
-    2: {"name": "The Diplomat", "desc": "A peacemaker thriving on partnership."},
-    3: {"name": "The Creator", "desc": "An artist expressing joy and optimism."},
-    4: {"name": "The Builder", "desc": "A foundation building stability through work."},
-    5: {"name": "The Adventurer", "desc": "A free spirit seeking freedom and change."},
-    6: {"name": "The Nurturer", "desc": "A caretaker focused on home and responsibility."},
-    7: {"name": "The Seeker", "desc": "An analyst searching for deep spiritual truth."},
-    8: {"name": "The Powerhouse", "desc": "An executive mastering abundance and success."},
-    9: {"name": "The Humanist", "desc": "A compassionate soul serving humanity."},
-    11: {"name": "The Illuminator", "desc": "A Master Number channeling intuition."},
-    22: {"name": "The Master Builder", "desc": "Turning massive dreams into reality."},
-    33: {"name": "The Master Teacher", "desc": "Uplifting humanity through compassion."}
+    1: {"name": "The Pioneer", "desc": "A self-starter leading with independence."}, 2: {"name": "The Diplomat", "desc": "A peacemaker thriving on partnership."},
+    3: {"name": "The Creator", "desc": "Expressing joy and optimism."}, 4: {"name": "The Builder", "desc": "Building stability through work."},
+    5: {"name": "The Adventurer", "desc": "Seeking freedom and change."}, 6: {"name": "The Nurturer", "desc": "Focusing on home and responsibility."},
+    7: {"name": "The Seeker", "desc": "Searching for deep truth."}, 8: {"name": "The Powerhouse", "desc": "Mastering abundance and success."},
+    9: {"name": "The Humanist", "desc": "Serving humanity."}, 11: {"name": "The Illuminator", "desc": "Channeling intuition."},
+    22: {"name": "The Master Builder", "desc": "Turning dreams into reality."}, 33: {"name": "The Master Teacher", "desc": "Uplifting via compassion."}
 }
-# --- HELPER FUNCTIONS ---
+
+# --- 3. LOGIC & HELPERS ---
 def get_key_data(degree):
     if degree is None: return {"name": "Unknown", "story": ""}
     index = int(degree / 5.625)
@@ -135,7 +109,33 @@ def calculate_life_path(date_str):
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
 
-# --- API ENDPOINT ---
+def resolve_location(city_input, date_str):
+    # Lookup city in DB
+    city_clean = city_input.lower().strip()
+    data = CITY_DB.get(city_clean)
+    
+    if not data:
+        # Fallback to Geopy if not in DB
+        try:
+            geo = Nominatim(user_agent="ia_v22", timeout=5).geocode(city_input)
+            if geo: return geo.latitude, geo.longitude, 0.0 # Default TZ 0 if unknown
+        except: pass
+        return 51.48, 0.0, 0.0 # Default London
+
+    # Calculate DST Logic based on Month & Hemisphere
+    lat, lon, tz_std, hemi = data['lat'], data['lon'], data['tz_std'], data['hemisphere']
+    month = int(date_str.split("-")[1])
+    
+    is_dst = False
+    if hemi == "S": # Southern Hemisphere (Summer is Oct-Feb)
+        if month >= 10 or month <= 2: is_dst = True
+    else: # Northern Hemisphere (Summer is Mar-Oct)
+        if 3 <= month <= 10: is_dst = True
+        
+    final_tz = tz_std + 1.0 if is_dst else tz_std
+    return lat, lon, final_tz
+
+# --- 4. API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
     tz: Union[float, int, str, None] = None
@@ -149,26 +149,10 @@ class UserInput(BaseModel):
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        # GEOLOCATION & TIMEZONE FIX
-        lat, lon, tz = 51.48, 0.0, data.tz
-        
-        # BRAZIL SUMMER TIME FIX
-        if "sao paulo" in data.city.lower() or "são paulo" in data.city.lower(): 
-            lat, lon = -23.55, -46.63
-            month = int(data.date.split("-")[1])
-            # Summer Time in Brazil roughly Oct-Feb
-            if month >= 10 or month <= 2:
-                tz = -2.0 
-            else:
-                tz = -3.0
-        elif "fargo" in data.city.lower(): 
-            lat, lon, tz = 46.87, -96.79, -6.0 
-        else:
-            try:
-                geo = Nominatim(user_agent="ia_v21", timeout=5).geocode(data.city)
-                if geo: lat, lon = geo.latitude, geo.longitude
-            except: pass
+        # Resolve Location using new DB Logic
+        lat, lon, tz = resolve_location(data.city, data.date)
 
+        # Astrology Calc
         dt = Datetime(data.date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
@@ -176,6 +160,7 @@ def generate_reading(data: UserInput):
         objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
         rising = chart.get(const.HOUSE1)
 
+        # Design Calc
         d_dt = datetime.datetime.strptime(data.date, "%Y-%m-%d") - datetime.timedelta(days=88)
         d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
         d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
@@ -188,7 +173,7 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # --- THE POLISHED LAYOUT (CSS FIX) ---
+        # --- THE REPORT (WHITE/CLEAN THEME) ---
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -196,156 +181,47 @@ def generate_reading(data: UserInput):
         <meta charset="UTF-8">
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
+            body {{ font-family: 'Source Sans Pro', sans-serif; background: #fff; color: #2D2D2D; padding: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+            .box {{ max-width: 700px; margin: 0 auto; background: #FFF; padding: 40px; border-radius: 12px; border: 1px solid #ddd; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }}
+            h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; text-transform: uppercase; margin: 0 0 10px 0; font-size: 28px; }}
+            h3 {{ font-family: 'Playfair Display', serif; font-size: 20px; margin: 0 0 10px 0; color: #333; }}
+            .section {{ border-left: 4px solid #D4AF37; padding: 15px 0 15px 20px; margin-bottom: 30px; background: #fff; }}
+            .vib {{ background: #F8F4FF; text-align: center; padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid #E6D8FF; }}
+            .item {{ margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px; }}
+            .item:last-child {{ border: none; }}
+            .label {{ font-weight: bold; color: #333; display: block; }}
+            .desc {{ font-size: 0.9em; color: #666; font-style: italic; }}
+            .highlight {{ color: #C71585; font-weight: bold; }}
             
-            :root {{ 
-                --gold: #D4AF37; 
-                --bg: #FFFFFF; 
-                --card-bg: #FFFFFF; 
-                --text: #333333; 
-                --muted: #666666;
-            }}
-            
-            body {{ 
-                font-family: 'Source Sans Pro', sans-serif; 
-                background-color: #F5F5F5; 
-                color: var(--text); 
-                padding: 40px 20px; 
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact;
-                margin: 0;
-            }}
-            
-            .box {{ 
-                max-width: 700px; 
-                margin: 0 auto; 
-                background: var(--card-bg); 
-                padding: 50px; 
-                border-radius: 16px; 
-                box-shadow: 0 10px 40px rgba(0,0,0,0.08); 
-            }}
-            
-            h2 {{ 
-                font-family: 'Playfair Display', serif; 
-                color: var(--gold); 
-                text-transform: uppercase; 
-                font-size: 28px;
-                letter-spacing: 1px;
-                margin: 0 0 5px 0;
-            }}
-            
-            h3 {{
-                font-family: 'Playfair Display', serif;
-                font-size: 20px;
-                margin: 0 0 15px 0;
-                color: #222;
-            }}
-
-            .section {{ 
-                border-left: 4px solid var(--gold); 
-                padding: 20px 0 20px 25px; 
-                margin-bottom: 30px; 
-            }}
-            
-            .vib {{ 
-                background: #F8F4FF; 
-                text-align: center; 
-                padding: 25px; 
-                border-radius: 12px; 
-                margin-bottom: 40px; 
-                border: 1px solid #E6D8FF;
-            }}
-            
-            .item {{ 
-                margin-bottom: 15px; 
-            }}
-            
-            .label {{ 
-                font-weight: 600; 
-                color: #111; 
-                display: block; 
-                margin-bottom: 3px;
-            }}
-            
-            .desc {{ 
-                font-size: 0.95em; 
-                color: var(--muted); 
-                line-height: 1.5;
-            }}
-            
-            .highlight {{ 
-                color: #C71585; 
-                font-weight: 600; 
-            }}
-            
-            /* VAULT STYLING */
-            .vault-section {{
-                background-color: #1A1A1A !important; 
-                color: #FFFFFF !important; 
-                padding: 30px; 
-                border-radius: 12px; 
-                margin-bottom: 30px;
-                border-left: 5px solid var(--gold);
-            }}
-            
-            .vault-section h3 {{ color: #D4AF37 !important; margin-top: 0; }}
-            .vault-label {{ color: #FFFFFF !important; font-weight: 600; display: block; margin-bottom: 3px; }}
-            .vault-desc {{ color: #CCCCCC !important; font-size: 0.95em; line-height: 1.5; }}
+            /* VAULT FIX: Force White Text on Black Background */
+            .vault-section {{ background-color: #111 !important; color: #fff !important; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #D4AF37; }}
+            .vault-section h3 {{ color: #FFD700 !important; margin-top: 0; }}
+            .vault-label {{ color: #fff !important; font-weight: bold; display: block; }}
+            .vault-desc {{ color: #ccc !important; font-size: 0.9em; font-style: italic; }}
             .vault-highlight {{ color: #FFD700 !important; }}
 
-            /* BUTTON STYLING */
-            .btn {{
-                display: inline-block;
-                background-color: #D4AF37;
-                color: white;
-                padding: 15px 35px;
-                font-size: 14px;
-                letter-spacing: 1px;
-                text-transform: uppercase;
-                border-radius: 50px;
-                text-decoration: none;
-                font-weight: 600;
-                border: none;
-                cursor: pointer;
-                transition: background 0.3s;
-                font-family: 'Source Sans Pro', sans-serif;
-            }}
-            .btn:hover {{ background-color: #B59328; }}
-
-            @media print {{
-                body {{ background: white; padding: 0; }}
-                .box {{ box-shadow: none; padding: 0; }}
-                button {{ display: none; }}
-            }}
+            @media print {{ button {{ display: none; }} }}
         </style>
         </head>
         <body>
             <div class="box">
-                <div style="text-align:center; margin-bottom:40px; border-bottom:1px solid #EEE; padding-bottom:30px;">
+                <div style="text-align:center; margin-bottom:30px; border-bottom:1px solid #D4AF37; padding-bottom:20px;">
                     <h2>The Integrated Self</h2>
-                    <span style="font-size:12px; color:#999; letter-spacing: 1px;">PREPARED FOR {data.name.upper()}</span>
+                    <span style="font-size:12px; color:#888;">PREPARED FOR {data.name.upper()}</span>
                 </div>
 
                 <div class="vib">
-                    <span style="font-size:11px; letter-spacing:2px; color:#888; text-transform:uppercase; display:block; margin-bottom:5px;">Life Path Vibration</span>
-                    <h3 style="color:#6A5ACD; font-size:24px; margin:0;">{lp['number']}: {lp['name']}</h3>
-                    <p style="font-size:15px; color:#555; margin-top:10px; font-style:italic;">"{lp['desc']}"</p>
+                    <span style="font-size:10px; letter-spacing:2px; color:#666;">THE VIBRATION (LIFE PATH)</span>
+                    <h3 style="color:#6A5ACD;">{lp['number']}: {lp['name']}</h3>
+                    <p style="font-size:14px; color:#555;">"{lp['desc']}"</p>
                 </div>
 
                 <div class="section">
                     <h3>🗝️ The Core ID</h3>
                     <div class="item"><span class="label">🎭 Profile: <span style="color:#444;">{hd['name']}</span></span></div>
-                    <div class="item">
-                        <span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span>
-                        <span class="desc">"{keys['lw']['story']}"</span>
-                    </div>
-                    <div class="item">
-                        <span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span>
-                        <span class="desc">"{keys['evo']['story']}"</span>
-                    </div>
-                    <div class="item">
-                        <span class="label">🏹 Rising: {rising.sign}</span>
-                        <span class="desc">"{generate_desc('Rising', rising.sign)}"</span>
-                    </div>
+                    <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span><span class="desc">"{keys['lw']['story']}"</span></div>
+                    <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span><span class="desc">"{keys['evo']['story']}"</span></div>
+                    <div class="item"><span class="label">🏹 Rising: {rising.sign}</span><span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
                 </div>
 
                 <div class="section" style="border-color: #4682B4;">
@@ -371,18 +247,9 @@ def generate_reading(data: UserInput):
 
                 <div class="vault-section">
                     <h3>🔒 The Vault</h3>
-                    <div class="item" style="border-bottom: 1px solid #333;">
-                        <span class="vault-label">⚡ Aura: <span class="vault-highlight">{keys['rad']['name']}</span></span>
-                        <span class="vault-desc">"{keys['rad']['story']}"</span>
-                    </div>
-                    <div class="item" style="border-bottom: 1px solid #333;">
-                        <span class="vault-label">⚓ Root: <span class="vault-highlight">{keys['pur']['name']}</span></span>
-                        <span class="vault-desc">"{keys['pur']['story']}"</span>
-                    </div>
-                    <div class="item">
-                        <span class="vault-label">🧲 Magnet: <span class="vault-highlight">{keys['att']['name']}</span></span>
-                        <span class="vault-desc">"{keys['att']['story']}"</span>
-                    </div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="vault-highlight">{keys['rad']['name']}</span></span><span class="vault-desc">"{keys['rad']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="vault-highlight">{keys['pur']['name']}</span></span><span class="vault-desc">"{keys['pur']['story']}"</span></div>
+                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="vault-highlight">{keys['att']['name']}</span></span><span class="vault-desc">"{keys['att']['story']}"</span></div>
                 </div>
 
                 <div style="background-color: #F8F8F8; padding: 20px; border-radius: 8px; text-align: center; color: #666; margin-top: 30px;">
@@ -390,14 +257,14 @@ def generate_reading(data: UserInput):
                     <p style="margin:5px 0 0 0; font-style:italic;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
                 </div>
                 
-                <div style="text-align: center; margin-top: 40px;">
-                    <button onclick="window.print()" class="btn">
+                <div style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="background-color: #D4AF37; color: white; border: none; padding: 12px 24px; font-size: 14px; border-radius: 6px; cursor: pointer; font-weight: bold; letter-spacing: 1px;">
                         📥 SAVE MY CODE
                     </button>
                 </div>
 
-                <div style="margin-top: 50px; border-top: 1px solid #eee; padding-top: 15px; font-size: 11px; color: #CCC; text-align: center;">
-                    Technical Data: {data.city} | {data.date} {data.time} | TZ: {tz}
+                <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; font-size: 10px; color: #999; text-align: center;">
+                    Debug: {data.city} | {data.date} {data.time} | TZ: {tz} (Using Dictionary DB)
                 </div>
             </div>
         </body>
