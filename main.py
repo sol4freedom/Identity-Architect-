@@ -8,7 +8,7 @@ from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
 
-# *** THE FIX: Import from the correct location ***
+# --- BACKEND CONFIG ---
 from flatlib.config import setBackend
 setBackend(const.BACKEND_MOSHIER)
 
@@ -22,7 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- THE RAVE MANDALA (Degree to Gene Key) ---
+# --- GENE KEYS DATA ---
 RAVE_ORDER = [
     25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 
     62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 
@@ -36,7 +36,7 @@ def get_gene_key(degree):
     if index >= 64: index = 0
     return RAVE_ORDER[index]
 
-# --- MEANING LIBRARY ---
+# --- ARCHETYPE LIBRARY ---
 INTERPRETATIONS = {
     "Aries": "The Pioneer", "Taurus": "The Builder", "Gemini": "The Messenger",
     "Cancer": "The Nurturer", "Leo": "The Creator", "Virgo": "The Editor",
@@ -44,7 +44,7 @@ INTERPRETATIONS = {
     "Capricorn": "The Architect", "Aquarius": "The Futurist", "Pisces": "The Guide"
 }
 
-# --- INPUT DATA SHAPE ---
+# --- INPUT DATA ---
 class UserInput(BaseModel):
     name: str
     date: str
@@ -93,23 +93,34 @@ def generate_reading(data: UserInput):
         # 2. CALCULATE ASTROLOGY
         date = Datetime(data.date.replace("-", "/"), data.time, tz_offset)
         pos = GeoPos(lat, lon)
-        safe_objects = [const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO]
+        
+        # We fetch ALL planets now
+        safe_objects = [
+            const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, 
+            const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
+        ]
         chart = Chart(date, pos, IDs=safe_objects, hsys=const.HOUSES_PLACIDUS)
 
+        # Get the Objects
         sun = chart.get(const.SUN)
         moon = chart.get(const.MOON)
+        mercury = chart.get(const.MERCURY)
+        venus = chart.get(const.VENUS)
+        mars = chart.get(const.MARS)
+        jupiter = chart.get(const.JUPITER)
+        saturn = chart.get(const.SATURN)
+        uranus = chart.get(const.URANUS)
+        neptune = chart.get(const.NEPTUNE)
+        pluto = chart.get(const.PLUTO)
+        
         rising = chart.get(const.HOUSE1)
         mc = chart.get(const.HOUSE10)
-        house2 = chart.get(const.HOUSE2)
 
         # 3. CALCULATE GENE KEYS
         lifes_work_key = get_gene_key(sun.lon)
-        
-        # Evolution = Earth (Sun + 180)
-        earth_lon = (sun.lon + 180) % 360
-        evolution_key = get_gene_key(earth_lon)
+        evolution_key = get_gene_key((sun.lon + 180) % 360)
 
-        # 4. PREPARE THE ELEGANT HTML REPORT
+        # 4. GENERATE THE "NEIGHBORHOOD" HTML REPORT
         report_html = f"""
         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 1.6; color: #2D2D2D;">
             
@@ -119,47 +130,47 @@ def generate_reading(data: UserInput):
             </div>
 
             <div style="background-color: #F9F9F9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <h3 style="color: #4A4A4A; margin-top: 0;">🗝️ YOUR GENE KEYS</h3>
-                <p>
-                    <strong>🧬 Life's Work (Sun):</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {lifes_work_key}</span><br>
-                    <span style="font-size: 14px; color: #666;">The quality you are here to manifest in the world.</span>
-                </p>
-                <p>
-                    <strong>🌍 Evolution (Earth):</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {evolution_key}</span><br>
-                    <span style="font-size: 14px; color: #666;">The challenge that helps you grow.</span>
-                </p>
+                <h3 style="color: #4A4A4A; margin-top: 0;">🗝️ THE CORE CODES</h3>
+                <p><strong>🧬 Life's Work:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {lifes_work_key}</span> ({sun.sign})</p>
+                <p><strong>🌍 Evolution:</strong> <span style="color: #C71585; font-weight: bold;">Gene Key {evolution_key}</span></p>
+                <p><strong>🏹 Rising Sign:</strong> {rising.sign} ({INTERPRETATIONS.get(rising.sign)})</p>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <h3 style="color: #4A4A4A;">🔮 COSMIC ARCHITECTURE</h3>
-                <ul style="list-style-type: none; padding: 0;">
-                    <li style="margin-bottom: 10px;">
-                        ☀️ <strong>Core Self (Sun):</strong> {sun.sign} - <em>{INTERPRETATIONS.get(sun.sign, 'The Essence')}</em>
-                    </li>
-                    <li style="margin-bottom: 10px;">
-                        🏹 <strong>The Path (Rising):</strong> {rising.sign} - <em>{INTERPRETATIONS.get(rising.sign, 'The Mask')}</em>
-                    </li>
-                    <li style="margin-bottom: 10px;">
-                        🌙 <strong>Inner World (Moon):</strong> {moon.sign} - <em>{INTERPRETATIONS.get(moon.sign, 'The Emotions')}</em>
-                    </li>
+            <div style="border-left: 5px solid #2C3E50; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #2C3E50; margin: 0;">THE BOARDROOM</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">STRATEGY & GROWTH</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li>🤝 <strong>The Broker (Mercury):</strong> {mercury.sign}</li>
+                    <li>👔 <strong>The CEO (Saturn):</strong> {saturn.sign}</li>
+                    <li>💰 <strong>The Mogul (Jupiter):</strong> {jupiter.sign}</li>
                 </ul>
             </div>
 
-            <div style="background-color: #F0F4F8; padding: 20px; border-radius: 8px; border-left: 5px solid #4682B4;">
-                <h3 style="color: #4682B4; margin-top: 0;">🚀 CAREER & ABUNDANCE</h3>
-                <p>
-                    <strong>💼 Your Legacy (Midheaven in {mc.sign}):</strong><br>
-                    {INTERPRETATIONS.get(mc.sign, "Build your legacy.")}
-                </p>
-                <p>
-                    <strong>💰 Your Wealth Style (2nd House in {house2.sign}):</strong><br>
-                    You attract resources through {house2.sign} energy.
-                </p>
+            <div style="border-left: 5px solid #27AE60; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #27AE60; margin: 0;">THE SANCTUARY</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">CONNECTION & CARE</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li>❤️ <strong>The Heart (Moon):</strong> {moon.sign}</li>
+                    <li>🎨 <strong>The Muse (Venus):</strong> {venus.sign}</li>
+                    <li>🌫️ <strong>The Dreamer (Neptune):</strong> {neptune.sign}</li>
+                </ul>
             </div>
 
-            <div style="margin-top: 20px; font-size: 14px; color: #999; text-align: center;">
-                Generated for {data.city} • Focus: {data.struggle}
+            <div style="border-left: 5px solid #C0392B; padding-left: 15px; margin-bottom: 20px;">
+                <h3 style="color: #C0392B; margin: 0;">THE STREETS</h3>
+                <span style="font-size: 12px; color: #777; letter-spacing: 1px;">POWER & DRIVE</span>
+                <ul style="list-style: none; padding: 0; margin-top: 10px;">
+                    <li>🔥 <strong>The Hustle (Mars):</strong> {mars.sign}</li>
+                    <li>⚡ <strong>The Disruptor (Uranus):</strong> {uranus.sign}</li>
+                    <li>🕵️ <strong>The Kingpin (Pluto):</strong> {pluto.sign}</li>
+                </ul>
             </div>
+
+            <div style="background-color: #F0F4F8; padding: 15px; border-radius: 8px; font-size: 14px; text-align: center; color: #555;">
+                <p><strong>Current Struggle:</strong> {data.struggle}</p>
+                <p><em>To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {INTERPRETATIONS.get(rising.sign)}.</em></p>
+            </div>
+
         </div>
         """
 
