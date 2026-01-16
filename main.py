@@ -134,7 +134,7 @@ def resolve_location(city_input, date_str, time_str):
 
     # 2. TRY AUTO ENGINE
     try:
-        geolocator = Nominatim(user_agent="ia_v31_pro", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v32_pro", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -187,15 +187,29 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # --- THE REPORT (NEW LAYOUT) ---
+        # --- THE REPORT (RENAMED SECTION & PDF BUTTON) ---
         html = f"""
         <!DOCTYPE html>
         <html>
         <head>
         <meta charset="UTF-8">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        <script>
+        function downloadPDF() {{
+            const element = document.querySelector('.box');
+            const opt = {{
+              margin: 0.2,
+              filename: 'My_Integrated_Self.pdf',
+              image: {{ type: 'jpeg', quality: 0.98 }},
+              html2canvas: {{ scale: 2, useCORS: true }},
+              jsPDF: {{ unit: 'in', format: 'letter', orientation: 'portrait' }}
+            }};
+            html2pdf().set(opt).from(element).save();
+        }}
+        </script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
-            body {{ font-family: 'Source Sans Pro', sans-serif; background: #fff; color: #333; padding: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+            body {{ font-family: 'Source Sans Pro', sans-serif; background: #fff; color: #333; padding: 20px; }}
             .box {{ max-width: 700px; margin: 0 auto; background: #FFF; padding: 40px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }}
             h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; text-transform: uppercase; margin: 0 0 10px 0; font-size: 28px; text-align: center; }}
             .vib {{ background: #F3E5F5; text-align: center; padding: 25px; border-radius: 12px; margin-bottom: 40px; }}
@@ -211,7 +225,6 @@ def generate_reading(data: UserInput):
             .vault .desc {{ color: #ccc; font-style: italic; }}
             .vault .highlight {{ color: #FFD700; }}
             .btn {{ background-color: #D4AF37; color: white; border: none; padding: 15px 30px; font-size: 14px; border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 40px auto 0; }}
-            @media print {{ .btn {{ display: none; }} }}
         </style>
         </head>
         <body>
@@ -235,7 +248,7 @@ def generate_reading(data: UserInput):
                 </div>
 
                 <div class="section" style="border-color: #D4AF37;">
-                    <h3 style="color:#D4AF37; margin-top:0;">🗝️ The Human Design</h3>
+                    <h3 style="color:#D4AF37; margin-top:0;">🗝️ The Blueprint</h3>
                     <div class="item"><span class="label">🎭 Profile:</span> {hd['name']}</div>
                     <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
                     <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
@@ -267,7 +280,7 @@ def generate_reading(data: UserInput):
                     <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <br><span class="desc">"{keys['att']['story']}"</span></div>
                 </div>
                 
-                <button onclick="window.print()" class="btn">📥 SAVE MY CODE</button>
+                <button onclick="downloadPDF()" class="btn">📥 SAVE MY CODE</button>
                 <div style="text-align:center; font-size:10px; color:#ccc; margin-top:20px;">
                     {data.city} | {data.date} {data.time} | TZ Offset: {tz}
                 </div>
