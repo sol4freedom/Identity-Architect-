@@ -17,7 +17,20 @@ from flatlib import const
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- ARCHETYPES & STORIES ---
+# --- 1. BACKUP CITY DATABASE ---
+CITY_DB = {
+    "sao paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
+    "são paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
+    "fargo":     {"lat": 46.87,  "lon": -96.79, "tz_std": -6.0, "hemisphere": "N"},
+    "minneapolis": {"lat": 44.97, "lon": -93.26, "tz_std": -6.0, "hemisphere": "N"},
+    "ashland":   {"lat": 42.19,  "lon": -122.70, "tz_std": -8.0, "hemisphere": "N"},
+    "new york":  {"lat": 40.71,  "lon": -74.00, "tz_std": -5.0, "hemisphere": "N"},
+    "london":    {"lat": 51.50,  "lon": -0.12,  "tz_std": 0.0,  "hemisphere": "N"}
+}
+
+RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
+
+# --- ARCHETYPES ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness."}, 2: {"name": "The Receptive", "story": "The Divine Feminine blueprint."},
     3: {"name": "The Innovator", "story": "Chaos into Order."}, 4: {"name": "The Logic Master", "story": "The Answer to doubt."},
@@ -45,28 +58,27 @@ KEY_LORE = {
     47: {"name": "The Realization", "story": "Transmutation of confusion."}, 48: {"name": "The Depth", "story": "Wisdom from the well."},
     49: {"name": "The Catalyst", "story": "Revolution of principles."}, 50: {"name": "The Values", "story": "Harmony and tribal law."},
     51: {"name": "The Shock", "story": "Initiation by thunder."}, 52: {"name": "The Stillness", "story": "The Mountain waiting."},
-    53: {"name": "The Starter", "story": "Abundance of beginnings."}, 54: {"name": "The Ambition", "story": "Ascension and drive."},
+    53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new."},
+    54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward seeking success."},
     55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
     57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality against authority."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
-
-RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
 MEGA_MATRIX = {
-    "Aries": {"Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
-    "Taurus": {"Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
-    "Gemini": {"Mercury": "Brilliant, agile processing.", "Saturn": "Structuring the intellect.", "Jupiter": "Luck via networking.", "Moon": "Safety in conversation.", "Venus": "Mental love and wit.", "Neptune": "Telepathic connection.", "Mars": "Versatile, scattered drive.", "Uranus": "Disrupting narratives.", "Pluto": "Psychological reprogramming.", "Rising": "Youthful curiosity."},
-    "Cancer": {"Mercury": "Intuitive, memory-based speech.", "Saturn": "Responsibility to the clan.", "Jupiter": "Wealth via real estate.", "Moon": "Safety in a shell.", "Venus": "Caretaking love.", "Neptune": "Dreams of the perfect home.", "Mars": "Defensive protection.", "Uranus": "Revolutionizing family.", "Pluto": "Ancestral healing.", "Rising": "Gentle, receptive aura."},
-    "Leo": {"Mercury": "Dramatic storytelling.", "Saturn": "Disciplined creativity.", "Jupiter": "Luck via visibility.", "Moon": "Safety in appreciation.", "Venus": "Grand, performative romance.", "Neptune": "Dreams of fame.", "Mars": "Drive fueled by honor.", "Uranus": "Disrupting the ego.", "Pluto": "Rebirth of identity.", "Rising": "Warm charisma."},
-    "Virgo": {"Mercury": "Precise, analytical logic.", "Saturn": "Mastery of craft.", "Jupiter": "Expansion via details.", "Moon": "Safety in routine.", "Venus": "Devoted, practical love.", "Neptune": "Perfect healing.", "Mars": "Efficient action.", "Uranus": "Revolutionizing work.", "Pluto": "Deep purification.", "Rising": "Modest and sharp."},
-    "Libra": {"Mercury": "Diplomatic negotiation.", "Saturn": "Structuring contracts.", "Jupiter": "Wealth via partnerships.", "Moon": "Safety in harmony.", "Venus": "Aesthetic love.", "Neptune": "Dreams of the soulmate.", "Mars": "Strategic alliances.", "Uranus": "Disrupting norms.", "Pluto": "Transformation via mirroring.", "Rising": "Graceful intelligence."},
-    "Scorpio": {"Mercury": "Detective mind.", "Saturn": "Mastery of self-control.", "Jupiter": "Power via research.", "Moon": "Safety in deep trust.", "Venus": "Soul-merging fusion.", "Neptune": "Dreams of mysteries.", "Mars": "Relentless will.", "Uranus": "Disrupting taboos.", "Pluto": "Total metamorphosis.", "Rising": "Magnetic intensity."},
-    "Sagittarius": {"Mercury": "Broad-minded philosophy.", "Saturn": "Structuring belief.", "Jupiter": "Luck via travel.", "Moon": "Safety in freedom.", "Venus": "Adventurous love.", "Neptune": "Dreams of nirvana.", "Mars": "Crusading for a cause.", "Uranus": "Disrupting dogma.", "Pluto": "Death of old beliefs.", "Rising": "Jovial optimism."},
-    "Capricorn": {"Mercury": "Pragmatic thinking.", "Saturn": "Building institutions.", "Jupiter": "Success via career.", "Moon": "Safety in control.", "Venus": "Serious commitment.", "Neptune": "Spiritual authority.", "Mars": "Disciplined drive.", "Uranus": "Disrupting government.", "Pluto": "Exposing corruption.", "Rising": "Authoritative capability."},
-    "Aquarius": {"Mercury": "Genius innovation.", "Saturn": "Structuring the future.", "Jupiter": "Luck via networks.", "Moon": "Safety in detachment.", "Venus": "Unconventional love.", "Neptune": "Dreams of utopia.", "Mars": "Rebellious drive.", "Uranus": "Awakening the collective.", "Pluto": "Power to the people.", "Rising": "Unique brilliance."},
-    "Pisces": {"Mercury": "Poetic thinking.", "Saturn": "Form to chaos.", "Jupiter": "Compassionate expansion.", "Moon": "Safety in solitude.", "Venus": "Spiritual love.", "Neptune": "Dissolving into oneness.", "Mars": "Fluid adaptability.", "Uranus": "Disrupting reality.", "Pluto": "Soul transformation.", "Rising": "Dreamy empathy."}
+    "Aries": {"Sun": "You are a pioneer; bold, independent, and direct.", "Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
+    "Taurus": {"Sun": "You are a builder; grounded, patient, and reliable.", "Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
+    "Gemini": {"Sun": "You are a messenger; curious, adaptable, and witty.", "Mercury": "Brilliant, agile processing.", "Saturn": "Structuring the intellect.", "Jupiter": "Luck via networking.", "Moon": "Safety in conversation.", "Venus": "Mental love and wit.", "Neptune": "Telepathic connection.", "Mars": "Versatile, scattered drive.", "Uranus": "Disrupting narratives.", "Pluto": "Psychological reprogramming.", "Rising": "Youthful curiosity."},
+    "Cancer": {"Sun": "You are a nurturer; intuitive, protective, and feeling.", "Mercury": "Intuitive, memory-based speech.", "Saturn": "Responsibility to the clan.", "Jupiter": "Wealth via real estate.", "Moon": "Safety in a shell.", "Venus": "Caretaking love.", "Neptune": "Dreams of the perfect home.", "Mars": "Defensive protection.", "Uranus": "Revolutionizing family.", "Pluto": "Ancestral healing.", "Rising": "Gentle, receptive aura."},
+    "Leo": {"Sun": "You are a star; creative, generous, and radiant.", "Mercury": "Dramatic storytelling.", "Saturn": "Disciplined creativity.", "Jupiter": "Luck via visibility.", "Moon": "Safety in appreciation.", "Venus": "Grand, performative romance.", "Neptune": "Dreams of fame.", "Mars": "Drive fueled by honor.", "Uranus": "Disrupting the ego.", "Pluto": "Rebirth of identity.", "Rising": "Warm charisma."},
+    "Virgo": {"Sun": "You are a healer; analytical, practical, and precise.", "Mercury": "Precise, analytical logic.", "Saturn": "Mastery of craft.", "Jupiter": "Expansion via details.", "Moon": "Safety in routine.", "Venus": "Devoted, practical love.", "Neptune": "Perfect healing.", "Mars": "Efficient action.", "Uranus": "Revolutionizing work.", "Pluto": "Deep purification.", "Rising": "Modest and sharp."},
+    "Libra": {"Sun": "You are a diplomat; charming, fair, and balanced.", "Mercury": "Diplomatic negotiation.", "Saturn": "Structuring contracts.", "Jupiter": "Wealth via partnerships.", "Moon": "Safety in harmony.", "Venus": "Aesthetic love.", "Neptune": "Dreams of the soulmate.", "Mars": "Strategic alliances.", "Uranus": "Disrupting norms.", "Pluto": "Transformation via mirroring.", "Rising": "Graceful intelligence."},
+    "Scorpio": {"Sun": "You are a mystic; intense, passionate, and transformative.", "Mercury": "Detective mind.", "Saturn": "Mastery of self-control.", "Jupiter": "Power via research.", "Moon": "Safety in deep trust.", "Venus": "Soul-merging fusion.", "Neptune": "Dreams of mysteries.", "Mars": "Relentless will.", "Uranus": "Disrupting taboos.", "Pluto": "Total metamorphosis.", "Rising": "Magnetic intensity."},
+    "Sagittarius": {"Sun": "You are an explorer; optimistic, adventurous, and wise.", "Mercury": "Broad-minded philosophy.", "Saturn": "Structuring belief.", "Jupiter": "Luck via travel.", "Moon": "Safety in freedom.", "Venus": "Adventurous love.", "Neptune": "Dreams of nirvana.", "Mars": "Crusading for a cause.", "Uranus": "Disrupting dogma.", "Pluto": "Death of old beliefs.", "Rising": "Jovial optimism."},
+    "Capricorn": {"Sun": "You are a boss; ambitious, disciplined, and strategic.", "Mercury": "Pragmatic thinking.", "Saturn": "Building institutions.", "Jupiter": "Success via career.", "Moon": "Safety in control.", "Venus": "Serious commitment.", "Neptune": "Spiritual authority.", "Mars": "Disciplined drive.", "Uranus": "Disrupting government.", "Pluto": "Exposing corruption.", "Rising": "Authoritative capability."},
+    "Aquarius": {"Sun": "You are a visionary; original, independent, and humanitarian.", "Mercury": "Genius innovation.", "Saturn": "Structuring the future.", "Jupiter": "Luck via networks.", "Moon": "Safety in detachment.", "Venus": "Unconventional love.", "Neptune": "Dreams of utopia.", "Mars": "Rebellious drive.", "Uranus": "Awakening the collective.", "Pluto": "Power to the people.", "Rising": "Unique brilliance."},
+    "Pisces": {"Sun": "You are a dreamer; compassionate, artistic, and spiritual.", "Mercury": "Poetic thinking.", "Saturn": "Form to chaos.", "Jupiter": "Compassionate expansion.", "Moon": "Safety in solitude.", "Venus": "Spiritual love.", "Neptune": "Dissolving into oneness.", "Mars": "Fluid adaptability.", "Uranus": "Disrupting reality.", "Pluto": "Soul transformation.", "Rising": "Dreamy empathy."}
 }
 
 NUMEROLOGY_LORE = {
@@ -91,9 +103,7 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
-    # SAFETY CLEAN: STRIP TIME FROM DATE
     if "T" in date_str: date_str = date_str.split("T")[0]
-    
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
     while total > 9 and total not in [11, 22, 33]:
@@ -103,52 +113,58 @@ def calculate_life_path(date_str):
 
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
-# --- TIMEZONE ENGINE WITH FALLBACK ---
-def get_exact_timezone(city_name, date_str, time_str):
+# --- TIMEZONE ENGINE ---
+def resolve_location(city_input, date_str, time_str):
+    # 1. TRY BACKUP TABLE
+    city_clean = city_input.lower().strip()
+    found_backup = None
+    for key in CITY_DB:
+        if key in city_clean:
+            found_backup = CITY_DB[key]
+            break
+    if found_backup:
+        lat, lon, tz_std, hemi = found_backup['lat'], found_backup['lon'], found_backup['tz_std'], found_backup['hemisphere']
+        month = int(date_str.split("-")[1])
+        is_dst = False
+        if hemi == "S":
+            if month >= 10 or month <= 2: is_dst = True
+        else:
+            if 3 <= month <= 10: is_dst = True
+        return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
+
+    # 2. TRY AUTO ENGINE
     try:
-        # Fallbacks for specific sticky cities
-        if "minneapolis" in city_name.lower(): return 44.97, -93.26, -6.0
-        if "sao paulo" in city_name.lower() or "são paulo" in city_name.lower(): return -23.55, -46.63, -2.0 # Nov is Summer Time
-
-        geolocator = Nominatim(user_agent="ia_final_v30", timeout=10)
-        location = geolocator.geocode(city_name)
-        if not location: return 51.50, -0.12, 0.0
-
-        tf = TimezoneFinder()
-        tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
-        if not tz_str: return location.latitude, location.longitude, 0.0
-
-        local_tz = pytz.timezone(tz_str)
-        naive_dt = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
-        localized_dt = local_tz.localize(naive_dt)
-        offset = localized_dt.utcoffset().total_seconds() / 3600.0
-        
-        return location.latitude, location.longitude, offset
+        geolocator = Nominatim(user_agent="ia_v31_pro", timeout=10)
+        location = geolocator.geocode(city_input)
+        if location:
+            tf = TimezoneFinder()
+            tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+            if tz_str:
+                local_tz = pytz.timezone(tz_str)
+                naive_dt = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+                localized_dt = local_tz.localize(naive_dt)
+                return location.latitude, location.longitude, localized_dt.utcoffset().total_seconds() / 3600.0, "Automatic DB"
     except Exception as e:
-        print(f"TZ Error: {e}")
-        return 51.50, -0.12, 0.0
+        print(f"Auto-lookup failed: {e}")
+
+    return 51.50, -0.12, 0.0, "Default"
 
 # --- API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
-    tz: Union[float, int, str, None] = None
     
     @validator('date', pre=True)
     def clean_date_format(cls, v):
-        # THE FIX: If date comes in as '1992-11-06T08:00...', strip the time.
-        if isinstance(v, str) and "T" in v:
-            return v.split("T")[0]
+        if isinstance(v, str) and "T" in v: return v.split("T")[0]
         return v
 
-    @validator('tz', pre=True)
-    def parse_tz(cls, v): return float(v) if v else 0
     @validator('time', pre=True)
     def clean_time(cls, v): return v.split(".")[0] if "." in v else v
 
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        lat, lon, tz = get_exact_timezone(data.city, data.date, data.time)
+        lat, lon, tz, source = resolve_location(data.city, data.date, data.time)
 
         # Astrology
         dt = Datetime(data.date.replace("-", "/"), data.time, tz)
@@ -171,7 +187,7 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # THE REPORT
+        # --- THE REPORT (NEW LAYOUT) ---
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -185,7 +201,6 @@ def generate_reading(data: UserInput):
             .vib {{ background: #F3E5F5; text-align: center; padding: 25px; border-radius: 12px; margin-bottom: 40px; }}
             .vib h3 {{ color: #7B1FA2; margin: 0; font-size: 24px; }}
             .section {{ border-left: 5px solid #ddd; padding: 15px 0 15px 25px; margin-bottom: 30px; }}
-            .boardroom {{ border-color: #4682B4; }} .sanctuary {{ border-color: #2E8B57; }} .streets {{ border-color: #CD5C5C; }}
             .item {{ margin-bottom: 12px; }}
             .label {{ font-weight: 600; color: #222; }}
             .desc {{ font-size: 0.95em; color: #555; }}
@@ -195,7 +210,6 @@ def generate_reading(data: UserInput):
             .vault .label {{ color: #fff; }}
             .vault .desc {{ color: #ccc; font-style: italic; }}
             .vault .highlight {{ color: #FFD700; }}
-            .struggle {{ background: #F8F8F8; padding: 20px; border-radius: 8px; text-align: center; color: #666; margin-top: 30px; font-style: italic; }}
             .btn {{ background-color: #D4AF37; color: white; border: none; padding: 15px 30px; font-size: 14px; border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 40px auto 0; }}
             @media print {{ .btn {{ display: none; }} }}
         </style>
@@ -211,29 +225,35 @@ def generate_reading(data: UserInput):
                     <p>"{lp['desc']}"</p>
                 </div>
 
+                <div class="section" style="border-color: #C71585;">
+                    <h3 style="color:#C71585; margin-top:0;">✨ The Cosmic Signature</h3>
+                    <div class="item"><span class="label">☀️ Sun in {objs['Sun'].sign}:</span> <br><span class="desc">"{generate_desc('Sun', objs['Sun'].sign)}"</span></div>
+                    <div class="item"><span class="label">🌙 Moon in {objs['Moon'].sign}:</span> <br><span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
+                    <div class="item"><span class="label">🏹 Rising in {rising.sign}:</span> <br><span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
+                    <div class="item"><span class="label">🗣️ Mercury in {objs['Mercury'].sign}:</span> <br><span class="desc">"{generate_desc('Mercury', objs['Mercury'].sign)}"</span></div>
+                    <div class="item"><span class="label">❤️ Venus in {objs['Venus'].sign}:</span> <br><span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
+                </div>
+
                 <div class="section" style="border-color: #D4AF37;">
-                    <h3 style="color:#D4AF37; margin-top:0;">🗝️ The Core ID</h3>
+                    <h3 style="color:#D4AF37; margin-top:0;">🗝️ The Human Design</h3>
                     <div class="item"><span class="label">🎭 Profile:</span> {hd['name']}</div>
                     <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
                     <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
-                    <div class="item"><span class="label">🏹 Rising: {rising.sign}</span> <span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
                 </div>
 
-                <div class="section boardroom">
+                <div class="section" style="border-color: #4682B4;">
                     <h3 style="color:#4682B4; margin-top:0;">The Boardroom</h3>
-                    <div class="item"><span class="label">🤝 Broker (Mercury in {objs['Mercury'].sign})</span> <br><span class="desc">"{generate_desc('Mercury', objs['Mercury'].sign)}"</span></div>
                     <div class="item"><span class="label">👔 CEO (Saturn in {objs['Saturn'].sign})</span> <br><span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
                     <div class="item"><span class="label">💰 Mogul (Jupiter in {objs['Jupiter'].sign})</span> <br><span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
                 </div>
 
-                <div class="section sanctuary">
+                <div class="section" style="border-color: #2E8B57;">
                     <h3 style="color:#2E8B57; margin-top:0;">The Sanctuary</h3>
-                    <div class="item"><span class="label">❤️ Heart (Moon in {objs['Moon'].sign})</span> <br><span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
                     <div class="item"><span class="label">🎨 Muse (Venus in {objs['Venus'].sign})</span> <br><span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
                     <div class="item"><span class="label">🌫️ Dreamer (Neptune in {objs['Neptune'].sign})</span> <br><span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
                 </div>
 
-                <div class="section streets">
+                <div class="section" style="border-color: #CD5C5C;">
                     <h3 style="color:#CD5C5C; margin-top:0;">The Streets</h3>
                     <div class="item"><span class="label">🔥 Hustle (Mars in {objs['Mars'].sign})</span> <br><span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
                     <div class="item"><span class="label">⚡ Disruptor (Uranus in {objs['Uranus'].sign})</span> <br><span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
@@ -245,11 +265,6 @@ def generate_reading(data: UserInput):
                     <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <br><span class="desc">"{keys['rad']['story']}"</span></div>
                     <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <br><span class="desc">"{keys['pur']['story']}"</span></div>
                     <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <br><span class="desc">"{keys['att']['story']}"</span></div>
-                </div>
-
-                <div class="struggle">
-                    <strong>Current Struggle:</strong> {data.struggle} <br>
-                    To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.
                 </div>
                 
                 <button onclick="window.print()" class="btn">📥 SAVE MY CODE</button>
