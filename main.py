@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from typing import Union
 import datetime
+import traceback
 import base64
-import io
 
 # --- IMPORTS ---
 from geopy.geocoders import Nominatim
@@ -62,8 +62,10 @@ KEY_LORE = {
     51: {"name": "The Shock", "story": "Initiation by thunder."}, 52: {"name": "The Stillness", "story": "The Mountain waiting."},
     53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new."},
     54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward seeking success."},
-    55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
-    57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality against authority."},
+    55: {"name": "The Spirit", "story": "Freedom. You accept high and low emotions to find the spirit."},
+    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas to weave the collective myth."},
+    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the vibration of the now."},
+    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
@@ -116,42 +118,65 @@ def calculate_life_path(date_str):
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
 
-# --- SERVER-SIDE PDF GENERATOR (THE FIX) ---
+# --- SERVER-SIDE PDF GENERATOR ---
+# This builds a PDF file on the server and returns it as a download link.
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Helvetica', 'B', 15)
+        self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
+        self.ln(5)
+
 def create_pdf_b64(data, lp, hd, keys, objs, rising):
-    pdf = FPDF()
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    pdf.set_font("Helvetica", size=12)
     
-    # Title
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="THE INTEGRATED SELF", ln=1, align='C')
-    pdf.set_font("Arial", size=10)
-    pdf.cell(200, 10, txt=f"PREPARED FOR {data.name.upper()}", ln=1, align='C')
-    pdf.ln(10)
+    # User Info
+    pdf.set_font("Helvetica", 'I', 10)
+    pdf.cell(0, 10, f"Prepared for {data.name.upper()}", 0, 1, 'C')
+    pdf.ln(5)
     
-    # Vibration
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, f"LIFE PATH: {lp['number']} - {lp['name']}", ln=1)
-    pdf.set_font("Arial", 'I', 11)
+    # Life Path
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(100, 50, 150) # Purple
+    pdf.cell(0, 10, f"LIFE PATH: {lp['number']} - {lp['name']}", 0, 1)
+    pdf.set_font("Helvetica", '', 12)
+    pdf.set_text_color(0, 0, 0)
     pdf.multi_cell(0, 8, txt=f"{lp['desc']}")
     pdf.ln(5)
     
     # Cosmic Sig
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "COSMIC SIGNATURE", ln=1)
-    pdf.set_font("Arial", size=11)
-    pdf.multi_cell(0, 8, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}")
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(200, 50, 100) # Pink/Red
+    pdf.cell(0, 10, "COSMIC SIGNATURE", 0, 1)
+    pdf.set_font("Helvetica", '', 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 7, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}\nMercury: {objs['Mercury'].sign}\nVenus: {objs['Venus'].sign}")
     pdf.ln(5)
     
-    # Vault (Unconscious)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "THE VAULT", ln=1)
-    pdf.set_font("Arial", size=11)
-    pdf.multi_cell(0, 8, f"Aura: {keys['rad']['name']}\nRoot: {keys['pur']['name']}\nMagnet: {keys['att']['name']}")
-    
-    # Output to String
+    # Blueprint
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(200, 150, 0) # Gold
+    pdf.cell(0, 10, "THE BLUEPRINT", 0, 1)
+    pdf.set_font("Helvetica", '', 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 7, f"Profile: {hd['name']}\nCalling: {keys['lw']['name']} - {keys['lw']['story']}\nGrowth: {keys['evo']['name']} - {keys['evo']['story']}")
+    pdf.ln(5)
+
+    # Vault
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(50, 50, 50) # Dark Grey
+    pdf.cell(0, 10, "THE VAULT (UNCONSCIOUS)", 0, 1)
+    pdf.set_font("Helvetica", '', 11)
+    pdf.multi_cell(0, 7, f"Aura: {keys['rad']['name']} - {keys['rad']['story']}\nRoot: {keys['pur']['name']} - {keys['pur']['story']}\nMagnet: {keys['att']['name']} - {keys['att']['story']}")
+    pdf.ln(10)
+
+    # Struggle
+    pdf.set_font("Helvetica", 'I', 12)
+    pdf.multi_cell(0, 8, f"Current Struggle: {data.struggle}\nAdvice: Lean into your {rising.sign} Rising energy.")
+
     return base64.b64encode(pdf.output(dest='S').encode('latin-1')).decode('utf-8')
-# --- TIMEZONE ENGINE ---
+# --- TIMEZONE LOGIC ---
 def resolve_location(city_input, date_str, time_str):
     city_clean = city_input.lower().strip()
     found_backup = None
@@ -171,7 +196,7 @@ def resolve_location(city_input, date_str, time_str):
         return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
 
     try:
-        geolocator = Nominatim(user_agent="ia_v37_fix", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v39_final", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -225,10 +250,10 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # GENERATE PDF (Server Side)
+        # PDF GENERATION
         pdf_b64 = create_pdf_b64(data, lp, hd, keys, objs, rising)
 
-        # REPORT HTML
+        # HTML REPORT (With Footer Marker)
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -257,8 +282,12 @@ def generate_reading(data: UserInput):
                 background-color: #D4AF37; color: white; border: none; padding: 18px 40px; font-size: 16px; 
                 border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 50px auto 0; 
                 width: 100%; max-width: 300px; text-align: center; text-decoration: none;
+                box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
             }}
-            .end-marker {{ text-align: center; margin-top: 60px; color: #ccc; font-size: 12px; letter-spacing: 2px; border-top: 1px solid #eee; padding-top: 20px; }}
+            .end-marker {{ 
+                margin-top: 60px; border-top: 2px dashed #ddd; padding-top: 20px; 
+                text-align: center; color: #aaa; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+            }}
         </style>
         </head>
         <body>
@@ -319,9 +348,9 @@ def generate_reading(data: UserInput):
                     <p style="margin:10px 0 0 0; font-style:italic;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
                 </div>
                 
-                <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self_Code.pdf" class="btn">📥 DOWNLOAD PDF</a>
+                <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self.pdf" class="btn">⬇️ DOWNLOAD PDF REPORT</a>
                 
-                <div class="end-marker">--- END OF REPORT ---</div>
+                <div class="end-marker">--- END OF GENERATED REPORT ---</div>
             </div>
         </body>
         </html>
