@@ -3,16 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, validator
 from typing import Union
 import datetime
-import traceback
-# --- PROFESSIONAL ENGINES ---
+import base64
+import io
+
+# --- IMPORTS ---
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 import pytz
-# ----------------------------
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
+from fpdf import FPDF
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -103,9 +105,7 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
-    # CRASH FIX: Strip the "T" timecode from the date immediately
     if "T" in date_str: date_str = date_str.split("T")[0]
-    
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
     while total > 9 and total not in [11, 22, 33]:
@@ -115,6 +115,42 @@ def calculate_life_path(date_str):
 
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
+
+# --- SERVER-SIDE PDF GENERATOR (THE FIX) ---
+def create_pdf_b64(data, lp, hd, keys, objs, rising):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    
+    # Title
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, txt="THE INTEGRATED SELF", ln=1, align='C')
+    pdf.set_font("Arial", size=10)
+    pdf.cell(200, 10, txt=f"PREPARED FOR {data.name.upper()}", ln=1, align='C')
+    pdf.ln(10)
+    
+    # Vibration
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, f"LIFE PATH: {lp['number']} - {lp['name']}", ln=1)
+    pdf.set_font("Arial", 'I', 11)
+    pdf.multi_cell(0, 8, txt=f"{lp['desc']}")
+    pdf.ln(5)
+    
+    # Cosmic Sig
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "COSMIC SIGNATURE", ln=1)
+    pdf.set_font("Arial", size=11)
+    pdf.multi_cell(0, 8, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}")
+    pdf.ln(5)
+    
+    # Vault (Unconscious)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, "THE VAULT", ln=1)
+    pdf.set_font("Arial", size=11)
+    pdf.multi_cell(0, 8, f"Aura: {keys['rad']['name']}\nRoot: {keys['pur']['name']}\nMagnet: {keys['att']['name']}")
+    
+    # Output to String
+    return base64.b64encode(pdf.output(dest='S').encode('latin-1')).decode('utf-8')
 # --- TIMEZONE ENGINE ---
 def resolve_location(city_input, date_str, time_str):
     city_clean = city_input.lower().strip()
@@ -125,10 +161,7 @@ def resolve_location(city_input, date_str, time_str):
             break
     if found_backup:
         lat, lon, tz_std, hemi = found_backup['lat'], found_backup['lon'], found_backup['tz_std'], found_backup['hemisphere']
-        
-        # DATE CLEANER: Handle '1992-11-06T08:00...' format
         if "T" in date_str: date_str = date_str.split("T")[0]
-        
         month = int(date_str.split("-")[1])
         is_dst = False
         if hemi == "S":
@@ -138,14 +171,13 @@ def resolve_location(city_input, date_str, time_str):
         return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
 
     try:
-        geolocator = Nominatim(user_agent="ia_v36_fix", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v37_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
             tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
             if tz_str:
                 local_tz = pytz.timezone(tz_str)
-                # Date Sanitizer 
                 clean_date = date_str.split("T")[0] if "T" in date_str else date_str
                 naive_dt = datetime.datetime.strptime(f"{clean_date} {time_str}", "%Y-%m-%d %H:%M")
                 localized_dt = local_tz.localize(naive_dt)
@@ -155,23 +187,20 @@ def resolve_location(city_input, date_str, time_str):
 
     return 51.50, -0.12, 0.0, "Default"
 
-# --- API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
-    email: str = None # OPTIONAL: Prevents crash!
+    email: str = None 
     
     @validator('date', pre=True)
     def clean_date_format(cls, v):
         if isinstance(v, str) and "T" in v: return v.split("T")[0]
         return v
-
     @validator('time', pre=True)
     def clean_time(cls, v): return v.split(".")[0] if "." in v else v
 
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        # 1. Clean date FIRST
         safe_date = data.date.split("T")[0] if "T" in data.date else data.date
         lat, lon, tz, source = resolve_location(data.city, safe_date, data.time)
 
@@ -196,74 +225,28 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # --- THE REPORT (NEW LAYOUT & PDF ENGINE) ---
+        # GENERATE PDF (Server Side)
+        pdf_b64 = create_pdf_b64(data, lp, hd, keys, objs, rising)
+
+        # REPORT HTML
         html = f"""
         <!DOCTYPE html>
         <html>
         <head>
         <meta charset="UTF-8">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-        <script>
-        function downloadPDF() {{
-            const element = document.querySelector('.box');
-            // Hide button while printing
-            const btn = document.querySelector('.btn');
-            btn.style.display = 'none';
-            
-            const opt = {{
-              margin: 0.2,
-              filename: 'Integrated_Self.pdf',
-              image: {{ type: 'jpeg', quality: 0.98 }},
-              html2canvas: {{ scale: 2, useCORS: true }},
-              jsPDF: {{ unit: 'in', format: 'letter', orientation: 'portrait' }}
-            }};
-            
-            html2pdf().set(opt).from(element).save().then(function(){{
-                btn.style.display = 'block';
-            }});
-        }}
-        </script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
-            body {{ 
-                font-family: 'Source Sans Pro', sans-serif; 
-                background: #fdfdfd; 
-                color: #333; 
-                padding: 30px; 
-                line-height: 1.8; /* BREATHING ROOM */
-            }}
-            .box {{ 
-                max-width: 700px; 
-                margin: 0 auto; 
-                background: #FFF; 
-                padding: 50px; 
-                border-radius: 16px; 
-                border: 1px solid #eee; 
-                box-shadow: 0 10px 40px rgba(0,0,0,0.05); 
-            }}
+            body {{ font-family: 'Source Sans Pro', sans-serif; background: #fff; color: #333; padding: 20px; line-height: 1.8; }}
+            .box {{ max-width: 700px; margin: 0 auto; background: #FFF; padding: 50px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }}
             h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; text-transform: uppercase; margin: 0 0 10px 0; font-size: 32px; text-align: center; }}
             .vib {{ background: #F3E5F5; text-align: center; padding: 30px; border-radius: 12px; margin-bottom: 50px; }}
             .vib h3 {{ color: #7B1FA2; margin: 0; font-size: 26px; }}
-            
-            .section {{ 
-                border-left: 5px solid #ddd; 
-                padding: 10px 0 10px 30px; 
-                margin-bottom: 50px; /* SPACED OUT */
-            }}
-            
-            h3 {{ font-family: 'Playfair Display', serif; font-size: 24px; margin: 0 0 20px 0; color: #222; }}
-            
-            .item {{ 
-                margin-bottom: 25px; /* SPACED OUT */
-                padding-bottom: 15px;
-                border-bottom: 1px dotted #eee; 
-            }}
+            .section {{ border-left: 5px solid #ddd; padding: 10px 0 10px 30px; margin-bottom: 50px; }}
+            .item {{ margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted #eee; }}
             .item:last-child {{ border-bottom: none; }}
-            
             .label {{ font-weight: 600; color: #222; font-size: 1.1em; display:block; margin-bottom: 8px; }}
             .desc {{ font-size: 1em; color: #555; display: block; }}
             .highlight {{ color: #C71585; font-weight: 600; }}
-            
             .vault {{ background: #111; color: #fff; padding: 40px; border-radius: 12px; margin-bottom: 40px; border-left: 5px solid #FFD700; }}
             .vault h3 {{ color: #FF4500; margin-top: 0; }}
             .vault .label {{ color: #fff; }}
@@ -271,21 +254,11 @@ def generate_reading(data: UserInput):
             .vault .highlight {{ color: #FFD700; }}
             
             .btn {{ 
-                background-color: #D4AF37; 
-                color: white; 
-                border: none; 
-                padding: 18px 40px; 
-                font-size: 16px; 
-                border-radius: 50px; 
-                font-weight: bold; 
-                cursor: pointer; 
-                display: block; 
-                margin: 50px auto 0; 
-                width: 100%;
-                max-width: 300px;
-                text-align: center;
-                box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+                background-color: #D4AF37; color: white; border: none; padding: 18px 40px; font-size: 16px; 
+                border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 50px auto 0; 
+                width: 100%; max-width: 300px; text-align: center; text-decoration: none;
             }}
+            .end-marker {{ text-align: center; margin-top: 60px; color: #ccc; font-size: 12px; letter-spacing: 2px; border-top: 1px solid #eee; padding-top: 20px; }}
         </style>
         </head>
         <body>
@@ -300,7 +273,7 @@ def generate_reading(data: UserInput):
                 </div>
 
                 <div class="section" style="border-color: #C71585;">
-                    <h3 style="color:#C71585; margin-top:0;">✨ The Cosmic Signature</h3>
+                    <h3 style="color:#C71585; margin-top:0; font-family:'Playfair Display'; font-size:24px;">✨ The Cosmic Signature</h3>
                     <div class="item"><span class="label">☀️ Sun in {objs['Sun'].sign}:</span> <span class="desc">"{generate_desc('Sun', objs['Sun'].sign)}"</span></div>
                     <div class="item"><span class="label">🌙 Moon in {objs['Moon'].sign}:</span> <span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
                     <div class="item"><span class="label">🏹 Rising in {rising.sign}:</span> <span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
@@ -309,26 +282,26 @@ def generate_reading(data: UserInput):
                 </div>
 
                 <div class="section" style="border-color: #D4AF37;">
-                    <h3 style="color:#D4AF37; margin-top:0;">🗝️ The Blueprint</h3>
+                    <h3 style="color:#D4AF37; margin-top:0; font-family:'Playfair Display'; font-size:24px;">🗝️ The Blueprint</h3>
                     <div class="item"><span class="label">🎭 Profile:</span> {hd['name']}</div>
                     <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
                     <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
                 </div>
 
                 <div class="section" style="border-color: #4682B4;">
-                    <h3 style="color:#4682B4; margin-top:0;">The Boardroom</h3>
+                    <h3 style="color:#4682B4; margin-top:0; font-family:'Playfair Display'; font-size:24px;">The Boardroom</h3>
                     <div class="item"><span class="label">👔 CEO (Saturn in {objs['Saturn'].sign})</span> <span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
                     <div class="item"><span class="label">💰 Mogul (Jupiter in {objs['Jupiter'].sign})</span> <span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
                 </div>
 
                 <div class="section" style="border-color: #2E8B57;">
-                    <h3 style="color:#2E8B57; margin-top:0;">The Sanctuary</h3>
+                    <h3 style="color:#2E8B57; margin-top:0; font-family:'Playfair Display'; font-size:24px;">The Sanctuary</h3>
                     <div class="item"><span class="label">🎨 Muse (Venus in {objs['Venus'].sign})</span> <span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
                     <div class="item"><span class="label">🌫️ Dreamer (Neptune in {objs['Neptune'].sign})</span> <span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
                 </div>
 
                 <div class="section" style="border-color: #CD5C5C;">
-                    <h3 style="color:#CD5C5C; margin-top:0;">The Streets</h3>
+                    <h3 style="color:#CD5C5C; margin-top:0; font-family:'Playfair Display'; font-size:24px;">The Streets</h3>
                     <div class="item"><span class="label">🔥 Hustle (Mars in {objs['Mars'].sign})</span> <span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
                     <div class="item"><span class="label">⚡ Disruptor (Uranus in {objs['Uranus'].sign})</span> <span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
                     <div class="item"><span class="label">🕵️ Kingpin (Pluto in {objs['Pluto'].sign})</span> <span class="desc">"{generate_desc('Pluto', objs['Pluto'].sign)}"</span></div>
@@ -346,10 +319,9 @@ def generate_reading(data: UserInput):
                     <p style="margin:10px 0 0 0; font-style:italic;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
                 </div>
                 
-                <button onclick="downloadPDF()" class="btn">📥 DOWNLOAD PDF</button>
-                <div style="text-align:center; font-size:10px; color:#ccc; margin-top:30px;">
-                    {data.city} | {safe_date} {data.time} | TZ Offset: {tz}
-                </div>
+                <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self_Code.pdf" class="btn">📥 DOWNLOAD PDF</a>
+                
+                <div class="end-marker">--- END OF REPORT ---</div>
             </div>
         </body>
         </html>
