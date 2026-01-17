@@ -115,7 +115,6 @@ def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
 # --- TIMEZONE ENGINE ---
 def resolve_location(city_input, date_str, time_str):
-    # 1. TRY BACKUP TABLE
     city_clean = city_input.lower().strip()
     found_backup = None
     for key in CITY_DB:
@@ -132,9 +131,8 @@ def resolve_location(city_input, date_str, time_str):
             if 3 <= month <= 10: is_dst = True
         return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
 
-    # 2. TRY AUTO ENGINE
     try:
-        geolocator = Nominatim(user_agent="ia_v32_pro", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v33_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -152,6 +150,7 @@ def resolve_location(city_input, date_str, time_str):
 # --- API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
+    email: str # Mandatory Email Field Added
     
     @validator('date', pre=True)
     def clean_date_format(cls, v):
@@ -187,44 +186,72 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # --- THE REPORT (RENAMED SECTION & PDF BUTTON) ---
+        # --- THE REPORT (SPACED OUT & FIXED) ---
         html = f"""
         <!DOCTYPE html>
         <html>
         <head>
         <meta charset="UTF-8">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-        <script>
-        function downloadPDF() {{
-            const element = document.querySelector('.box');
-            const opt = {{
-              margin: 0.2,
-              filename: 'My_Integrated_Self.pdf',
-              image: {{ type: 'jpeg', quality: 0.98 }},
-              html2canvas: {{ scale: 2, useCORS: true }},
-              jsPDF: {{ unit: 'in', format: 'letter', orientation: 'portrait' }}
-            }};
-            html2pdf().set(opt).from(element).save();
-        }}
-        </script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
-            body {{ font-family: 'Source Sans Pro', sans-serif; background: #fff; color: #333; padding: 20px; }}
-            .box {{ max-width: 700px; margin: 0 auto; background: #FFF; padding: 40px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }}
+            body {{ 
+                font-family: 'Source Sans Pro', sans-serif; 
+                background: #fff; 
+                color: #333; 
+                padding: 20px; 
+                line-height: 1.8; /* SPACED OUT FIX */
+            }}
+            .box {{ 
+                max-width: 700px; 
+                margin: 0 auto; 
+                background: #FFF; 
+                padding: 40px; 
+                border-radius: 16px; 
+                border: 1px solid #eee; 
+                box-shadow: 0 10px 40px rgba(0,0,0,0.05); 
+            }}
             h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; text-transform: uppercase; margin: 0 0 10px 0; font-size: 28px; text-align: center; }}
             .vib {{ background: #F3E5F5; text-align: center; padding: 25px; border-radius: 12px; margin-bottom: 40px; }}
             .vib h3 {{ color: #7B1FA2; margin: 0; font-size: 24px; }}
-            .section {{ border-left: 5px solid #ddd; padding: 15px 0 15px 25px; margin-bottom: 30px; }}
-            .item {{ margin-bottom: 12px; }}
-            .label {{ font-weight: 600; color: #222; }}
-            .desc {{ font-size: 0.95em; color: #555; }}
+            
+            .section {{ 
+                border-left: 5px solid #ddd; 
+                padding: 15px 0 15px 25px; 
+                margin-bottom: 40px; /* SPACED OUT FIX */
+            }}
+            
+            .item {{ 
+                margin-bottom: 20px; /* SPACED OUT FIX */
+                padding-bottom: 10px;
+                border-bottom: 1px dashed #eee; /* Visual Separator */
+            }}
+            .item:last-child {{ border-bottom: none; }}
+            
+            .label {{ font-weight: 600; color: #222; font-size: 1.1em; display:block; margin-bottom: 5px; }}
+            .desc {{ font-size: 1em; color: #555; }}
             .highlight {{ color: #C71585; font-weight: 600; }}
+            
             .vault {{ background: #111; color: #fff; padding: 30px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #FFD700; }}
             .vault h3 {{ color: #FF4500; margin-top: 0; }}
             .vault .label {{ color: #fff; }}
             .vault .desc {{ color: #ccc; font-style: italic; }}
             .vault .highlight {{ color: #FFD700; }}
-            .btn {{ background-color: #D4AF37; color: white; border: none; padding: 15px 30px; font-size: 14px; border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 40px auto 0; }}
+            
+            .btn {{ 
+                background-color: #D4AF37; 
+                color: white; 
+                border: none; 
+                padding: 15px 35px; 
+                font-size: 16px; 
+                border-radius: 50px; 
+                font-weight: bold; 
+                cursor: pointer; 
+                display: block; 
+                margin: 40px auto 0; 
+                width: 80%;
+                text-align: center;
+            }}
+            @media print {{ .btn {{ display: none; }} }}
         </style>
         </head>
         <body>
@@ -240,11 +267,11 @@ def generate_reading(data: UserInput):
 
                 <div class="section" style="border-color: #C71585;">
                     <h3 style="color:#C71585; margin-top:0;">✨ The Cosmic Signature</h3>
-                    <div class="item"><span class="label">☀️ Sun in {objs['Sun'].sign}:</span> <br><span class="desc">"{generate_desc('Sun', objs['Sun'].sign)}"</span></div>
-                    <div class="item"><span class="label">🌙 Moon in {objs['Moon'].sign}:</span> <br><span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
-                    <div class="item"><span class="label">🏹 Rising in {rising.sign}:</span> <br><span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
-                    <div class="item"><span class="label">🗣️ Mercury in {objs['Mercury'].sign}:</span> <br><span class="desc">"{generate_desc('Mercury', objs['Mercury'].sign)}"</span></div>
-                    <div class="item"><span class="label">❤️ Venus in {objs['Venus'].sign}:</span> <br><span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
+                    <div class="item"><span class="label">☀️ Sun in {objs['Sun'].sign}:</span> <span class="desc">"{generate_desc('Sun', objs['Sun'].sign)}"</span></div>
+                    <div class="item"><span class="label">🌙 Moon in {objs['Moon'].sign}:</span> <span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
+                    <div class="item"><span class="label">🏹 Rising in {rising.sign}:</span> <span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
+                    <div class="item"><span class="label">🗣️ Mercury in {objs['Mercury'].sign}:</span> <span class="desc">"{generate_desc('Mercury', objs['Mercury'].sign)}"</span></div>
+                    <div class="item"><span class="label">❤️ Venus in {objs['Venus'].sign}:</span> <span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
                 </div>
 
                 <div class="section" style="border-color: #D4AF37;">
@@ -256,33 +283,38 @@ def generate_reading(data: UserInput):
 
                 <div class="section" style="border-color: #4682B4;">
                     <h3 style="color:#4682B4; margin-top:0;">The Boardroom</h3>
-                    <div class="item"><span class="label">👔 CEO (Saturn in {objs['Saturn'].sign})</span> <br><span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
-                    <div class="item"><span class="label">💰 Mogul (Jupiter in {objs['Jupiter'].sign})</span> <br><span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
+                    <div class="item"><span class="label">👔 CEO (Saturn in {objs['Saturn'].sign})</span> <span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
+                    <div class="item"><span class="label">💰 Mogul (Jupiter in {objs['Jupiter'].sign})</span> <span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
                 </div>
 
                 <div class="section" style="border-color: #2E8B57;">
                     <h3 style="color:#2E8B57; margin-top:0;">The Sanctuary</h3>
-                    <div class="item"><span class="label">🎨 Muse (Venus in {objs['Venus'].sign})</span> <br><span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
-                    <div class="item"><span class="label">🌫️ Dreamer (Neptune in {objs['Neptune'].sign})</span> <br><span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
+                    <div class="item"><span class="label">🎨 Muse (Venus in {objs['Venus'].sign})</span> <span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
+                    <div class="item"><span class="label">🌫️ Dreamer (Neptune in {objs['Neptune'].sign})</span> <span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
                 </div>
 
                 <div class="section" style="border-color: #CD5C5C;">
                     <h3 style="color:#CD5C5C; margin-top:0;">The Streets</h3>
-                    <div class="item"><span class="label">🔥 Hustle (Mars in {objs['Mars'].sign})</span> <br><span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
-                    <div class="item"><span class="label">⚡ Disruptor (Uranus in {objs['Uranus'].sign})</span> <br><span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
-                    <div class="item"><span class="label">🕵️ Kingpin (Pluto in {objs['Pluto'].sign})</span> <br><span class="desc">"{generate_desc('Pluto', objs['Pluto'].sign)}"</span></div>
+                    <div class="item"><span class="label">🔥 Hustle (Mars in {objs['Mars'].sign})</span> <span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
+                    <div class="item"><span class="label">⚡ Disruptor (Uranus in {objs['Uranus'].sign})</span> <span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
+                    <div class="item"><span class="label">🕵️ Kingpin (Pluto in {objs['Pluto'].sign})</span> <span class="desc">"{generate_desc('Pluto', objs['Pluto'].sign)}"</span></div>
                 </div>
 
                 <div class="vault">
                     <h3>🔒 The Vault</h3>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <br><span class="desc">"{keys['rad']['story']}"</span></div>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <br><span class="desc">"{keys['pur']['story']}"</span></div>
-                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <br><span class="desc">"{keys['att']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <span class="vault-desc">"{keys['rad']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <span class="vault-desc">"{keys['pur']['story']}"</span></div>
+                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <span class="vault-desc">"{keys['att']['story']}"</span></div>
+                </div>
+
+                <div class="struggle" style="background:#f9f9f9; padding:20px; border-radius:8px; text-align:center;">
+                    <strong>Current Struggle:</strong> {data.struggle} <br>
+                    To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.
                 </div>
                 
-                <button onclick="downloadPDF()" class="btn">📥 SAVE MY CODE</button>
+                <button onclick="window.print()" class="btn">📥 SAVE MY CODE</button>
                 <div style="text-align:center; font-size:10px; color:#ccc; margin-top:20px;">
-                    {data.city} | {data.date} {data.time} | TZ Offset: {tz}
+                    {data.city} | {data.date} | TZ: {tz}
                 </div>
             </div>
         </body>
