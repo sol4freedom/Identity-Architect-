@@ -4,11 +4,11 @@ from pydantic import BaseModel, validator
 from typing import Union
 import datetime
 import traceback
-# --- PROFESSIONAL TIMEZONE ENGINES ---
+# --- PROFESSIONAL ENGINES ---
 from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 import pytz
-# -------------------------------------
+# ----------------------------
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
@@ -103,7 +103,7 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
-    # SAFETY: Strip time from date string if present
+    # CRASH FIX: Strip the "T" timecode from the date immediately
     if "T" in date_str: date_str = date_str.split("T")[0]
     
     digits = [int(d) for d in date_str if d.isdigit()]
@@ -125,6 +125,10 @@ def resolve_location(city_input, date_str, time_str):
             break
     if found_backup:
         lat, lon, tz_std, hemi = found_backup['lat'], found_backup['lon'], found_backup['tz_std'], found_backup['hemisphere']
+        
+        # DATE CLEANER: Handle '1992-11-06T08:00...' format
+        if "T" in date_str: date_str = date_str.split("T")[0]
+        
         month = int(date_str.split("-")[1])
         is_dst = False
         if hemi == "S":
@@ -134,13 +138,14 @@ def resolve_location(city_input, date_str, time_str):
         return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
 
     try:
-        geolocator = Nominatim(user_agent="ia_v35_fix", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v36_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
             tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
             if tz_str:
                 local_tz = pytz.timezone(tz_str)
+                # Date Sanitizer 
                 clean_date = date_str.split("T")[0] if "T" in date_str else date_str
                 naive_dt = datetime.datetime.strptime(f"{clean_date} {time_str}", "%Y-%m-%d %H:%M")
                 localized_dt = local_tz.localize(naive_dt)
@@ -153,7 +158,7 @@ def resolve_location(city_input, date_str, time_str):
 # --- API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
-    email: str = None # OPTIONAL: This prevents the crash!
+    email: str = None # OPTIONAL: Prevents crash!
     
     @validator('date', pre=True)
     def clean_date_format(cls, v):
@@ -166,7 +171,7 @@ class UserInput(BaseModel):
 @app.post("/calculate")
 def generate_reading(data: UserInput):
     try:
-        # CLEAN THE DATE STRING IMMEDIATELY
+        # 1. Clean date FIRST
         safe_date = data.date.split("T")[0] if "T" in data.date else data.date
         lat, lon, tz, source = resolve_location(data.city, safe_date, data.time)
 
@@ -191,7 +196,7 @@ def generate_reading(data: UserInput):
             'att': get_key_data(d_moon.lon)
         }
 
-        # --- THE REPORT (NEW SPACIOUS LAYOUT) ---
+        # --- THE REPORT (NEW LAYOUT & PDF ENGINE) ---
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -201,20 +206,20 @@ def generate_reading(data: UserInput):
         <script>
         function downloadPDF() {{
             const element = document.querySelector('.box');
-            // Hide the button during PDF generation
+            // Hide button while printing
             const btn = document.querySelector('.btn');
             btn.style.display = 'none';
             
             const opt = {{
               margin: 0.2,
-              filename: 'Integrated_Self_Code.pdf',
+              filename: 'Integrated_Self.pdf',
               image: {{ type: 'jpeg', quality: 0.98 }},
               html2canvas: {{ scale: 2, useCORS: true }},
               jsPDF: {{ unit: 'in', format: 'letter', orientation: 'portrait' }}
             }};
             
             html2pdf().set(opt).from(element).save().then(function(){{
-                btn.style.display = 'block'; // Bring button back
+                btn.style.display = 'block';
             }});
         }}
         </script>
@@ -225,7 +230,7 @@ def generate_reading(data: UserInput):
                 background: #fdfdfd; 
                 color: #333; 
                 padding: 30px; 
-                line-height: 1.8; 
+                line-height: 1.8; /* BREATHING ROOM */
             }}
             .box {{ 
                 max-width: 700px; 
@@ -243,13 +248,13 @@ def generate_reading(data: UserInput):
             .section {{ 
                 border-left: 5px solid #ddd; 
                 padding: 10px 0 10px 30px; 
-                margin-bottom: 50px; /* MORE BREATHING ROOM */
+                margin-bottom: 50px; /* SPACED OUT */
             }}
             
             h3 {{ font-family: 'Playfair Display', serif; font-size: 24px; margin: 0 0 20px 0; color: #222; }}
             
             .item {{ 
-                margin-bottom: 25px; /* SPACED OUT LIST ITEMS */
+                margin-bottom: 25px; /* SPACED OUT */
                 padding-bottom: 15px;
                 border-bottom: 1px dotted #eee; 
             }}
@@ -281,7 +286,6 @@ def generate_reading(data: UserInput):
                 text-align: center;
                 box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
             }}
-            @media print {{ .btn {{ display: none; }} }}
         </style>
         </head>
         <body>
@@ -342,9 +346,9 @@ def generate_reading(data: UserInput):
                     <p style="margin:10px 0 0 0; font-style:italic;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
                 </div>
                 
-                <button onclick="downloadPDF()" class="btn">📥 SAVE MY CODE</button>
+                <button onclick="downloadPDF()" class="btn">📥 DOWNLOAD PDF</button>
                 <div style="text-align:center; font-size:10px; color:#ccc; margin-top:30px;">
-                    {data.city} | {safe_date} {data.time} | TZ: {tz}
+                    {data.city} | {safe_date} {data.time} | TZ Offset: {tz}
                 </div>
             </div>
         </body>
