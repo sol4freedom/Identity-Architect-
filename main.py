@@ -6,15 +6,14 @@ import datetime
 import traceback
 import base64
 
-# --- IMPORTS ---
+# --- LIGHTWEIGHT IMPORTS ---
 from geopy.geocoders import Nominatim
-from timezonefinder import TimezoneFinder
 import pytz
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-from fpdf import FPDF
+# Note: Heavy imports (TimezoneFinder, FPDF) moved inside functions to prevent Timeout
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -62,10 +61,8 @@ KEY_LORE = {
     51: {"name": "The Shock", "story": "Initiation by thunder."}, 52: {"name": "The Stillness", "story": "The Mountain waiting."},
     53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new."},
     54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward seeking success."},
-    55: {"name": "The Spirit", "story": "Freedom. You accept high and low emotions to find the spirit."},
-    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas to weave the collective myth."},
-    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the vibration of the now."},
-    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
+    55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
+    57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality against authority."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
@@ -107,6 +104,7 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
+    # FIXED: Date Cleaner
     if "T" in date_str: date_str = date_str.split("T")[0]
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
@@ -118,15 +116,16 @@ def calculate_life_path(date_str):
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
 
-# --- SERVER-SIDE PDF GENERATOR ---
-# This builds a PDF file on the server and returns it as a download link.
-class PDF(FPDF):
-    def header(self):
-        self.set_font('Helvetica', 'B', 15)
-        self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
-        self.ln(5)
-
+# --- SERVER-SIDE PDF GENERATOR (Lazy Loaded) ---
 def create_pdf_b64(data, lp, hd, keys, objs, rising):
+    from fpdf import FPDF # Lazy import to prevent startup crash
+    
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Helvetica', 'B', 15)
+            self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
+            self.ln(5)
+
     pdf = PDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12)
@@ -176,7 +175,7 @@ def create_pdf_b64(data, lp, hd, keys, objs, rising):
     pdf.multi_cell(0, 8, f"Current Struggle: {data.struggle}\nAdvice: Lean into your {rising.sign} Rising energy.")
 
     return base64.b64encode(pdf.output(dest='S').encode('latin-1')).decode('utf-8')
-# --- TIMEZONE LOGIC ---
+# --- TIMEZONE ENGINE (Lazy Loaded) ---
 def resolve_location(city_input, date_str, time_str):
     city_clean = city_input.lower().strip()
     found_backup = None
@@ -196,7 +195,8 @@ def resolve_location(city_input, date_str, time_str):
         return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
 
     try:
-        geolocator = Nominatim(user_agent="ia_v39_final", timeout=10)
+        from timezonefinder import TimezoneFinder # Lazy import to prevent startup crash
+        geolocator = Nominatim(user_agent="ia_v40_opt", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -253,7 +253,7 @@ def generate_reading(data: UserInput):
         # PDF GENERATION
         pdf_b64 = create_pdf_b64(data, lp, hd, keys, objs, rising)
 
-        # HTML REPORT (With Footer Marker)
+        # HTML REPORT
         html = f"""
         <!DOCTYPE html>
         <html>
