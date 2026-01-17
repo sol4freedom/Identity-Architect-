@@ -103,7 +103,9 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
+    # FIXED: This cleans the 'T' from 1992-11-06T08:00
     if "T" in date_str: date_str = date_str.split("T")[0]
+    
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
     while total > 9 and total not in [11, 22, 33]:
@@ -123,6 +125,9 @@ def resolve_location(city_input, date_str, time_str):
             break
     if found_backup:
         lat, lon, tz_std, hemi = found_backup['lat'], found_backup['lon'], found_backup['tz_std'], found_backup['hemisphere']
+        # Fix date string before splitting
+        if "T" in date_str: date_str = date_str.split("T")[0]
+        
         month = int(date_str.split("-")[1])
         is_dst = False
         if hemi == "S":
@@ -132,14 +137,16 @@ def resolve_location(city_input, date_str, time_str):
         return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
 
     try:
-        geolocator = Nominatim(user_agent="ia_v33_fix", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v34_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
             tz_str = tf.timezone_at(lng=location.longitude, lat=location.latitude)
             if tz_str:
                 local_tz = pytz.timezone(tz_str)
-                naive_dt = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+                # Date Sanitizer included here
+                clean_date = date_str.split("T")[0] if "T" in date_str else date_str
+                naive_dt = datetime.datetime.strptime(f"{clean_date} {time_str}", "%Y-%m-%d %H:%M")
                 localized_dt = local_tz.localize(naive_dt)
                 return location.latitude, location.longitude, localized_dt.utcoffset().total_seconds() / 3600.0, "Automatic DB"
     except Exception as e:
@@ -150,7 +157,7 @@ def resolve_location(city_input, date_str, time_str):
 # --- API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
-    email: str # Mandatory Email Field Added
+    email: str = None # OPTIONAL: Prevents crash if Wix doesn't send it yet.
     
     @validator('date', pre=True)
     def clean_date_format(cls, v):
@@ -199,7 +206,7 @@ def generate_reading(data: UserInput):
                 background: #fff; 
                 color: #333; 
                 padding: 20px; 
-                line-height: 1.8; /* SPACED OUT FIX */
+                line-height: 1.8; /* MORE SPACING */
             }}
             .box {{ 
                 max-width: 700px; 
@@ -217,13 +224,13 @@ def generate_reading(data: UserInput):
             .section {{ 
                 border-left: 5px solid #ddd; 
                 padding: 15px 0 15px 25px; 
-                margin-bottom: 40px; /* SPACED OUT FIX */
+                margin-bottom: 40px; /* MORE SPACING */
             }}
             
             .item {{ 
-                margin-bottom: 20px; /* SPACED OUT FIX */
+                margin-bottom: 20px; /* MORE SPACING */
                 padding-bottom: 10px;
-                border-bottom: 1px dashed #eee; /* Visual Separator */
+                border-bottom: 1px dashed #eee; 
             }}
             .item:last-child {{ border-bottom: none; }}
             
@@ -312,9 +319,9 @@ def generate_reading(data: UserInput):
                     To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.
                 </div>
                 
-                <button onclick="window.print()" class="btn">📥 SAVE MY CODE</button>
+                <button onclick="window.print()" class="btn">PRINT / SAVE AS PDF</button>
                 <div style="text-align:center; font-size:10px; color:#ccc; margin-top:20px;">
-                    {data.city} | {data.date} | TZ: {tz}
+                    {data.city} | {data.date} {data.time} | TZ Offset: {tz}
                 </div>
             </div>
         </body>
