@@ -53,6 +53,7 @@ NUMEROLOGY_LORE = {
     11: {"name": "The Illuminator", "desc": "Channeling intuition."}
 }
 
+
 # --- LOGIC FUNCTIONS ---
 def get_key_data(degree):
     if degree is None: return {"name": "Unknown", "story": ""}
@@ -301,4 +302,3 @@ def generate_reading(data: UserInput):
         import traceback
         traceback.print_exc()
         return {"report": f"<div style='color:red; padding:20px;'>Error: {str(e)}</div>"}
-
