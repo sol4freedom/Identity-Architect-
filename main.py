@@ -31,8 +31,8 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE CORRECTED MAP (Starts at Aries/Gate 25) ---
-# This aligns 0° Aries (Flatlib start) with Gate 25 (HD Aries start)
+# --- 2. DATA: THE CORRECTED MAP (FULL 64 GATES) ---
+# Starts at Aries 0° (Gate 25) and completes the full circle
 RAVE_ORDER = [
     25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 
     62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 
@@ -40,7 +40,7 @@ RAVE_ORDER = [
     37, 63, 22, 36
 ]
 
-# --- 3. DATA: THE TRANSLATION LAYER (Your Full Descriptions) ---
+# --- 3. DATA: THE TRANSLATION LAYER ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles when the old ways go stale."},
     2: {"name": "The Receptive", "story": "The Divine Feminine. You are the architectural blueprint that guides raw energy into form."},
@@ -127,11 +127,8 @@ def calculate_life_path(dob_str):
 
 def resolve_location(city_name):
     city_lower = str(city_name).lower().strip()
-    # 1. Backup DB
     for key in CITY_DB:
-        if key in city_lower:
-            return CITY_DB[key]
-    # 2. Live Lookup
+        if key in city_lower: return CITY_DB[key]
     try:
         geolocator = Nominatim(user_agent="ia_v99_final")
         loc = geolocator.geocode(city_name)
@@ -154,11 +151,18 @@ def get_tz_offset(date_str, time_str, tz_name):
 def get_hd_data(degree):
     """Translates Degree -> Corrected Gate -> Drop In Language"""
     if degree is None: return {"name": "Unknown", "story": "Mystery"}
-    # Math: (Degree / 360) * 64 gives index in RAVE_ORDER
-    # RAVE_ORDER now starts at 25 (Aries 0), matching Flatlib's Tropical Zodiac
-    index = int(degree / 5.625) 
+    # 1. Calculate Index (0-63)
+    # The circle is 360 degrees. There are 64 gates.
+    # 360 / 64 = 5.625 degrees per gate.
+    index = int(degree / 5.625)
+    
+    # 2. Safety Check
     if index >= 64: index = 0
+    
+    # 3. Fetch Gate Number from CORRECTED Map
     gate = RAVE_ORDER[index]
+    
+    # 4. Fetch Story
     info = KEY_LORE.get(gate, {"name": f"Gate {gate}", "story": "Energy"})
     return {"gate": gate, "name": info["name"], "story": info["story"]}
 
