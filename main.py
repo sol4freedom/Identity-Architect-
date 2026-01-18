@@ -8,7 +8,7 @@ import base64
 
 # --- IMPORTS ---
 from geopy.geocoders import Nominatim
-# TimezoneFinder and FPDF are imported inside functions to prevent "System Error" timeout
+# Lazy loading applied later for heavy libs
 import pytz
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
@@ -61,13 +61,14 @@ KEY_LORE = {
     51: {"name": "The Shock", "story": "Initiation by thunder."}, 52: {"name": "The Stillness", "story": "The Mountain waiting."},
     53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new."},
     54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward seeking success."},
-    55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
-    57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality against authority."},
+    55: {"name": "The Spirit", "story": "Freedom. You accept high and low emotions to find the spirit."},
+    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas to weave the collective myth."},
+    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the vibration of the now."},
+    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
-}
-MEGA_MATRIX = {
+}MEGA_MATRIX = {
     "Aries": {"Sun": "You are a pioneer; bold, independent, and direct.", "Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
     "Taurus": {"Sun": "You are a builder; grounded, patient, and reliable.", "Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
     "Gemini": {"Sun": "You are a messenger; curious, adaptable, and witty.", "Mercury": "Brilliant, agile processing.", "Saturn": "Structuring the intellect.", "Jupiter": "Luck via networking.", "Moon": "Safety in conversation.", "Venus": "Mental love and wit.", "Neptune": "Telepathic connection.", "Mars": "Versatile, scattered drive.", "Uranus": "Disrupting narratives.", "Pluto": "Psychological reprogramming.", "Rising": "Youthful curiosity."},
@@ -104,7 +105,6 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
-    # FIXED: Date Cleaner
     if "T" in date_str: date_str = date_str.split("T")[0]
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
@@ -116,7 +116,8 @@ def calculate_life_path(date_str):
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
 
-# --- SERVER-SIDE PDF GENERATOR (Lazy Loaded) ---
+# --- SERVER-SIDE PDF GENERATOR ---
+# FIX: Removed invalid .encode('latin-1') call
 def create_pdf_b64(data, lp, hd, keys, objs, rising):
     from fpdf import FPDF
     
@@ -130,52 +131,51 @@ def create_pdf_b64(data, lp, hd, keys, objs, rising):
     pdf.add_page()
     pdf.set_font("Helvetica", size=12)
     
-    # User Info
     pdf.set_font("Helvetica", 'I', 10)
     pdf.cell(0, 10, f"Prepared for {data.name.upper()}", 0, 1, 'C')
     pdf.ln(5)
     
-    # Life Path
+    # Sections
     pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(100, 50, 150) # Purple
+    pdf.set_text_color(100, 50, 150)
     pdf.cell(0, 10, f"LIFE PATH: {lp['number']} - {lp['name']}", 0, 1)
     pdf.set_font("Helvetica", '', 12)
     pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 8, txt=f"{lp['desc']}")
+    pdf.multi_cell(0, 7, txt=f"{lp['desc']}")
     pdf.ln(5)
     
-    # Cosmic Sig
     pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(200, 50, 100) # Pink/Red
+    pdf.set_text_color(200, 50, 100)
     pdf.cell(0, 10, "COSMIC SIGNATURE", 0, 1)
     pdf.set_font("Helvetica", '', 11)
     pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 7, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}\nMercury: {objs['Mercury'].sign}\nVenus: {objs['Venus'].sign}")
+    pdf.multi_cell(0, 6, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}\nMercury: {objs['Mercury'].sign}\nVenus: {objs['Venus'].sign}")
     pdf.ln(5)
     
-    # Blueprint
     pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(200, 150, 0) # Gold
+    pdf.set_text_color(200, 150, 0)
     pdf.cell(0, 10, "THE BLUEPRINT", 0, 1)
     pdf.set_font("Helvetica", '', 11)
     pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 7, f"Profile: {hd['name']}\nCalling: {keys['lw']['name']} - {keys['lw']['story']}\nGrowth: {keys['evo']['name']} - {keys['evo']['story']}")
+    pdf.multi_cell(0, 6, f"Profile: {hd['name']}\nCalling: {keys['lw']['name']} - {keys['lw']['story']}\nGrowth: {keys['evo']['name']} - {keys['evo']['story']}")
     pdf.ln(5)
 
-    # Vault
     pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(50, 50, 50) # Dark Grey
-    pdf.cell(0, 10, "THE VAULT (UNCONSCIOUS)", 0, 1)
+    pdf.set_text_color(50, 50, 50)
+    pdf.cell(0, 10, "THE VAULT", 0, 1)
     pdf.set_font("Helvetica", '', 11)
-    pdf.multi_cell(0, 7, f"Aura: {keys['rad']['name']} - {keys['rad']['story']}\nRoot: {keys['pur']['name']} - {keys['pur']['story']}\nMagnet: {keys['att']['name']} - {keys['att']['story']}")
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 6, f"Aura: {keys['rad']['name']} - {keys['rad']['story']}\nRoot: {keys['pur']['name']} - {keys['pur']['story']}\nMagnet: {keys['att']['name']} - {keys['att']['story']}")
     pdf.ln(10)
 
-    # Struggle
     pdf.set_font("Helvetica", 'I', 12)
     pdf.multi_cell(0, 8, f"Current Struggle: {data.struggle}\nAdvice: Lean into your {rising.sign} Rising energy.")
 
-    return base64.b64encode(pdf.output(dest='S').encode('latin-1')).decode('utf-8')
-# --- TIMEZONE ENGINE (Lazy Loaded) ---
+    # FIX: Directly return the bytearray as base64 string
+    pdf_bytes = pdf.output()
+    return base64.b64encode(pdf_bytes).decode('utf-8')
+
+# --- TIMEZONE ENGINE ---
 def resolve_location(city_input, date_str, time_str):
     city_clean = city_input.lower().strip()
     found_backup = None
@@ -196,7 +196,7 @@ def resolve_location(city_input, date_str, time_str):
 
     try:
         from timezonefinder import TimezoneFinder
-        geolocator = Nominatim(user_agent="ia_v42_fix", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v43_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -214,10 +214,11 @@ def resolve_location(city_input, date_str, time_str):
 
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
-    email: str = None # FIX: Email is now optional!
+    email: str = None 
     
     @validator('date', pre=True)
     def clean_date_format(cls, v):
+        # FIX: The Date Sanitizer
         if isinstance(v, str) and "T" in v: return v.split("T")[0]
         return v
     @validator('time', pre=True)
@@ -253,7 +254,7 @@ def generate_reading(data: UserInput):
         # PDF GENERATION
         pdf_b64 = create_pdf_b64(data, lp, hd, keys, objs, rising)
 
-        # HTML REPORT
+        # HTML REPORT (Updated Layout)
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -261,45 +262,54 @@ def generate_reading(data: UserInput):
         <meta charset="UTF-8">
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
-            body {{ font-family: 'Source Sans Pro', sans-serif; background: #fff; color: #333; padding: 20px; line-height: 1.8; }}
-            .box {{ max-width: 700px; margin: 0 auto; background: #FFF; padding: 50px; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }}
-            h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; text-transform: uppercase; margin: 0 0 10px 0; font-size: 32px; text-align: center; }}
-            .vib {{ background: #F3E5F5; text-align: center; padding: 30px; border-radius: 12px; margin-bottom: 50px; }}
-            .vib h3 {{ color: #7B1FA2; margin: 0; font-size: 26px; }}
-            .section {{ border-left: 5px solid #ddd; padding: 10px 0 10px 30px; margin-bottom: 50px; }}
-            .item {{ margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted #eee; }}
-            .item:last-child {{ border-bottom: none; }}
-            .label {{ font-weight: 600; color: #222; font-size: 1.1em; display:block; margin-bottom: 8px; }}
-            .desc {{ font-size: 1em; color: #555; display: block; }}
-            .highlight {{ color: #C71585; font-weight: 600; }}
-            .vault {{ background: #111; color: #fff; padding: 40px; border-radius: 12px; margin-bottom: 40px; border-left: 5px solid #FFD700; }}
-            .vault h3 {{ color: #FF4500; margin-top: 0; }}
-            .vault .label {{ color: #fff; }}
-            .vault .desc {{ color: #ccc; font-style: italic; }}
-            .vault .highlight {{ color: #FFD700; }}
-            
+            body {{ font-family: 'Source Sans Pro', sans-serif; background: #f5f5f5; color: #333; padding: 20px; line-height: 1.6; }}
+            .main-container {{ max-width: 700px; margin: 0 auto; }}
+            .card {{ 
+                background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid #ddd;
+            }}
+            h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin: 0 0 5px 0; font-size: 28px; text-align: center; }}
+            h3 {{ font-family: 'Playfair Display', serif; font-size: 22px; margin: 0 0 15px 0; color: #222; }}
+            .item {{ margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }}
+            .item:last-child {{ border: none; padding-bottom: 0; }}
+            .label {{ font-weight: 600; color: #444; font-size: 1.05em; display:block; margin-bottom: 4px; }}
+            .desc {{ font-size: 0.95em; color: #666; display: block; }}
+            .card.cosmic {{ border-left-color: #C71585; }}
+            .card.blueprint {{ border-left-color: #D4AF37; }}
+            .card.boardroom {{ border-left-color: #4682B4; }}
+            .card.sanctuary {{ border-left-color: #2E8B57; }}
+            .card.streets {{ border-left-color: #CD5C5C; }}
+            .card.vault {{ border-left-color: #FFD700; background: #222; color: #fff; }}
+            .card.vault .label {{ color: #fff; }}
+            .card.vault .desc {{ color: #ccc; }}
+            .card.vault h3 {{ color: #FFD700; }}
             .btn {{ 
                 background-color: #D4AF37; color: white; border: none; padding: 18px 40px; font-size: 16px; 
-                border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 50px auto 0; 
-                width: 100%; max-width: 300px; text-align: center; text-decoration: none;
-                box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+                border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 30px auto; 
+                width: 100%; max-width: 300px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                text-decoration: none;
             }}
-            .end-marker {{ text-align: center; margin-top: 60px; border-top: 1px dashed #ccc; padding-top: 20px; color: #aaa; font-size: 12px; letter-spacing: 2px; }}
+            .end-marker {{ 
+                text-align: center; margin-top: 50px; margin-bottom: 50px; 
+                color: #aaa; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid #ccc; padding-top: 15px;
+            }}
         </style>
         </head>
         <body>
-            <div class="box">
-                <h2>The Integrated Self</h2>
-                <div style="text-align:center; font-size:12px; color:#999; margin-bottom:40px;">PREPARED FOR {data.name.upper()}</div>
-
-                <div class="vib">
-                    <div style="font-size:12px; letter-spacing:2px; margin-bottom:5px; text-transform:uppercase;">Life Path Vibration</div>
-                    <h3>{lp['number']}: {lp['name']}</h3>
-                    <p>"{lp['desc']}"</p>
+            <div class="main-container">
+                <div class="card" style="text-align:center; border:none;">
+                    <h2>The Integrated Self</h2>
+                    <div style="font-size:12px; color:#999; letter-spacing:1px;">PREPARED FOR {data.name.upper()}</div>
                 </div>
 
-                <div class="section" style="border-color: #C71585;">
-                    <h3 style="color:#C71585; margin-top:0; font-family:'Playfair Display'; font-size:24px;">✨ The Cosmic Signature</h3>
+                <div class="card" style="text-align:center; background:#F8F4FF; border-left:none;">
+                    <div style="font-size:11px; letter-spacing:2px; margin-bottom:5px; color:#888;">LIFE PATH VIBRATION</div>
+                    <h3 style="color:#6A5ACD; font-size:24px; margin:0;">{lp['number']}: {lp['name']}</h3>
+                    <p style="font-style:italic; margin-top:10px;">"{lp['desc']}"</p>
+                </div>
+
+                <div class="card cosmic">
+                    <h3 style="color:#C71585;">✨ The Cosmic Signature</h3>
                     <div class="item"><span class="label">☀️ Sun in {objs['Sun'].sign}:</span> <span class="desc">"{generate_desc('Sun', objs['Sun'].sign)}"</span></div>
                     <div class="item"><span class="label">🌙 Moon in {objs['Moon'].sign}:</span> <span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
                     <div class="item"><span class="label">🏹 Rising in {rising.sign}:</span> <span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
@@ -307,47 +317,48 @@ def generate_reading(data: UserInput):
                     <div class="item"><span class="label">❤️ Venus in {objs['Venus'].sign}:</span> <span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
                 </div>
 
-                <div class="section" style="border-color: #D4AF37;">
-                    <h3 style="color:#D4AF37; margin-top:0; font-family:'Playfair Display'; font-size:24px;">🗝️ The Blueprint</h3>
+                <div class="card blueprint">
+                    <h3 style="color:#D4AF37;">🗝️ The Blueprint</h3>
                     <div class="item"><span class="label">🎭 Profile:</span> {hd['name']}</div>
-                    <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
-                    <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
+                    <div class="item"><span class="label">🧬 Calling: <span style="color:#C71585;">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
+                    <div class="item"><span class="label">🌍 Growth: <span style="color:#C71585;">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
                 </div>
 
-                <div class="section" style="border-color: #4682B4;">
-                    <h3 style="color:#4682B4; margin-top:0; font-family:'Playfair Display'; font-size:24px;">The Boardroom</h3>
+                <div class="card boardroom">
+                    <h3 style="color:#4682B4;">The Boardroom</h3>
                     <div class="item"><span class="label">👔 CEO (Saturn in {objs['Saturn'].sign})</span> <span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
                     <div class="item"><span class="label">💰 Mogul (Jupiter in {objs['Jupiter'].sign})</span> <span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
                 </div>
 
-                <div class="section" style="border-color: #2E8B57;">
-                    <h3 style="color:#2E8B57; margin-top:0; font-family:'Playfair Display'; font-size:24px;">The Sanctuary</h3>
+                <div class="card sanctuary">
+                    <h3 style="color:#2E8B57;">The Sanctuary</h3>
                     <div class="item"><span class="label">🎨 Muse (Venus in {objs['Venus'].sign})</span> <span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
                     <div class="item"><span class="label">🌫️ Dreamer (Neptune in {objs['Neptune'].sign})</span> <span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
                 </div>
 
-                <div class="section" style="border-color: #CD5C5C;">
-                    <h3 style="color:#CD5C5C; margin-top:0; font-family:'Playfair Display'; font-size:24px;">The Streets</h3>
+                <div class="card streets">
+                    <h3 style="color:#CD5C5C;">The Streets</h3>
                     <div class="item"><span class="label">🔥 Hustle (Mars in {objs['Mars'].sign})</span> <span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
                     <div class="item"><span class="label">⚡ Disruptor (Uranus in {objs['Uranus'].sign})</span> <span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
                     <div class="item"><span class="label">🕵️ Kingpin (Pluto in {objs['Pluto'].sign})</span> <span class="desc">"{generate_desc('Pluto', objs['Pluto'].sign)}"</span></div>
                 </div>
 
-                <div class="vault">
+                <div class="card vault">
                     <h3>🔒 The Vault</h3>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <span class="vault-desc">"{keys['rad']['story']}"</span></div>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <span class="vault-desc">"{keys['pur']['story']}"</span></div>
-                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <span class="vault-desc">"{keys['att']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span style="color:#FFD700;">{keys['rad']['name']}</span></span> <span class="vault-desc">"{keys['rad']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span style="color:#FFD700;">{keys['pur']['name']}</span></span> <span class="vault-desc">"{keys['pur']['story']}"</span></div>
+                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span style="color:#FFD700;">{keys['att']['name']}</span></span> <span class="vault-desc">"{keys['att']['story']}"</span></div>
                 </div>
 
-                <div class="struggle" style="background:#f9f9f9; padding:25px; border-radius:12px; text-align:center;">
+                <div class="card" style="text-align:center; font-style:italic;">
                     <p style="margin:0;"><strong>Current Struggle:</strong> {data.struggle}</p>
-                    <p style="margin:10px 0 0 0; font-style:italic;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
+                    <p style="margin:10px 0 0 0;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
                 </div>
                 
                 <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self.pdf" class="btn">⬇️ DOWNLOAD PDF REPORT</a>
                 
                 <div class="end-marker">--- END OF GENERATED REPORT ---</div>
+                <div style="text-align:center; font-size:10px; color:#ccc;">{data.city} | {safe_date} | TZ: {tz}</div>
             </div>
         </body>
         </html>
