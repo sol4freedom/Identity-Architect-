@@ -8,6 +8,7 @@ import base64
 
 # --- IMPORTS ---
 from geopy.geocoders import Nominatim
+# Lazy loading applied later for heavy libs to prevent timeouts
 import pytz
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
@@ -67,7 +68,8 @@ KEY_LORE = {
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
-
+# --- END OF PART 1 (Safe Bumper) ---
+# --- PART 2 START (Safe Bumper) ---
 MEGA_MATRIX = {
     "Aries": {"Sun": "You are a pioneer; bold, independent, and direct.", "Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
     "Taurus": {"Sun": "You are a builder; grounded, patient, and reliable.", "Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
@@ -105,7 +107,9 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
+    # SAFETY: Strip time from date string if present (Fixes the date crash)
     if "T" in date_str: date_str = date_str.split("T")[0]
+    
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
     while total > 9 and total not in [11, 22, 33]:
@@ -174,8 +178,10 @@ def create_pdf_b64(data, lp, hd, keys, objs, rising):
     pdf.set_font("Helvetica", 'I', 12)
     pdf.multi_cell(0, 8, f"Current Struggle: {data.struggle}\nAdvice: Lean into your {rising.sign} Rising energy.")
 
-    # FIX: Correct PDF output for FPDF2
-    return base64.b64encode(bytes(pdf.output())).decode('utf-8')
+    # FIX: Correct PDF output for FPDF2 (Returns raw bytes, no encoding needed)
+    return base64.b64encode(pdf.output()).decode('utf-8')
+# --- END OF PART 2 (Safe Bumper) ---
+# --- PART 3 START (Safe Bumper) ---
 # --- TIMEZONE ENGINE ---
 def resolve_location(city_input, date_str, time_str):
     city_clean = city_input.lower().strip()
@@ -197,7 +203,7 @@ def resolve_location(city_input, date_str, time_str):
 
     try:
         from timezonefinder import TimezoneFinder
-        geolocator = Nominatim(user_agent="ia_v44_final", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v46_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -230,6 +236,7 @@ def generate_reading(data: UserInput):
         safe_date = data.date.split("T")[0] if "T" in data.date else data.date
         lat, lon, tz, source = resolve_location(data.city, safe_date, data.time)
 
+        # Astrology
         dt = Datetime(safe_date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
@@ -237,6 +244,7 @@ def generate_reading(data: UserInput):
         objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
         rising = chart.get(const.HOUSE1)
 
+        # Design
         d_dt = datetime.datetime.strptime(safe_date, "%Y-%m-%d") - datetime.timedelta(days=88)
         d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
         d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
@@ -258,16 +266,6 @@ def generate_reading(data: UserInput):
         <html>
         <head>
         <meta charset="UTF-8">
-        <script>
-        function downloadPDF(b64Data) {{
-            const linkSource = `data:application/pdf;base64,${{b64Data}}`;
-            const downloadLink = document.createElement("a");
-            const fileName = "Integrated_Self_Code.pdf";
-            downloadLink.href = linkSource;
-            downloadLink.download = fileName;
-            downloadLink.click();
-        }}
-        </script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
             body {{ font-family: 'Source Sans Pro', sans-serif; background: #f5f5f5; color: #333; padding: 20px; line-height: 1.6; }}
@@ -279,7 +277,7 @@ def generate_reading(data: UserInput):
             h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin: 0 0 5px 0; font-size: 28px; text-align: center; }}
             h3 {{ font-family: 'Playfair Display', serif; font-size: 22px; margin: 0 0 15px 0; color: #222; }}
             .item {{ margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }}
-            .item:last-child {{ border: none; padding-bottom: 0; }}
+            .item:last-child {{ border-bottom: none; padding-bottom: 0; }}
             .label {{ font-weight: 600; color: #444; font-size: 1.05em; display:block; margin-bottom: 4px; }}
             .desc {{ font-size: 0.95em; color: #666; display: block; }}
             .card.cosmic {{ border-left-color: #C71585; }}
@@ -295,8 +293,12 @@ def generate_reading(data: UserInput):
                 background-color: #D4AF37; color: white; border: none; padding: 18px 40px; font-size: 16px; 
                 border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 30px auto; 
                 width: 100%; max-width: 300px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                text-decoration: none;
             }}
-            .end-marker {{ text-align: center; margin-top: 40px; color: #aaa; font-size: 11px; letter-spacing: 2px; }}
+            .end-marker {{ 
+                text-align: center; margin-top: 50px; margin-bottom: 50px; 
+                color: #aaa; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid #ccc; padding-top: 15px;
+            }}
         </style>
         </head>
         <body>
@@ -359,7 +361,7 @@ def generate_reading(data: UserInput):
                     <p style="margin:10px 0 0 0;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
                 </div>
                 
-                <button onclick="downloadPDF('{pdf_b64}')" class="btn">⬇️ DOWNLOAD PDF</button>
+                <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self.pdf" class="btn">⬇️ DOWNLOAD PDF REPORT</a>
                 
                 <div class="end-marker">--- END OF GENERATED REPORT ---</div>
                 <div style="text-align:center; font-size:10px; color:#ccc; margin-top:10px;">{data.city} | {safe_date} | TZ: {tz}</div>
@@ -372,5 +374,3 @@ def generate_reading(data: UserInput):
         import traceback
         traceback.print_exc()
         return {"report": f"<div style='color:red; padding:20px;'>Error: {str(e)}</div>"}
-
-
