@@ -2,7 +2,7 @@ import sys
 import base64
 import datetime
 import json
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from geopy.geocoders import Nominatim
@@ -26,17 +26,20 @@ app.add_middleware(
 )
 
 # ==============================================================================
-# 2. DATA DICTIONARIES
+# 2. DATA DICTIONARIES (Hardcoded for stability)
 # ==============================================================================
 
+# Backup coordinates
 CITY_DB = {
     "minneapolis": (44.9778, -93.2650),
     "london": (51.5074, -0.1278),
     "new york": (40.7128, -74.0060),
     "sao paulo": (-23.5558, -46.6396),
-    "tokyo": (35.6762, 139.6503)
+    "tokyo": (35.6762, 139.6503),
+    "los angeles": (34.0522, -118.2437)
 }
 
+# Human Design Gate Order
 RAVE_ORDER = [
     41, 19, 13, 49, 30, 55, 37, 63, 22, 36, 25, 17, 21, 51, 42, 3, 27, 24,
     2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4,
@@ -44,6 +47,7 @@ RAVE_ORDER = [
     9, 5, 26, 11, 10, 58, 38, 54, 61, 60
 ]
 
+# The 64 Keys / Hexagram Meanings
 KEY_LORE = {i: f"Gate {i}: Archetypal Energy" for i in range(1, 65)}
 KEY_LORE.update({
     1: "The Creative - Self Expression",
@@ -52,6 +56,7 @@ KEY_LORE.update({
     60: "Limitation - Acceptance of Bounds"
 })
 
+# Astrology Keywords
 MEGA_MATRIX = {
     "Sun": {"core": "Life Purpose", "action": "Radiating"},
     "Moon": {"core": "Emotional Needs", "action": "Feeling"},
@@ -62,6 +67,7 @@ MEGA_MATRIX = {
     "Mercury": {"core": "Communication", "action": "Thinking"},
 }
 
+# Numerology Meanings
 NUMEROLOGY_LORE = {
     1: "The Leader - Independent and ambitious.",
     2: "The Peacemaker - Diplomatic and intuitive.",
@@ -81,17 +87,14 @@ NUMEROLOGY_LORE = {
 # 3. HELPER & LOGIC FUNCTIONS
 # ==============================================================================
 
-def validate_date(date_str: str):
-    """Safely extracts YYYY-MM-DD and strips time."""
+def validate_date(date_str):
+    """Safely extracts YYYY-MM-DD from various formats."""
     if not date_str:
         return datetime.date.today().strftime("%Y-%m-%d")
-    try:
-        # Handle '1992-11-06T08:00' format
-        if "T" in str(date_str):
-            return str(date_str).split("T")[0]
-        return str(date_str)
-    except Exception:
-        return datetime.date.today().strftime("%Y-%m-%d")
+    s = str(date_str)
+    if "T" in s:
+        return s.split("T")[0]
+    return s
 
 def calculate_life_path(dob_str: str) -> int:
     try:
@@ -114,24 +117,26 @@ def calculate_life_path(dob_str: str) -> int:
         return 0
 
 def resolve_location(city_name: str):
-    # Lazy load TimezoneFinder
-    from timezonefinder import TimezoneFinder
-    
+    """Lazily loads TimezoneFinder to avoid timeout."""
     city_lower = str(city_name).lower().strip()
     lat, lon = 0.0, 0.0
     
+    # 1. Check Dictionary
     if city_lower in CITY_DB:
         lat, lon = CITY_DB[city_lower]
     else:
+        # 2. Try Geopy
         try:
             geolocator = Nominatim(user_agent="astro_app_render")
             location = geolocator.geocode(city_name)
             if location:
                 lat, lon = location.latitude, location.longitude
         except:
-            pass # Use defaults
+            pass 
 
+    # 3. Get Timezone
     try:
+        from timezonefinder import TimezoneFinder
         tf = TimezoneFinder()
         tz_str = tf.timezone_at(lng=lon, lat=lat) or "UTC"
     except:
@@ -140,6 +145,7 @@ def resolve_location(city_name: str):
     return lat, lon, tz_str
 
 def get_key_data(planet_name, sign, degree):
+    """Maps Zodiac position to Human Design Gate."""
     total_deg = 0
     sign_list = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
                  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
@@ -157,25 +163,22 @@ def get_hd_profile(sun_gate, earth_gate):
     line_earth = (earth_gate % 6) + 1
     return f"{line_sun}/{line_earth}"
 
-def generate_desc(planet, sign, house):
-    core = MEGA_MATRIX.get(planet, {}).get("core", "Energy")
-    return f"Your {planet} is in {sign}, affecting {core}."
-
 def get_strategic_advice(struggle, chart_objects):
     struggle = str(struggle).lower()
     advice = ""
     
+    # Logic: specific advice based on struggle keywords + planetary signs
     if "money" in struggle or "career" in struggle:
         jup = chart_objects.get("Jupiter", {}).get("Sign", "?")
-        advice += f"<b>Money Strategy:</b> Leverage Jupiter in {jup}. Expand through this archetype.<br>"
+        advice += f"<b>Financial Strategy:</b> Leverage your Jupiter in {jup}. Expand through this archetype.<br>"
     
     if "love" in struggle or "relationship" in struggle:
         ven = chart_objects.get("Venus", {}).get("Sign", "?")
-        advice += f"<b>Love Strategy:</b> Your Venus in {ven} indicates your values in connection.<br>"
+        advice += f"<b>Relational Strategy:</b> Your Venus in {ven} indicates your values in connection.<br>"
         
     if not advice:
         sun = chart_objects.get("Sun", {}).get("Sign", "?")
-        advice += f"<b>Core Strategy:</b> Shine your light through your Sun in {sun}."
+        advice += f"<b>Core Strategy:</b> When in doubt, shine your light through your Sun in {sun}."
         
     return advice
 
@@ -203,10 +206,8 @@ def create_pdf_b64(name, life_path, hd_profile, advice_text, chart_data):
     for p, d in chart_data.items():
         pdf.cell(0, 7, f"{p}: {d['Sign']} (Gate {d['Gate']})", 0, 1)
 
-    try:
-        return base64.b64encode(pdf.output(dest='S').encode('latin-1')).decode('utf-8')
-    except:
-        return base64.b64encode(pdf.output()).decode('utf-8')
+    # STRICT: return base64 encoded bytes
+    return base64.b64encode(pdf.output()).decode('utf-8')
 
 # ==============================================================================
 # 4. MAIN ROUTE (UNIVERSAL ADAPTER)
@@ -215,37 +216,39 @@ def create_pdf_b64(name, life_path, hd_profile, advice_text, chart_data):
 @app.post("/calculate", response_class=HTMLResponse)
 async def calculate_chart(request: Request):
     """
-    Accepts both JSON and FORM data to prevent 422 Errors.
+    Universal Adapter: Accepts BOTH JSON and Form data to prevent 422 Errors.
     """
-    # 1. Universal Input Parsing
+    # 1. Parse Input (Universal)
     content_type = request.headers.get("content-type", "")
+    data = {}
+    
     try:
         if "application/json" in content_type:
             data = await request.json()
         else:
-            data = await request.form()
+            form_data = await request.form()
+            data = dict(form_data)
     except Exception:
         data = {}
 
-    # 2. Extract Data Safely
+    # 2. Extract Fields with Defaults
     name = data.get("name", "Traveler")
     dob = data.get("dob", "")
     tob = data.get("tob", "12:00")
     city = data.get("city", "")
     struggle = data.get("struggle", "General")
 
-    # 3. Validation Check
+    # 3. Validation
     if not dob or not city:
         return HTMLResponse(content=f"""
-        <html><body style="background:#222; color:#fff; font-family:sans-serif; padding:20px;">
-            <h2>Data Missing</h2>
-            <p>We received the request, but 'Date of Birth' or 'City' was missing.</p>
-            <p><strong>Debug Info:</strong> Received: {json.dumps(data, default=str)}</p>
-            <a href="/" style="color:cyan;">Go Back</a>
+        <html><body style="background:#222; color:#fff; padding:20px;">
+            <h3>Data Missing</h3>
+            <p>We received the request but 'Date of Birth' or 'City' was empty.</p>
+            <p>Debug: {json.dumps(data, default=str)}</p>
         </body></html>
         """)
 
-    # 4. Run Logic
+    # 4. Execute Logic
     clean_dob = validate_date(dob)
     life_path = calculate_life_path(clean_dob)
     lat, lon, tz_str = resolve_location(city)
@@ -265,13 +268,13 @@ async def calculate_chart(request: Request):
         gate, _ = get_key_data(p_id, obj.sign, obj.lon % 30)
         chart_data[p_id] = {"Sign": obj.sign, "Gate": gate}
         if p_id == const.SUN: hd_sun = gate
-        if p_id == const.EARTH: hd_earth = gate # fallback if Earth not in flatlib default
+        if p_id == const.EARTH: hd_earth = gate
 
     hd_profile = get_hd_profile(hd_sun, hd_earth)
     advice_html = get_strategic_advice(struggle, chart_data)
     pdf_b64 = create_pdf_b64(name, life_path, hd_profile, advice_html, chart_data)
 
-    # 5. Return HTML
+    # 5. Return HTML Response
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -281,8 +284,8 @@ async def calculate_chart(request: Request):
             body {{ font-family: 'Courier New', monospace; background: transparent; color: #fff; padding: 20px; }}
             .card {{ background: rgba(0,0,0,0.8); padding: 20px; border: 1px solid #555; margin-bottom: 20px; border-radius: 8px; }}
             h2 {{ color: #d4af37; border-bottom: 1px solid #555; padding-bottom: 5px; }}
-            .btn {{ background: #d4af37; color: #000; padding: 10px; text-decoration: none; font-weight: bold; border:none; cursor:pointer; }}
-            .footer-guard {{ height: 600px; }}
+            .btn {{ background: #d4af37; color: #000; padding: 10px 20px; text-decoration: none; font-weight: bold; border:none; cursor:pointer; font-size:16px; }}
+            .footer-guard {{ height: 600px; width: 100%; }}
         </style>
     </head>
     <body>
@@ -320,6 +323,7 @@ async def calculate_chart(request: Request):
                 document.body.removeChild(link);
             }}
         </script>
+        
         <div class="footer-guard"></div>
     </body>
     </html>
