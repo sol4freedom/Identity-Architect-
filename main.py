@@ -20,21 +20,62 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # ==========================================
-# 1. LOGIC & MATH
+# 1. INPUTS & ROUTES (MOVED TO TOP)
 # ==========================================
 
-RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
+class UserInput(BaseModel):
+    name: str; date: str; time: str; city: str; struggle: str
+    email: str = None 
+    
+    @validator('date', pre=True)
+    def clean_date_format(cls, v):
+        if isinstance(v, str) and "T" in v: return v.split("T")[0]
+        return v
+    @validator('time', pre=True)
+    def clean_time(cls, v): return v.split(".")[0] if "." in v else v
 
-KEY_LORE = {
-    1: {"name": "The Creator", "story": "Entropy into Freshness."}, 2: {"name": "The Receptive", "story": "The Divine Feminine blueprint."},
-    3: {"name": "The Innovator", "story": "Chaos into Order."}, 4: {"name": "The Logic Master", "story": "The Answer to doubt."},
-    5: {"name": "The Fixer", "story": "Patience into Timelessness."}, 6: {"name": "The Peacemaker", "story": "Conflict into Peace."},
-    7: {"name": "The Leader", "story": "Guidance by will."}, 8: {"name": "The Stylist", "story": "Mediocrity into Style."},
-    9: {"name": "The Focuser", "story": "Power of the Small."}, 10: {"name": "The Self", "story": "The art of Being."},
-    11: {"name": "The Idealist", "story": "Ideas into Light."}, 12: {"name": "The Articulate", "story": "Channeling the soul."},
-    13: {"name": "The Listener", "story": "The Confidant of secrets."}, 14: {"name": "The Power House", "story": "Fueling dreams."},
-    15: {"name": "The Humanist", "story": "Extremes into Flow."}, 16: {"name": "The Master", "story": "Skill into Magic."},
-    17: {"name": "The Opinion", "story": "The logical Eye."}, 18: {"name": "The Improver", "story": "Healing the flaw."},
-    19: {"name": "The Sensitive", "story": "Attunement to needs."}, 20: {"name": "The Now", "story": "Spontaneous clarity."},
-    21: {"name": "The Controller", "story": "Authority and resources."}, 22: {"name": "The Grace", "story": "Emotional openness."},
-    23: {"name": "The Assimilator", "story": "Simplicity from
+@app.get("/")
+def home():
+    return {"status": "System Status: Online", "message": "The server is running correctly."}
+
+@app.post("/calculate")
+def generate_reading(data: UserInput):
+    try:
+        # 1. PREPARE DATA
+        safe_date = data.date.split("T")[0] if "T" in data.date else data.date
+        lat, lon, tz, source = resolve_location(data.city, safe_date, data.time)
+
+        # 2. CALCULATE ASTROLOGY
+        dt = Datetime(safe_date.replace("-", "/"), data.time, tz)
+        geo = GeoPos(lat, lon)
+        chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
+        
+        objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
+        rising = chart.get(const.HOUSE1)
+
+        # 3. CALCULATE DESIGN
+        d_dt = datetime.datetime.strptime(safe_date, "%Y-%m-%d") - datetime.timedelta(days=88)
+        d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
+        d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
+
+        lp = calculate_life_path(safe_date)
+        hd = get_hd_profile(objs['Sun'].lon, d_sun.lon)
+        keys = {
+            'lw': get_key_data(objs['Sun'].lon), 'evo': get_key_data((objs['Sun'].lon + 180) % 360),
+            'rad': get_key_data(d_sun.lon), 'pur': get_key_data((d_sun.lon + 180) % 360),
+            'att': get_key_data(d_moon.lon)
+        }
+
+        # 4. GET ADVICE & PDF
+        topic, advice = get_strategic_advice(data.struggle, objs, rising)
+        pdf_b64 = create_pdf_b64(data, lp, hd, keys, objs, rising)
+
+        # 5. GENERATE HTML REPORT
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="UTF-8">
+        <script>
+        function downloadPDF(b64Data) {{
+            const linkSource = `data:
