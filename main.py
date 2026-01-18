@@ -17,9 +17,10 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
+import pytz
 
 # ------------------------------------------------------------------------------
-# 2. APP CONFIGURATION & LOGGING
+# 2. APP CONFIGURATION
 # ------------------------------------------------------------------------------
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("uvicorn")
@@ -35,15 +36,14 @@ app.add_middleware(
 )
 
 # ------------------------------------------------------------------------------
-# 3. DATA DICTIONARIES
+# 3. RICH DATA (The Brains)
 # ------------------------------------------------------------------------------
 CITY_DB = {
-    "minneapolis": (44.9778, -93.2650),
-    "london": (51.5074, -0.1278),
-    "new york": (40.7128, -74.0060),
-    "sao paulo": (-23.5558, -46.6396),
-    "tokyo": (35.6762, 139.6503),
-    "los angeles": (34.0522, -118.2437)
+    "minneapolis": (44.9778, -93.2650, "America/Chicago"),
+    "london": (51.5074, -0.1278, "Europe/London"),
+    "new york": (40.7128, -74.0060, "America/New_York"),
+    "sao paulo": (-23.5558, -46.6396, "America/Sao_Paulo"),
+    "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
 RAVE_ORDER = [
@@ -53,127 +53,123 @@ RAVE_ORDER = [
     9, 5, 26, 11, 10, 58, 38, 54, 61, 60
 ]
 
+MEGA_MATRIX = {
+    "Aries": "The Pioneer (Courage)", "Taurus": "The Builder (Stability)",
+    "Gemini": "The Messenger (Curiosity)", "Cancer": "The Nurturer (Protection)",
+    "Leo": "The Star (Expression)", "Virgo": "The Healer (Precision)",
+    "Libra": "The Diplomat (Harmony)", "Scorpio": "The Mystic (Transformation)",
+    "Sagittarius": "The Explorer (Freedom)", "Capricorn": "The Boss (Ambition)",
+    "Aquarius": "The Visionary (Innovation)", "Pisces": "The Dreamer (Empathy)"
+}
+
+KEY_LORE = {i: f"Gate {i}" for i in range(1, 65)}
+# (You can expand this later, keeping it light for safety)
+
 # ------------------------------------------------------------------------------
 # 4. LOGIC FUNCTIONS
 # ------------------------------------------------------------------------------
 
 def safe_get_date(date_input):
-    """Parses date from any weird format the frontend sends."""
-    if not date_input:
-        return datetime.date.today().strftime("%Y-%m-%d")
+    if not date_input: return datetime.date.today().strftime("%Y-%m-%d")
     s = str(date_input).strip()
-    # Handle ISO format 1990-01-01T00:00:00.000Z
-    if "T" in s:
-        s = s.split("T")[0]
+    if "T" in s: s = s.split("T")[0]
     return s
 
-def calculate_life_path(dob_str: str) -> int:
+def calculate_life_path(dob_str):
     try:
-        clean_date = safe_get_date(dob_str)
-        # Ensure we have YYYY-MM-DD
-        if clean_date.count("-") != 2:
-            return 0
-        parts = clean_date.split("-")
-        year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+        clean = safe_get_date(dob_str)
+        parts = clean.split("-")
+        if len(parts) != 3: return 0
+        total = sum(int(p) for p in parts)
         
-        def reduce_sum(n):
-            while n > 9 and n not in [11, 22, 33]:
-                n = sum(int(digit) for digit in str(n))
-            return n
+        while total > 9 and total not in [11, 22, 33]:
+            total = sum(int(d) for d in str(total))
+        return total
+    except: return 0
 
-        total = reduce_sum(year) + reduce_sum(month) + reduce_sum(day)
-        return reduce_sum(total)
-    except Exception as e:
-        logger.error(f"Numerology Error: {e}")
-        return 0
-
-def resolve_location(city_name: str):
+def resolve_location(city_name):
     city_lower = str(city_name).lower().strip()
-    lat, lon = 0.0, 0.0
     
-    # 1. Try DB
-    if city_lower in CITY_DB:
-        lat, lon = CITY_DB[city_lower]
-    else:
-        # 2. Try Geopy
-        try:
-            geolocator = Nominatim(user_agent="astro_app_render")
-            location = geolocator.geocode(city_name)
-            if location:
-                lat, lon = location.latitude, location.longitude
-        except Exception as e:
-            logger.error(f"Geopy Error: {e}")
-            pass
-
-    # 3. Get Timezone
+    # 1. Check Backup DB
+    for key in CITY_DB:
+        if key in city_lower:
+            return CITY_DB[key]
+            
+    # 2. Geopy Lookup
     try:
-        from timezonefinder import TimezoneFinder
-        tf = TimezoneFinder()
-        tz_str = tf.timezone_at(lng=lon, lat=lat) or "UTC"
-    except:
-        tz_str = "UTC"
+        geolocator = Nominatim(user_agent="ia_v60_full")
+        loc = geolocator.geocode(city_name)
+        if loc:
+            from timezonefinder import TimezoneFinder
+            tf = TimezoneFinder()
+            tz = tf.timezone_at(lng=loc.longitude, lat=loc.latitude) or "UTC"
+            return loc.latitude, loc.longitude, tz
+    except: pass
     
-    return lat, lon, tz_str
+    return 51.50, -0.12, "Europe/London" # Default
 
 def get_hd_gate(sign, degree):
-    """Maps Zodiac Sign + Degree -> Human Design Gate"""
-    sign_list = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+    sign_list = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+    if sign not in sign_list: return 1
     
-    total_deg = 0
-    if sign in sign_list:
-        idx = sign_list.index(sign)
-        total_deg = (idx * 30) + degree
-    
-    # 360 degrees / 64 gates
-    gate_idx = int((total_deg / 360) * 64) % 64
+    idx = sign_list.index(sign)
+    abs_deg = (idx * 30) + degree
+    gate_idx = int((abs_deg / 360) * 64) % 64
     return RAVE_ORDER[gate_idx]
 
-def get_strategic_advice(struggle, chart_objects):
-    struggle = str(struggle).lower()
-    advice = ""
+def get_strategic_advice(struggle, chart):
+    s = str(struggle).lower()
+    sun_sign = chart.get("Sun", {}).get("Sign", "Unknown")
     
-    if "money" in struggle or "career" in struggle:
-        sign = chart_objects.get("Jupiter", {}).get("Sign", "Unknown")
-        advice += f"<b>Wealth Strategy:</b> Your Jupiter is in {sign}. Expand here.<br>"
-    elif "love" in struggle or "relationship" in struggle:
-        sign = chart_objects.get("Venus", {}).get("Sign", "Unknown")
-        advice += f"<b>Love Strategy:</b> Your Venus is in {sign}. Value this energy.<br>"
-    else:
-        sign = chart_objects.get("Sun", {}).get("Sign", "Unknown")
-        advice += f"<b>Core Strategy:</b> Your Sun in {sign} is your guide.<br>"
+    if any(x in s for x in ['money', 'career', 'job', 'wealth']):
+        jup = chart.get("Jupiter", {}).get("Sign", "Unknown")
+        sat = chart.get("Saturn", {}).get("Sign", "Unknown")
+        return "Wealth Architecture", f"Your path to abundance combines the expansion of **Jupiter in {jup}** with the structure of **Saturn in {sat}**."
         
-    return advice
+    elif any(x in s for x in ['love', 'relationship', 'partner']):
+        ven = chart.get("Venus", {}).get("Sign", "Unknown")
+        moon = chart.get("Moon", {}).get("Sign", "Unknown")
+        return "Relational Design", f"Your heart speaks the language of **Venus in {ven}**, while your soul needs the safety of **Moon in {moon}**."
+        
+    else:
+        ris = chart.get("Rising", {}).get("Sign", "Unknown")
+        return "Core Alignment", f"When in doubt, return to your **{ris} Rising**. This is your hull and your strategy for navigating life."
 
-def create_pdf_b64(name, life_path, hd_profile, advice_text, chart_data):
+def create_pdf_b64(name, lp, hd, advice, chart):
     from fpdf import FPDF
-    
     class PDF(FPDF):
         def header(self):
-            self.set_font('Arial', 'B', 15)
-            self.cell(0, 10, 'Cosmic Blueprint', 0, 1, 'C')
-            self.ln(10)
-
+            self.set_font('Arial', 'B', 16)
+            self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
+            self.ln(5)
+            
     try:
         pdf = PDF()
         pdf.add_page()
         pdf.set_font("Arial", size=12)
         
-        pdf.cell(0, 10, f"Name: {name}", 0, 1)
-        pdf.cell(0, 10, f"Life Path: {life_path} | Profile: {hd_profile}", 0, 1)
+        pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
+        pdf.cell(0, 10, f"Life Path: {lp} | Profile: {hd}", 0, 1)
         pdf.ln(5)
         
-        clean_adv = advice_text.replace("<b>", "").replace("</b>", "").replace("<br>", "\n")
-        pdf.multi_cell(0, 7, f"Advice:\n{clean_adv}")
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Strategic Guidance", 0, 1)
+        pdf.set_font("Arial", '', 12)
+        clean_advice = advice[1].replace("**", "").replace("<br>", "\n")
+        pdf.multi_cell(0, 7, clean_advice)
         pdf.ln(5)
         
-        for k, v in chart_data.items():
-            pdf.cell(0, 7, f"{k}: {v['Sign']} (Gate {v['Gate']})", 0, 1)
-
-        # Output bytes safely
-        return base64.b64encode(pdf.output()).decode('utf-8')
-    except Exception as e:
-        logger.error(f"PDF Error: {e}")
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 10, "Planetary Blueprint", 0, 1)
+        pdf.set_font("Arial", '', 12)
+        
+        for k, v in chart.items():
+            sign = v.get("Sign", "?")
+            gate = v.get("Gate", "?")
+            pdf.cell(0, 8, f"{k}: {sign} (Gate {gate})", 0, 1)
+            
+        return base64.b64encode(pdf.output().encode('latin-1', 'ignore')).decode('utf-8')
+    except:
         return ""
 
 # ------------------------------------------------------------------------------
@@ -182,127 +178,114 @@ def create_pdf_b64(name, life_path, hd_profile, advice_text, chart_data):
 
 @app.post("/calculate")
 async def calculate_chart(request: Request):
-    """
-    Robust Endpoint: Accepts ANY input format, applies defaults, NEVER crashes (422).
-    Returns JSON {"report": html} to satisfy Wix Frontend.
-    """
-    # 1. Parse Input Safely
+    # 1. Parse Data (Safe Mode)
     data = {}
-    content_type = request.headers.get("content-type", "")
-    
     try:
-        if "application/json" in content_type:
-            data = await request.json()
-        else:
-            form_data = await request.form()
-            data = dict(form_data)
-    except Exception as e:
-        logger.error(f"Parsing Error: {e}")
+        ct = request.headers.get("content-type", "")
+        if "application/json" in ct: data = await request.json()
+        else: data = dict(await request.form())
+    except: pass
 
-    # 2. Extract Data (With Defaults)
+    # 2. Defaults to prevent crash
     name = data.get("name") or "Traveler"
-    dob = data.get("dob") or "1990-01-01"
+    dob = safe_get_date(data.get("dob"))
     tob = data.get("tob") or "12:00"
     city = data.get("city") or "London"
     struggle = data.get("struggle") or "General"
-    
-    logger.info(f"Processing for: {name}, City: {city}, DOB: {dob}")
 
-    # 3. Calculations
-    clean_dob = safe_get_date(dob)
-    life_path = calculate_life_path(clean_dob)
-    lat, lon, tz_str = resolve_location(city)
-    
-    # Astrology Chart
+    # 3. Calculations (The Real Engine)
     try:
-        date_obj = Datetime(clean_dob, tob, tz_str)
-        pos_obj = GeoPos(lat, lon)
-        chart = Chart(date_obj, pos_obj)
+        lat, lon, tz_str = resolve_location(city)
+        dt_obj = Datetime(dob, tob, tz_str)
+        geo_obj = GeoPos(lat, lon)
+        chart = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
         chart_data = {}
-        hd_sun, hd_earth = 1, 2
+        planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
         
-        for p_id in [const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN]:
-            obj = chart.get(p_id)
+        hd_sun_gate = 1
+        hd_earth_gate = 2
+        
+        for p in planets:
+            obj = chart.get(getattr(const, p.upper()))
             gate = get_hd_gate(obj.sign, obj.lon % 30)
-            chart_data[p_id] = {"Sign": obj.sign, "Gate": gate}
+            chart_data[p] = {"Sign": obj.sign, "Gate": gate}
+            if p == "Sun": hd_sun_gate = gate
+            if p == "Earth": hd_earth_gate = gate # Note: Flatlib doesn't calc Earth by default, using Sun-180 logic later if needed
             
-            if p_id == const.SUN: hd_sun = gate
-            if p_id == const.EARTH: hd_earth = gate
-            
-        hd_profile = f"{(hd_sun % 6) + 1}/{(hd_earth % 6) + 1}"
+        # Rising Sign
+        asc = chart.get(const.ASC)
+        chart_data["Rising"] = {"Sign": asc.sign, "Gate": get_hd_gate(asc.sign, asc.lon % 30)}
+        
+        # Profile (Simplified)
+        line_sun = (hd_sun_gate % 6) + 1
+        hd_profile = f"{line_sun}/?" 
+        
+        lp = calculate_life_path(dob)
+        
     except Exception as e:
-        logger.error(f"Chart Calc Error: {e}")
-        hd_profile = "unknown"
-        chart_data = {"Sun": {"Sign": "Unknown", "Gate": 1}}
+        logger.error(f"Calc Error: {e}")
+        chart_data = {"Sun": {"Sign": "Unknown", "Gate": "?"}}
+        hd_profile = "Unknown"
+        lp = 0
 
-    # 4. Generate Outputs
-    advice_html = get_strategic_advice(struggle, chart_data)
-    pdf_b64 = create_pdf_b64(name, life_path, hd_profile, advice_html, chart_data)
+    # 4. Generate Advice & PDF
+    topic, advice_text = get_strategic_advice(struggle, chart_data)
+    pdf_b64 = create_pdf_b64(name, lp, hd_profile, (topic, advice_text), chart_data)
 
-    # 5. Return JSON containing HTML (For Wix Compatibility)
-    html_content = f"""
+    # 5. Return JSON with Rich HTML
+    html = f"""
     <!DOCTYPE html>
-    <html lang="en">
+    <html>
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Cosmic Blueprint</title>
-        <style>
-            body {{ font-family: 'Courier New', monospace; background: transparent; color: #fff; padding: 20px; }}
-            .card {{ background: rgba(0,0,0,0.8); padding: 20px; border: 1px solid #555; margin-bottom: 20px; border-radius: 8px; }}
-            h2 {{ color: #d4af37; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 0; }}
-            ul {{ list-style-type: none; padding: 0; }}
-            li {{ margin-bottom: 5px; }}
-            .btn {{ 
-                background: #d4af37; color: #000; padding: 12px 24px; 
-                text-decoration: none; font-weight: bold; border:none; 
-                cursor:pointer; font-size:16px; display: inline-block;
-                border-radius: 4px;
-            }}
-            .footer-guard {{ height: 500px; width: 100%; }}
-        </style>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
+        body {{ font-family: 'Source Sans Pro', sans-serif; padding: 20px; line-height: 1.6; color: #333; }}
+        .card {{ background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }}
+        h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin-top: 0; }}
+        .highlight {{ color: #C71585; font-weight: bold; }}
+        .btn {{ 
+            background-color: #D4AF37; color: white; border: none; padding: 15px 30px; 
+            font-size: 16px; border-radius: 50px; cursor: pointer; display: block; 
+            width: 100%; max-width: 300px; margin: 20px auto; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }}
+        .spacer {{ height: 500px; }}
+    </style>
     </head>
     <body>
-        <div class="card">
-            <h2>Report for {name}</h2>
-            <p><strong>Life Path:</strong> {life_path}</p>
-            <p><strong>HD Profile:</strong> {hd_profile}</p>
+        <div class="card" style="text-align:center;">
+            <h2>The Integrated Self</h2>
+            <p>Prepared for {name}</p>
+            <p><strong>Life Path:</strong> {lp} | <strong>Profile:</strong> {hd_profile}</p>
         </div>
-        
-        <div class="card">
-            <h2>Strategic Guidance</h2>
-            <p>{advice_html}</p>
+
+        <div class="card" style="border-left: 5px solid #D4AF37;">
+            <h2>⚡ Strategic Insight: {topic}</h2>
+            <p>{advice_text}</p>
         </div>
 
         <div class="card">
-            <h2>Planetary Data</h2>
-            <ul>
-                {"".join([f"<li><strong>{k}:</strong> {v['Sign']} (Gate {v['Gate']})</li>" for k,v in chart_data.items()])}
-            </ul>
+            <h2>The Blueprint</h2>
+            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong>: {MEGA_MATRIX.get(chart_data.get('Sun',{}).get('Sign','?'), '')}</p>
+            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong>: {MEGA_MATRIX.get(chart_data.get('Moon',{}).get('Sign','?'), '')}</p>
+            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong>: {MEGA_MATRIX.get(chart_data.get('Rising',{}).get('Sign','?'), '')}</p>
         </div>
 
-        <div class="card">
-            <button onclick="dlPDF()" class="btn">Download PDF</button>
-        </div>
+        <button onclick="downloadPDF()" class="btn">⬇️ DOWNLOAD PDF REPORT</button>
 
-        <input type="hidden" id="pdfData" value="{pdf_b64}">
         <script>
-            function dlPDF() {{
-                const b64 = document.getElementById('pdfData').value;
-                if(!b64) {{ alert('PDF generation failed.'); return; }}
+            function downloadPDF() {{
                 const link = document.createElement('a');
-                link.href = 'data:application/pdf;base64,' + b64;
-                link.download = 'Cosmic_Report_{name}.pdf';
-                document.body.appendChild(link);
+                link.href = 'data:application/pdf;base64,{pdf_b64}';
+                link.download = 'Integrated_Self_Report.pdf';
                 link.click();
-                document.body.removeChild(link);
             }}
         </script>
-        
-        <div class="footer-guard"></div>
+
+        <div class="spacer"></div>
     </body>
     </html>
     """
     
-    return {"report": html_content}
+    return {"report": html}
