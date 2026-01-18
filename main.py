@@ -32,6 +32,7 @@ CITY_DB = {
 }
 
 # --- 2. DATA: THE CORRECTED MAP (Starts at Aries/Gate 25) ---
+# This aligns 0° Aries (Flatlib start) with Gate 25 (HD Aries start)
 RAVE_ORDER = [
     25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 
     62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 
@@ -126,8 +127,11 @@ def calculate_life_path(dob_str):
 
 def resolve_location(city_name):
     city_lower = str(city_name).lower().strip()
+    # 1. Backup DB
     for key in CITY_DB:
-        if key in city_lower: return CITY_DB[key]
+        if key in city_lower:
+            return CITY_DB[key]
+    # 2. Live Lookup
     try:
         geolocator = Nominatim(user_agent="ia_v99_final")
         loc = geolocator.geocode(city_name)
