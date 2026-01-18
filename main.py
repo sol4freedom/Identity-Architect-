@@ -6,14 +6,14 @@ import datetime
 import traceback
 import base64
 
-# --- LIGHTWEIGHT IMPORTS ---
+# --- IMPORTS ---
 from geopy.geocoders import Nominatim
+# TimezoneFinder and FPDF are imported inside functions to prevent "System Error" timeout
 import pytz
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-# Note: Heavy imports (TimezoneFinder, FPDF) moved inside functions to prevent Timeout
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -118,7 +118,7 @@ def generate_desc(planet, sign):
 
 # --- SERVER-SIDE PDF GENERATOR (Lazy Loaded) ---
 def create_pdf_b64(data, lp, hd, keys, objs, rising):
-    from fpdf import FPDF # Lazy import to prevent startup crash
+    from fpdf import FPDF
     
     class PDF(FPDF):
         def header(self):
@@ -195,8 +195,8 @@ def resolve_location(city_input, date_str, time_str):
         return lat, lon, tz_std + 1.0 if is_dst else tz_std, "Backup Table"
 
     try:
-        from timezonefinder import TimezoneFinder # Lazy import to prevent startup crash
-        geolocator = Nominatim(user_agent="ia_v40_opt", timeout=10)
+        from timezonefinder import TimezoneFinder
+        geolocator = Nominatim(user_agent="ia_v42_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -214,7 +214,7 @@ def resolve_location(city_input, date_str, time_str):
 
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
-    email: str = None 
+    email: str = None # FIX: Email is now optional!
     
     @validator('date', pre=True)
     def clean_date_format(cls, v):
@@ -284,10 +284,7 @@ def generate_reading(data: UserInput):
                 width: 100%; max-width: 300px; text-align: center; text-decoration: none;
                 box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
             }}
-            .end-marker {{ 
-                margin-top: 60px; border-top: 2px dashed #ddd; padding-top: 20px; 
-                text-align: center; color: #aaa; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
-            }}
+            .end-marker {{ text-align: center; margin-top: 60px; border-top: 1px dashed #ccc; padding-top: 20px; color: #aaa; font-size: 12px; letter-spacing: 2px; }}
         </style>
         </head>
         <body>
