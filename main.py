@@ -36,7 +36,7 @@ app.add_middleware(
 )
 
 # ------------------------------------------------------------------------------
-# 3. RICH DATA (The Brains)
+# 3. DATA & LORE
 # ------------------------------------------------------------------------------
 CITY_DB = {
     "minneapolis": (44.9778, -93.2650, "America/Chicago"),
@@ -53,39 +53,38 @@ RAVE_ORDER = [
     9, 5, 26, 11, 10, 58, 38, 54, 61, 60
 ]
 
-MEGA_MATRIX = {
-    "Aries": "The Pioneer (Courage)", "Taurus": "The Builder (Stability)",
-    "Gemini": "The Messenger (Curiosity)", "Cancer": "The Nurturer (Protection)",
-    "Leo": "The Star (Expression)", "Virgo": "The Healer (Precision)",
-    "Libra": "The Diplomat (Harmony)", "Scorpio": "The Mystic (Transformation)",
-    "Sagittarius": "The Explorer (Freedom)", "Capricorn": "The Boss (Ambition)",
-    "Aquarius": "The Visionary (Innovation)", "Pisces": "The Dreamer (Empathy)"
-}
-
-KEY_LORE = {i: f"Gate {i}" for i in range(1, 65)}
-# (You can expand this later, keeping it light for safety)
-
 # ------------------------------------------------------------------------------
 # 4. LOGIC FUNCTIONS
 # ------------------------------------------------------------------------------
 
 def safe_get_date(date_input):
+    """Ensures we have a string YYYY-MM-DD."""
     if not date_input: return datetime.date.today().strftime("%Y-%m-%d")
     s = str(date_input).strip()
     if "T" in s: s = s.split("T")[0]
     return s
 
 def calculate_life_path(dob_str):
+    """
+    Bulletproof Numerology:
+    Extracts digits from ANY string and sums them.
+    Ex: '1992-11-06' -> 1+9+9+2+1+1+0+6 = 29 -> 11 (Master)
+    """
     try:
-        clean = safe_get_date(dob_str)
-        parts = clean.split("-")
-        if len(parts) != 3: return 0
-        total = sum(int(p) for p in parts)
+        # Step 1: Extract only digits
+        digits = [int(d) for d in dob_str if d.isdigit()]
+        if not digits: return 0
         
+        total = sum(digits)
+        
+        # Step 2: Reduce (keeping Master Numbers 11, 22, 33)
         while total > 9 and total not in [11, 22, 33]:
             total = sum(int(d) for d in str(total))
+            
         return total
-    except: return 0
+    except Exception as e:
+        logger.error(f"Numerology logic failed: {e}")
+        return 0
 
 def resolve_location(city_name):
     city_lower = str(city_name).lower().strip()
@@ -97,7 +96,7 @@ def resolve_location(city_name):
             
     # 2. Geopy Lookup
     try:
-        geolocator = Nominatim(user_agent="ia_v60_full")
+        geolocator = Nominatim(user_agent="ia_v61_fix")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -119,7 +118,6 @@ def get_hd_gate(sign, degree):
 
 def get_strategic_advice(struggle, chart):
     s = str(struggle).lower()
-    sun_sign = chart.get("Sun", {}).get("Sign", "Unknown")
     
     if any(x in s for x in ['money', 'career', 'job', 'wealth']):
         jup = chart.get("Jupiter", {}).get("Sign", "Unknown")
@@ -137,31 +135,34 @@ def get_strategic_advice(struggle, chart):
 
 def create_pdf_b64(name, lp, hd, advice, chart):
     from fpdf import FPDF
+    
     class PDF(FPDF):
         def header(self):
-            self.set_font('Arial', 'B', 16)
+            # Use Helvetica (Standard Core Font) to avoid warnings
+            self.set_font('Helvetica', 'B', 16)
             self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
             self.ln(5)
             
     try:
         pdf = PDF()
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
+        pdf.set_font("Helvetica", size=12)
         
         pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
         pdf.cell(0, 10, f"Life Path: {lp} | Profile: {hd}", 0, 1)
         pdf.ln(5)
         
-        pdf.set_font("Arial", 'B', 14)
+        pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, "Strategic Guidance", 0, 1)
-        pdf.set_font("Arial", '', 12)
+        pdf.set_font("Helvetica", '', 12)
+        
         clean_advice = advice[1].replace("**", "").replace("<br>", "\n")
         pdf.multi_cell(0, 7, clean_advice)
         pdf.ln(5)
         
-        pdf.set_font("Arial", 'B', 14)
+        pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, "Planetary Blueprint", 0, 1)
-        pdf.set_font("Arial", '', 12)
+        pdf.set_font("Helvetica", '', 12)
         
         for k, v in chart.items():
             sign = v.get("Sign", "?")
@@ -169,7 +170,8 @@ def create_pdf_b64(name, lp, hd, advice, chart):
             pdf.cell(0, 8, f"{k}: {sign} (Gate {gate})", 0, 1)
             
         return base64.b64encode(pdf.output().encode('latin-1', 'ignore')).decode('utf-8')
-    except:
+    except Exception as e:
+        logger.error(f"PDF Gen Error: {e}")
         return ""
 
 # ------------------------------------------------------------------------------
@@ -186,14 +188,14 @@ async def calculate_chart(request: Request):
         else: data = dict(await request.form())
     except: pass
 
-    # 2. Defaults to prevent crash
+    # 2. Defaults
     name = data.get("name") or "Traveler"
     dob = safe_get_date(data.get("dob"))
     tob = data.get("tob") or "12:00"
     city = data.get("city") or "London"
     struggle = data.get("struggle") or "General"
 
-    # 3. Calculations (The Real Engine)
+    # 3. Calculations
     try:
         lat, lon, tz_str = resolve_location(city)
         dt_obj = Datetime(dob, tob, tz_str)
@@ -211,16 +213,17 @@ async def calculate_chart(request: Request):
             gate = get_hd_gate(obj.sign, obj.lon % 30)
             chart_data[p] = {"Sign": obj.sign, "Gate": gate}
             if p == "Sun": hd_sun_gate = gate
-            if p == "Earth": hd_earth_gate = gate # Note: Flatlib doesn't calc Earth by default, using Sun-180 logic later if needed
+            if p == "Earth": hd_earth_gate = gate 
             
         # Rising Sign
         asc = chart.get(const.ASC)
         chart_data["Rising"] = {"Sign": asc.sign, "Gate": get_hd_gate(asc.sign, asc.lon % 30)}
         
-        # Profile (Simplified)
+        # Profile
         line_sun = (hd_sun_gate % 6) + 1
         hd_profile = f"{line_sun}/?" 
         
+        # Numerology (Using the new Bulletproof Function)
         lp = calculate_life_path(dob)
         
     except Exception as e:
@@ -267,9 +270,9 @@ async def calculate_chart(request: Request):
 
         <div class="card">
             <h2>The Blueprint</h2>
-            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong>: {MEGA_MATRIX.get(chart_data.get('Sun',{}).get('Sign','?'), '')}</p>
-            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong>: {MEGA_MATRIX.get(chart_data.get('Moon',{}).get('Sign','?'), '')}</p>
-            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong>: {MEGA_MATRIX.get(chart_data.get('Rising',{}).get('Sign','?'), '')}</p>
+            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Sun',{}).get('Gate','?')})</p>
+            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Moon',{}).get('Gate','?')})</p>
+            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Rising',{}).get('Gate','?')})</p>
         </div>
 
         <button onclick="downloadPDF()" class="btn">⬇️ DOWNLOAD PDF REPORT</button>
