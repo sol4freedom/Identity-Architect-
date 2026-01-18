@@ -4,11 +4,10 @@ from pydantic import BaseModel, validator
 from typing import Union
 import datetime
 import traceback
-import base64
 
 # --- IMPORTS ---
 from geopy.geocoders import Nominatim
-# Lazy loading applied later for heavy libs (TimezoneFinder, FPDF)
+# Lazy loading applied later for heavy libs to prevent timeouts
 import pytz
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
@@ -60,10 +59,8 @@ KEY_LORE = {
     51: {"name": "The Shock", "story": "Initiation by thunder."}, 52: {"name": "The Stillness", "story": "The Mountain waiting."},
     53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new."},
     54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward seeking success."},
-    55: {"name": "The Spirit", "story": "Freedom. You accept high and low emotions to find the spirit."},
-    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas to weave the collective myth."},
-    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the vibration of the now."},
-    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
+    55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
+    57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
@@ -93,7 +90,7 @@ NUMEROLOGY_LORE = {
     22: {"name": "The Master Builder", "desc": "Turning dreams into reality."}, 33: {"name": "The Master Teacher", "desc": "Uplifting via compassion."}
 }
 
-# --- 2. HELPER FUNCTIONS (This was missing!) ---
+# --- 2. HELPER FUNCTIONS ---
 def get_key_data(degree):
     if degree is None: return {"name": "Unknown", "story": ""}
     index = int(degree / 5.625)
@@ -107,9 +104,7 @@ def get_hd_profile(p_degree, d_degree):
     return {"name": f"{key} Profile"}
 
 def calculate_life_path(date_str):
-    # SAFETY: Strip time from date string if present
     if "T" in date_str: date_str = date_str.split("T")[0]
-    
     digits = [int(d) for d in date_str if d.isdigit()]
     total = sum(digits)
     while total > 9 and total not in [11, 22, 33]:
@@ -120,63 +115,31 @@ def calculate_life_path(date_str):
 def generate_desc(planet, sign):
     return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
 
-# --- 3. SERVER-SIDE PDF GENERATOR ---
-def create_pdf_b64(data, lp, hd, keys, objs, rising):
-    from fpdf import FPDF
+# --- 3. THE STRUGGLE ENGINE (NEW) ---
+def get_strategic_advice(struggle_text, objs, rising):
+    s = struggle_text.lower()
     
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('Helvetica', 'B', 15)
-            self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
-            self.ln(5)
+    if any(x in s for x in ['money', 'wealth', 'finance', 'job', 'career', 'business', 'work']):
+        # Business Advice: Jupiter (Expansion) & Saturn (Structure)
+        j_sign = objs['Jupiter'].sign
+        s_sign = objs['Saturn'].sign
+        return "Money & Career", f"Your path to wealth involves balancing the expansion of **Jupiter in {j_sign}** ({MEGA_MATRIX[j_sign]['Jupiter']}) with the discipline of **Saturn in {s_sign}** ({MEGA_MATRIX[s_sign]['Saturn']})."
 
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=12)
-    
-    # User Info
-    pdf.set_font("Helvetica", 'I', 10)
-    pdf.cell(0, 10, f"Prepared for {data.name.upper()}", 0, 1, 'C')
-    pdf.ln(5)
-    
-    # Sections
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(100, 50, 150)
-    pdf.cell(0, 10, f"LIFE PATH: {lp['number']} - {lp['name']}", 0, 1)
-    pdf.set_font("Helvetica", '', 12)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 8, txt=f"{lp['desc']}")
-    pdf.ln(5)
-    
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(200, 50, 100)
-    pdf.cell(0, 10, "COSMIC SIGNATURE", 0, 1)
-    pdf.set_font("Helvetica", '', 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 7, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}\nMercury: {objs['Mercury'].sign}\nVenus: {objs['Venus'].sign}")
-    pdf.ln(5)
-    
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(200, 150, 0)
-    pdf.cell(0, 10, "THE BLUEPRINT", 0, 1)
-    pdf.set_font("Helvetica", '', 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 7, f"Profile: {hd['name']}\nCalling: {keys['lw']['name']} - {keys['lw']['story']}\nGrowth: {keys['evo']['name']} - {keys['evo']['story']}")
-    pdf.ln(5)
+    elif any(x in s for x in ['love', 'relationship', 'partner', 'marriage', 'dating', 'family', 'wife', 'husband']):
+        # Love Advice: Venus (Desire) & Moon (Needs)
+        v_sign = objs['Venus'].sign
+        m_sign = objs['Moon'].sign
+        return "Relationships", f"For connection, honor your **Venus in {v_sign}** ({MEGA_MATRIX[v_sign]['Venus']}), but do not neglect the safety needs of your **Moon in {m_sign}**."
 
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(50, 50, 50)
-    pdf.cell(0, 10, "THE VAULT (UNCONSCIOUS)", 0, 1)
-    pdf.set_font("Helvetica", '', 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 7, f"Aura: {keys['rad']['name']} - {keys['rad']['story']}\nRoot: {keys['pur']['name']} - {keys['pur']['story']}\nMagnet: {keys['att']['name']} - {keys['att']['story']}")
-    pdf.ln(10)
+    elif any(x in s for x in ['purpose', 'direction', 'lost', 'confused', 'life', 'why']):
+        # Purpose Advice: Sun (Core) & Mars (Drive)
+        sun_sign = objs['Sun'].sign
+        mars_sign = objs['Mars'].sign
+        return "Life Purpose", f"Your core identity is **Sun in {sun_sign}**. To activate it, use the drive of **Mars in {mars_sign}** ({MEGA_MATRIX[mars_sign]['Mars']})."
 
-    pdf.set_font("Helvetica", 'I', 12)
-    pdf.multi_cell(0, 8, f"Current Struggle: {data.struggle}\nAdvice: Lean into your {rising.sign} Rising energy.")
-
-    # FIX: Correct PDF output for FPDF2 (Returns raw bytes, no encoding needed)
-    return base64.b64encode(bytes(pdf.output())).decode('utf-8')
+    else:
+        # Default Advice: Rising Sign (The Helm)
+        return "General Alignment", f"To navigate this, lean into your **{rising.sign} Rising**. This is your hull and first line of defense: {MEGA_MATRIX[rising.sign]['Rising']}."
 
 # --- 4. TIMEZONE ENGINE ---
 def resolve_location(city_input, date_str, time_str):
@@ -199,7 +162,7 @@ def resolve_location(city_input, date_str, time_str):
 
     try:
         from timezonefinder import TimezoneFinder
-        geolocator = Nominatim(user_agent="ia_v47_fix", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v48_final", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -233,153 +196,9 @@ def generate_reading(data: UserInput):
         safe_date = data.date.split("T")[0] if "T" in data.date else data.date
         lat, lon, tz, source = resolve_location(data.city, safe_date, data.time)
 
+        # Astrology
         dt = Datetime(safe_date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
         
-        objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
-        rising = chart.get(const.HOUSE1)
-
-        d_dt = datetime.datetime.strptime(safe_date, "%Y-%m-%d") - datetime.timedelta(days=88)
-        d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
-        d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
-
-        lp = calculate_life_path(safe_date)
-        hd = get_hd_profile(objs['Sun'].lon, d_sun.lon)
-        keys = {
-            'lw': get_key_data(objs['Sun'].lon), 'evo': get_key_data((objs['Sun'].lon + 180) % 360),
-            'rad': get_key_data(d_sun.lon), 'pur': get_key_data((d_sun.lon + 180) % 360),
-            'att': get_key_data(d_moon.lon)
-        }
-
-        # PDF GENERATION
-        pdf_b64 = create_pdf_b64(data, lp, hd, keys, objs, rising)
-
-        # HTML REPORT
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="UTF-8">
-        <script>
-        function downloadPDF(b64Data) {{
-            const linkSource = `data:application/pdf;base64,${{b64Data}}`;
-            const downloadLink = document.createElement("a");
-            const fileName = "Integrated_Self_Code.pdf";
-            downloadLink.href = linkSource;
-            downloadLink.download = fileName;
-            downloadLink.click();
-        }}
-        </script>
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
-            body {{ font-family: 'Source Sans Pro', sans-serif; background: #f5f5f5; color: #333; padding: 20px; line-height: 1.6; }}
-            .main-container {{ max-width: 700px; margin: 0 auto; }}
-            .card {{ 
-                background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; 
-                box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid #ddd;
-            }}
-            h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin: 0 0 5px 0; font-size: 28px; text-align: center; }}
-            h3 {{ font-family: 'Playfair Display', serif; font-size: 22px; margin: 0 0 15px 0; color: #222; }}
-            .item {{ margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }}
-            .item:last-child {{ border: none; padding-bottom: 0; }}
-            .label {{ font-weight: 600; color: #444; font-size: 1.05em; display:block; margin-bottom: 4px; }}
-            .desc {{ font-size: 0.95em; color: #666; display: block; }}
-            .card.cosmic {{ border-left-color: #C71585; }}
-            .card.blueprint {{ border-left-color: #D4AF37; }}
-            .card.boardroom {{ border-left-color: #4682B4; }}
-            .card.sanctuary {{ border-left-color: #2E8B57; }}
-            .card.streets {{ border-left-color: #CD5C5C; }}
-            .card.vault {{ border-left-color: #FFD700; background: #222; color: #fff; }}
-            .card.vault .label {{ color: #fff; }}
-            .card.vault .desc {{ color: #ccc; }}
-            .card.vault h3 {{ color: #FFD700; }}
-            .btn {{ 
-                background-color: #D4AF37; color: white; border: none; padding: 18px 40px; font-size: 16px; 
-                border-radius: 50px; font-weight: bold; cursor: pointer; display: block; margin: 30px auto; 
-                width: 100%; max-width: 300px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-                text-decoration: none;
-            }}
-            .end-marker {{ 
-                text-align: center; margin-top: 50px; margin-bottom: 50px; 
-                color: #aaa; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid #ccc; padding-top: 15px;
-            }}
-            /* Massive spacer to push footer away */
-            .footer-guard {{ height: 150px; }}
-        </style>
-        </head>
-        <body>
-            <div class="main-container">
-                <div class="card" style="text-align:center; border:none;">
-                    <h2>The Integrated Self</h2>
-                    <div style="font-size:12px; color:#999; letter-spacing:1px;">PREPARED FOR {data.name.upper()}</div>
-                </div>
-
-                <div class="card" style="text-align:center; background:#F8F4FF; border-left:none;">
-                    <div style="font-size:11px; letter-spacing:2px; margin-bottom:5px; color:#888;">LIFE PATH VIBRATION</div>
-                    <h3 style="color:#6A5ACD; font-size:24px; margin:0;">{lp['number']}: {lp['name']}</h3>
-                    <p style="font-style:italic; margin-top:10px;">"{lp['desc']}"</p>
-                </div>
-
-                <div class="card cosmic">
-                    <h3 style="color:#C71585;">✨ The Cosmic Signature</h3>
-                    <div class="item"><span class="label">☀️ Sun in {objs['Sun'].sign}:</span> <span class="desc">"{generate_desc('Sun', objs['Sun'].sign)}"</span></div>
-                    <div class="item"><span class="label">🌙 Moon in {objs['Moon'].sign}:</span> <span class="desc">"{generate_desc('Moon', objs['Moon'].sign)}"</span></div>
-                    <div class="item"><span class="label">🏹 Rising in {rising.sign}:</span> <span class="desc">"{generate_desc('Rising', rising.sign)}"</span></div>
-                    <div class="item"><span class="label">🗣️ Mercury in {objs['Mercury'].sign}:</span> <span class="desc">"{generate_desc('Mercury', objs['Mercury'].sign)}"</span></div>
-                    <div class="item"><span class="label">❤️ Venus in {objs['Venus'].sign}:</span> <span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
-                </div>
-
-                <div class="card blueprint">
-                    <h3 style="color:#D4AF37;">🗝️ The Blueprint</h3>
-                    <div class="item"><span class="label">🎭 Profile:</span> {hd['name']}</div>
-                    <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
-                    <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
-                </div>
-
-                <div class="card boardroom">
-                    <h3 style="color:#4682B4;">The Boardroom</h3>
-                    <div class="item"><span class="label">👔 CEO (Saturn in {objs['Saturn'].sign})</span> <span class="desc">"{generate_desc('Saturn', objs['Saturn'].sign)}"</span></div>
-                    <div class="item"><span class="label">💰 Mogul (Jupiter in {objs['Jupiter'].sign})</span> <span class="desc">"{generate_desc('Jupiter', objs['Jupiter'].sign)}"</span></div>
-                </div>
-
-                <div class="card sanctuary">
-                    <h3 style="color:#2E8B57;">The Sanctuary</h3>
-                    <div class="item"><span class="label">🎨 Muse (Venus in {objs['Venus'].sign})</span> <span class="desc">"{generate_desc('Venus', objs['Venus'].sign)}"</span></div>
-                    <div class="item"><span class="label">🌫️ Dreamer (Neptune in {objs['Neptune'].sign})</span> <span class="desc">"{generate_desc('Neptune', objs['Neptune'].sign)}"</span></div>
-                </div>
-
-                <div class="card streets">
-                    <h3 style="color:#CD5C5C;">The Streets</h3>
-                    <div class="item"><span class="label">🔥 Hustle (Mars in {objs['Mars'].sign})</span> <span class="desc">"{generate_desc('Mars', objs['Mars'].sign)}"</span></div>
-                    <div class="item"><span class="label">⚡ Disruptor (Uranus in {objs['Uranus'].sign})</span> <span class="desc">"{generate_desc('Uranus', objs['Uranus'].sign)}"</span></div>
-                    <div class="item"><span class="label">🕵️ Kingpin (Pluto in {objs['Pluto'].sign})</span> <span class="desc">"{generate_desc('Pluto', objs['Pluto'].sign)}"</span></div>
-                </div>
-
-                <div class="card vault">
-                    <h3>🔒 The Vault</h3>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <span class="vault-desc">"{keys['rad']['story']}"</span></div>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <span class="vault-desc">"{keys['pur']['story']}"</span></div>
-                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <span class="vault-desc">"{keys['att']['story']}"</span></div>
-                </div>
-
-                <div class="card" style="text-align:center; font-style:italic;">
-                    <p style="margin:0;"><strong>Current Struggle:</strong> {data.struggle}</p>
-                    <p style="margin:10px 0 0 0;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
-                </div>
-                
-                <button onclick="downloadPDF('{pdf_b64}')" class="btn">⬇️ DOWNLOAD PDF REPORT</button>
-                
-                <div class="end-marker">--- END OF GENERATED REPORT ---</div>
-                <div style="text-align:center; font-size:10px; color:#ccc; margin-top:10px;">{data.city} | {safe_date} | TZ: {tz}</div>
-                
-                <div class="footer-guard"></div>
-            </div>
-        </body>
-        </html>
-        """
-        return {"report": html}
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return {"report": f"<div style='color:red; padding:20px;'>Error: {str(e)}</div>"}
+        objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "
