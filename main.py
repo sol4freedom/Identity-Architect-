@@ -8,18 +8,17 @@ import base64
 
 # --- IMPORTS ---
 from geopy.geocoders import Nominatim
-# Lazy loading applied later for heavy libs to prevent timeouts
+# Lazy loading applied later for heavy libs (TimezoneFinder, FPDF)
 import pytz
 from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-from fpdf import FPDF
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- 1. BACKUP CITY DATABASE ---
+# --- 1. DATA LIBRARIES ---
 CITY_DB = {
     "sao paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
     "são paulo": {"lat": -23.55, "lon": -46.63, "tz_std": -3.0, "hemisphere": "S"},
@@ -32,7 +31,6 @@ CITY_DB = {
 
 RAVE_ORDER = [25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36]
 
-# --- ARCHETYPES ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness."}, 2: {"name": "The Receptive", "story": "The Divine Feminine blueprint."},
     3: {"name": "The Innovator", "story": "Chaos into Order."}, 4: {"name": "The Logic Master", "story": "The Answer to doubt."},
@@ -62,15 +60,125 @@ KEY_LORE = {
     51: {"name": "The Shock", "story": "Initiation by thunder."}, 52: {"name": "The Stillness", "story": "The Mountain waiting."},
     53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new."},
     54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward seeking success."},
-    55: {"name": "The Spirit", "story": "Freedom in emotion."}, 56: {"name": "The Storyteller", "story": "Wandering through myths."},
-    57: {"name": "The Intuitive", "story": "Clarity in the now."}, 58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
+    55: {"name": "The Spirit", "story": "Freedom. You accept high and low emotions to find the spirit."},
+    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas to weave the collective myth."},
+    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the vibration of the now."},
+    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of improvement."},
     59: {"name": "The Sexual", "story": "Intimacy breaking barriers."}, 60: {"name": "The Limitation", "story": "Realism grounding magic."},
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
-# --- END OF PART 1 (SAFETY BUMPER) ---
-# --- PART 3 START (SAFE BUMPER) ---
-# --- TIMEZONE ENGINE ---
+
+MEGA_MATRIX = {
+    "Aries": {"Sun": "You are a pioneer; bold, independent, and direct.", "Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
+    "Taurus": {"Sun": "You are a builder; grounded, patient, and reliable.", "Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
+    "Gemini": {"Sun": "You are a messenger; curious, adaptable, and witty.", "Mercury": "Brilliant, agile processing.", "Saturn": "Structuring the intellect.", "Jupiter": "Luck via networking.", "Moon": "Safety in conversation.", "Venus": "Mental love and wit.", "Neptune": "Telepathic connection.", "Mars": "Versatile, scattered drive.", "Uranus": "Disrupting narratives.", "Pluto": "Psychological reprogramming.", "Rising": "Youthful curiosity."},
+    "Cancer": {"Sun": "You are a nurturer; intuitive, protective, and feeling.", "Mercury": "Intuitive, memory-based speech.", "Saturn": "Responsibility to the clan.", "Jupiter": "Wealth via real estate.", "Moon": "Safety in a shell.", "Venus": "Caretaking love.", "Neptune": "Dreams of the perfect home.", "Mars": "Defensive protection.", "Uranus": "Revolutionizing family.", "Pluto": "Ancestral healing.", "Rising": "Gentle, receptive aura."},
+    "Leo": {"Sun": "You are a star; creative, generous, and radiant.", "Mercury": "Dramatic storytelling.", "Saturn": "Disciplined creativity.", "Jupiter": "Luck via visibility.", "Moon": "Safety in appreciation.", "Venus": "Grand, performative romance.", "Neptune": "Dreams of fame.", "Mars": "Drive fueled by honor.", "Uranus": "Disrupting the ego.", "Pluto": "Rebirth of identity.", "Rising": "Warm charisma."},
+    "Virgo": {"Sun": "You are a healer; analytical, practical, and precise.", "Mercury": "Precise, analytical logic.", "Saturn": "Mastery of craft.", "Jupiter": "Expansion via details.", "Moon": "Safety in routine.", "Venus": "Devoted, practical love.", "Neptune": "Perfect healing.", "Mars": "Efficient action.", "Uranus": "Revolutionizing work.", "Pluto": "Deep purification.", "Rising": "Modest and sharp."},
+    "Libra": {"Sun": "You are a diplomat; charming, fair, and balanced.", "Mercury": "Diplomatic negotiation.", "Saturn": "Structuring contracts.", "Jupiter": "Wealth via partnerships.", "Moon": "Safety in harmony.", "Venus": "Aesthetic love.", "Neptune": "Dreams of the soulmate.", "Mars": "Strategic alliances.", "Uranus": "Disrupting norms.", "Pluto": "Transformation via mirroring.", "Rising": "Graceful intelligence."},
+    "Scorpio": {"Sun": "You are a mystic; intense, passionate, and transformative.", "Mercury": "Detective mind.", "Saturn": "Mastery of self-control.", "Jupiter": "Power via research.", "Moon": "Safety in deep trust.", "Venus": "Soul-merging fusion.", "Neptune": "Dreams of mysteries.", "Mars": "Relentless will.", "Uranus": "Disrupting taboos.", "Pluto": "Total metamorphosis.", "Rising": "Magnetic intensity."},
+    "Sagittarius": {"Sun": "You are an explorer; optimistic, adventurous, and wise.", "Mercury": "Broad-minded philosophy.", "Saturn": "Structuring belief.", "Jupiter": "Luck via travel.", "Moon": "Safety in freedom.", "Venus": "Adventurous love.", "Neptune": "Dreams of nirvana.", "Mars": "Crusading for a cause.", "Uranus": "Disrupting dogma.", "Pluto": "Death of old beliefs.", "Rising": "Jovial optimism."},
+    "Capricorn": {"Sun": "You are a boss; ambitious, disciplined, and strategic.", "Mercury": "Pragmatic thinking.", "Saturn": "Building institutions.", "Jupiter": "Success via career.", "Moon": "Safety in control.", "Venus": "Serious commitment.", "Neptune": "Spiritual authority.", "Mars": "Disciplined drive.", "Uranus": "Disrupting government.", "Pluto": "Exposing corruption.", "Rising": "Authoritative capability."},
+    "Aquarius": {"Sun": "You are a visionary; original, independent, and humanitarian.", "Mercury": "Genius innovation.", "Saturn": "Structuring the future.", "Jupiter": "Luck via networks.", "Moon": "Safety in detachment.", "Venus": "Unconventional love.", "Neptune": "Dreams of utopia.", "Mars": "Rebellious drive.", "Uranus": "Awakening the collective.", "Pluto": "Power to the people.", "Rising": "Unique brilliance."},
+    "Pisces": {"Sun": "You are a dreamer; compassionate, artistic, and spiritual.", "Mercury": "Poetic thinking.", "Saturn": "Form to chaos.", "Jupiter": "Compassionate expansion.", "Moon": "Safety in solitude.", "Venus": "Spiritual love.", "Neptune": "Dissolving into oneness.", "Mars": "Fluid adaptability.", "Uranus": "Disrupting reality.", "Pluto": "Soul transformation.", "Rising": "Dreamy empathy."}
+}
+
+NUMEROLOGY_LORE = {
+    1: {"name": "The Pioneer", "desc": "Leading with independence."}, 2: {"name": "The Diplomat", "desc": "Thriving on partnership."},
+    3: {"name": "The Creator", "desc": "Expressing joy and optimism."}, 4: {"name": "The Builder", "desc": "Building stability through work."},
+    5: {"name": "The Adventurer", "desc": "Seeking freedom and change."}, 6: {"name": "The Nurturer", "desc": "Focusing on home and responsibility."},
+    7: {"name": "The Seeker", "desc": "Searching for deep truth."}, 8: {"name": "The Powerhouse", "desc": "Mastering abundance and success."},
+    9: {"name": "The Humanist", "desc": "Serving humanity."}, 11: {"name": "The Illuminator", "desc": "Channeling intuition."},
+    22: {"name": "The Master Builder", "desc": "Turning dreams into reality."}, 33: {"name": "The Master Teacher", "desc": "Uplifting via compassion."}
+}
+
+# --- 2. HELPER FUNCTIONS (This was missing!) ---
+def get_key_data(degree):
+    if degree is None: return {"name": "Unknown", "story": ""}
+    index = int(degree / 5.625)
+    if index >= 64: index = 0
+    key_number = RAVE_ORDER[index]
+    return KEY_LORE.get(key_number, {"name": f"Key {key_number}", "story": ""})
+
+def get_hd_profile(p_degree, d_degree):
+    def get_line(deg): return int((deg % 5.625) / 0.9375) + 1
+    key = f"{get_line(p_degree)}/{get_line(d_degree)}"
+    return {"name": f"{key} Profile"}
+
+def calculate_life_path(date_str):
+    # SAFETY: Strip time from date string if present
+    if "T" in date_str: date_str = date_str.split("T")[0]
+    
+    digits = [int(d) for d in date_str if d.isdigit()]
+    total = sum(digits)
+    while total > 9 and total not in [11, 22, 33]:
+        total = sum(int(d) for d in str(total))
+    data = NUMEROLOGY_LORE.get(total, {"name": "Mystery", "desc": ""})
+    return {"number": total, "name": data["name"], "desc": data["desc"]}
+
+def generate_desc(planet, sign):
+    return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
+
+# --- 3. SERVER-SIDE PDF GENERATOR ---
+def create_pdf_b64(data, lp, hd, keys, objs, rising):
+    from fpdf import FPDF
+    
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Helvetica', 'B', 15)
+            self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
+            self.ln(5)
+
+    pdf = PDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=12)
+    
+    # User Info
+    pdf.set_font("Helvetica", 'I', 10)
+    pdf.cell(0, 10, f"Prepared for {data.name.upper()}", 0, 1, 'C')
+    pdf.ln(5)
+    
+    # Sections
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(100, 50, 150)
+    pdf.cell(0, 10, f"LIFE PATH: {lp['number']} - {lp['name']}", 0, 1)
+    pdf.set_font("Helvetica", '', 12)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 8, txt=f"{lp['desc']}")
+    pdf.ln(5)
+    
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(200, 50, 100)
+    pdf.cell(0, 10, "COSMIC SIGNATURE", 0, 1)
+    pdf.set_font("Helvetica", '', 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 7, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}\nMercury: {objs['Mercury'].sign}\nVenus: {objs['Venus'].sign}")
+    pdf.ln(5)
+    
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(200, 150, 0)
+    pdf.cell(0, 10, "THE BLUEPRINT", 0, 1)
+    pdf.set_font("Helvetica", '', 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 7, f"Profile: {hd['name']}\nCalling: {keys['lw']['name']} - {keys['lw']['story']}\nGrowth: {keys['evo']['name']} - {keys['evo']['story']}")
+    pdf.ln(5)
+
+    pdf.set_font("Helvetica", 'B', 14)
+    pdf.set_text_color(50, 50, 50)
+    pdf.cell(0, 10, "THE VAULT (UNCONSCIOUS)", 0, 1)
+    pdf.set_font("Helvetica", '', 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.multi_cell(0, 7, f"Aura: {keys['rad']['name']} - {keys['rad']['story']}\nRoot: {keys['pur']['name']} - {keys['pur']['story']}\nMagnet: {keys['att']['name']} - {keys['att']['story']}")
+    pdf.ln(10)
+
+    pdf.set_font("Helvetica", 'I', 12)
+    pdf.multi_cell(0, 8, f"Current Struggle: {data.struggle}\nAdvice: Lean into your {rising.sign} Rising energy.")
+
+    # FIX: Correct PDF output for FPDF2 (Returns raw bytes, no encoding needed)
+    return base64.b64encode(bytes(pdf.output())).decode('utf-8')
+
+# --- 4. TIMEZONE ENGINE ---
 def resolve_location(city_input, date_str, time_str):
     city_clean = city_input.lower().strip()
     found_backup = None
@@ -91,7 +199,7 @@ def resolve_location(city_input, date_str, time_str):
 
     try:
         from timezonefinder import TimezoneFinder
-        geolocator = Nominatim(user_agent="ia_v46_fix", timeout=10)
+        geolocator = Nominatim(user_agent="ia_v47_fix", timeout=10)
         location = geolocator.geocode(city_input)
         if location:
             tf = TimezoneFinder()
@@ -107,6 +215,7 @@ def resolve_location(city_input, date_str, time_str):
 
     return 51.50, -0.12, 0.0, "Default"
 
+# --- 5. API ENDPOINT ---
 class UserInput(BaseModel):
     name: str; date: str; time: str; city: str; struggle: str
     email: str = None 
@@ -124,7 +233,6 @@ def generate_reading(data: UserInput):
         safe_date = data.date.split("T")[0] if "T" in data.date else data.date
         lat, lon, tz, source = resolve_location(data.city, safe_date, data.time)
 
-        # Astrology
         dt = Datetime(safe_date.replace("-", "/"), data.time, tz)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=[const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS, const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO], hsys=const.HOUSES_PLACIDUS)
@@ -132,7 +240,6 @@ def generate_reading(data: UserInput):
         objs = {k: chart.get(getattr(const, k.upper())) for k in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]}
         rising = chart.get(const.HOUSE1)
 
-        # Design
         d_dt = datetime.datetime.strptime(safe_date, "%Y-%m-%d") - datetime.timedelta(days=88)
         d_chart = Chart(Datetime(d_dt.strftime("%Y/%m/%d"), data.time, tz), geo, IDs=[const.SUN, const.MOON])
         d_sun = d_chart.get(const.SUN); d_moon = d_chart.get(const.MOON)
@@ -154,6 +261,16 @@ def generate_reading(data: UserInput):
         <html>
         <head>
         <meta charset="UTF-8">
+        <script>
+        function downloadPDF(b64Data) {{
+            const linkSource = `data:application/pdf;base64,${{b64Data}}`;
+            const downloadLink = document.createElement("a");
+            const fileName = "Integrated_Self_Code.pdf";
+            downloadLink.href = linkSource;
+            downloadLink.download = fileName;
+            downloadLink.click();
+        }}
+        </script>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
             body {{ font-family: 'Source Sans Pro', sans-serif; background: #f5f5f5; color: #333; padding: 20px; line-height: 1.6; }}
@@ -165,7 +282,7 @@ def generate_reading(data: UserInput):
             h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin: 0 0 5px 0; font-size: 28px; text-align: center; }}
             h3 {{ font-family: 'Playfair Display', serif; font-size: 22px; margin: 0 0 15px 0; color: #222; }}
             .item {{ margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px; }}
-            .item:last-child {{ border-bottom: none; padding-bottom: 0; }}
+            .item:last-child {{ border: none; padding-bottom: 0; }}
             .label {{ font-weight: 600; color: #444; font-size: 1.05em; display:block; margin-bottom: 4px; }}
             .desc {{ font-size: 0.95em; color: #666; display: block; }}
             .card.cosmic {{ border-left-color: #C71585; }}
@@ -183,7 +300,12 @@ def generate_reading(data: UserInput):
                 width: 100%; max-width: 300px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
                 text-decoration: none;
             }}
-            .end-marker {{ text-align: center; margin-top: 40px; color: #aaa; font-size: 11px; letter-spacing: 2px; }}
+            .end-marker {{ 
+                text-align: center; margin-top: 50px; margin-bottom: 50px; 
+                color: #aaa; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid #ccc; padding-top: 15px;
+            }}
+            /* Massive spacer to push footer away */
+            .footer-guard {{ height: 150px; }}
         </style>
         </head>
         <body>
@@ -246,10 +368,12 @@ def generate_reading(data: UserInput):
                     <p style="margin:10px 0 0 0;">To overcome this, lean into your <strong>{rising.sign} Rising</strong> energy: {generate_desc('Rising', rising.sign)}.</p>
                 </div>
                 
-                <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self.pdf" class="btn">⬇️ DOWNLOAD PDF REPORT</a>
+                <button onclick="downloadPDF('{pdf_b64}')" class="btn">⬇️ DOWNLOAD PDF REPORT</button>
                 
                 <div class="end-marker">--- END OF GENERATED REPORT ---</div>
                 <div style="text-align:center; font-size:10px; color:#ccc; margin-top:10px;">{data.city} | {safe_date} | TZ: {tz}</div>
+                
+                <div class="footer-guard"></div>
             </div>
         </body>
         </html>
