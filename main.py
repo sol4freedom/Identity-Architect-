@@ -73,6 +73,11 @@ KEY_LORE = {
     63: "The Doubter (Doubt to Truth)", 64: "The Confusion (Confusion to Illumination)"
 }
 
+PLANET_LORE = {
+    "Sun": "Essence", "Moon": "Emotion", "Mercury": "Mind", "Venus": "Love",
+    "Mars": "Drive", "Jupiter": "Luck", "Saturn": "Karma"
+}
+
 # --- LOGIC ---
 def safe_get_date(date_input):
     if not date_input: return datetime.date.today().strftime("%Y-%m-%d")
@@ -90,12 +95,24 @@ def calculate_life_path(dob_str):
         return total
     except: return 0
 
+def get_tz_offset(date_str, time_str, tz_name):
+    """Converts 'America/New_York' to -5.0 for Flatlib compatibility"""
+    try:
+        local = pytz.timezone(tz_name)
+        # Parse date to check DST
+        dt = datetime.datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        # Get offset in hours (e.g. -5.0)
+        offset = local.utcoffset(dt).total_seconds() / 3600.0
+        return offset
+    except:
+        return 0.0 # Default UTC
+
 def resolve_location(city_name):
     city_lower = str(city_name).lower().strip()
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_v63_final")
+        geolocator = Nominatim(user_agent="ia_v64_final")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -158,7 +175,6 @@ def create_pdf_b64(name, lp, hd, advice, chart):
 
 @app.post("/calculate")
 async def calculate_chart(request: Request):
-    # 1. Parse & Defaults
     data = {}
     try:
         ct = request.headers.get("content-type", "")
@@ -172,10 +188,15 @@ async def calculate_chart(request: Request):
     city = data.get("city") or "London"
     struggle = data.get("struggle") or "General"
 
-    # 2. Calculations
     try:
-        lat, lon, tz_str = resolve_location(city)
-        dt_obj = Datetime(dob, tob, tz_str)
+        # 1. Resolve Location & Timezone
+        lat, lon, tz_name = resolve_location(city)
+        
+        # 2. Convert Timezone Name -> Offset (THE FIX)
+        tz_offset = get_tz_offset(dob, tob, tz_name)
+        
+        # 3. Create Chart
+        dt_obj = Datetime(dob.replace("-", "/"), tob, tz_offset)
         geo_obj = GeoPos(lat, lon)
         chart = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
@@ -201,7 +222,6 @@ async def calculate_chart(request: Request):
         hd_profile = "Unknown"
         lp = 0
 
-    # 3. Output
     topic, advice_text = get_strategic_advice(struggle, chart_data)
     pdf_b64 = create_pdf_b64(name, lp, hd_profile, (topic, advice_text), chart_data)
 
