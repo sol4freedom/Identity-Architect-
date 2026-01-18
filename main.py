@@ -68,120 +68,8 @@ KEY_LORE = {
     61: {"name": "The Mystery", "story": "Sanctity of the unknown."}, 62: {"name": "The Detail", "story": "Precision of language."},
     63: {"name": "The Doubter", "story": "Truth through logic."}, 64: {"name": "The Confusion", "story": "Illumination of the mind."}
 }
-# --- END OF PART 1 (Safe Bumper) ---
-# --- PART 2 START (Safe Bumper) ---
-MEGA_MATRIX = {
-    "Aries": {"Sun": "You are a pioneer; bold, independent, and direct.", "Mercury": "Direct, rapid-fire communication.", "Saturn": "Self-reliant discipline.", "Jupiter": "Wealth via bold risks.", "Moon": "Safety in independence.", "Venus": "Passionate, spontaneous love.", "Neptune": "Dreams of heroism.", "Mars": "Explosive, head-first drive.", "Uranus": "Individualistic rebellion.", "Pluto": "Destroying barriers.", "Rising": "Undeniable courage."},
-    "Taurus": {"Sun": "You are a builder; grounded, patient, and reliable.", "Mercury": "Deliberate, methodical thinking.", "Saturn": "Building legacy through patience.", "Jupiter": "Compounding assets.", "Moon": "Safety in comfort.", "Venus": "Sensory love and touch.", "Neptune": "Dreams of abundance.", "Mars": "Unstoppable momentum.", "Uranus": "Revolutionizing values.", "Pluto": "Transformation of worth.", "Rising": "Calm reliability."},
-    "Gemini": {"Sun": "You are a messenger; curious, adaptable, and witty.", "Mercury": "Brilliant, agile processing.", "Saturn": "Structuring the intellect.", "Jupiter": "Luck via networking.", "Moon": "Safety in conversation.", "Venus": "Mental love and wit.", "Neptune": "Telepathic connection.", "Mars": "Versatile, scattered drive.", "Uranus": "Disrupting narratives.", "Pluto": "Psychological reprogramming.", "Rising": "Youthful curiosity."},
-    "Cancer": {"Sun": "You are a nurturer; intuitive, protective, and feeling.", "Mercury": "Intuitive, memory-based speech.", "Saturn": "Responsibility to the clan.", "Jupiter": "Wealth via real estate.", "Moon": "Safety in a shell.", "Venus": "Caretaking love.", "Neptune": "Dreams of the perfect home.", "Mars": "Defensive protection.", "Uranus": "Revolutionizing family.", "Pluto": "Ancestral healing.", "Rising": "Gentle, receptive aura."},
-    "Leo": {"Sun": "You are a star; creative, generous, and radiant.", "Mercury": "Dramatic storytelling.", "Saturn": "Disciplined creativity.", "Jupiter": "Luck via visibility.", "Moon": "Safety in appreciation.", "Venus": "Grand, performative romance.", "Neptune": "Dreams of fame.", "Mars": "Drive fueled by honor.", "Uranus": "Disrupting the ego.", "Pluto": "Rebirth of identity.", "Rising": "Warm charisma."},
-    "Virgo": {"Sun": "You are a healer; analytical, practical, and precise.", "Mercury": "Precise, analytical logic.", "Saturn": "Mastery of craft.", "Jupiter": "Expansion via details.", "Moon": "Safety in routine.", "Venus": "Devoted, practical love.", "Neptune": "Perfect healing.", "Mars": "Efficient action.", "Uranus": "Revolutionizing work.", "Pluto": "Deep purification.", "Rising": "Modest and sharp."},
-    "Libra": {"Sun": "You are a diplomat; charming, fair, and balanced.", "Mercury": "Diplomatic negotiation.", "Saturn": "Structuring contracts.", "Jupiter": "Wealth via partnerships.", "Moon": "Safety in harmony.", "Venus": "Aesthetic love.", "Neptune": "Dreams of the soulmate.", "Mars": "Strategic alliances.", "Uranus": "Disrupting norms.", "Pluto": "Transformation via mirroring.", "Rising": "Graceful intelligence."},
-    "Scorpio": {"Sun": "You are a mystic; intense, passionate, and transformative.", "Mercury": "Detective mind.", "Saturn": "Mastery of self-control.", "Jupiter": "Power via research.", "Moon": "Safety in deep trust.", "Venus": "Soul-merging fusion.", "Neptune": "Dreams of mysteries.", "Mars": "Relentless will.", "Uranus": "Disrupting taboos.", "Pluto": "Total metamorphosis.", "Rising": "Magnetic intensity."},
-    "Sagittarius": {"Sun": "You are an explorer; optimistic, adventurous, and wise.", "Mercury": "Broad-minded philosophy.", "Saturn": "Structuring belief.", "Jupiter": "Luck via travel.", "Moon": "Safety in freedom.", "Venus": "Adventurous love.", "Neptune": "Dreams of nirvana.", "Mars": "Crusading for a cause.", "Uranus": "Disrupting dogma.", "Pluto": "Death of old beliefs.", "Rising": "Jovial optimism."},
-    "Capricorn": {"Sun": "You are a boss; ambitious, disciplined, and strategic.", "Mercury": "Pragmatic thinking.", "Saturn": "Building institutions.", "Jupiter": "Success via career.", "Moon": "Safety in control.", "Venus": "Serious commitment.", "Neptune": "Spiritual authority.", "Mars": "Disciplined drive.", "Uranus": "Disrupting government.", "Pluto": "Exposing corruption.", "Rising": "Authoritative capability."},
-    "Aquarius": {"Sun": "You are a visionary; original, independent, and humanitarian.", "Mercury": "Genius innovation.", "Saturn": "Structuring the future.", "Jupiter": "Luck via networks.", "Moon": "Safety in detachment.", "Venus": "Unconventional love.", "Neptune": "Dreams of utopia.", "Mars": "Rebellious drive.", "Uranus": "Awakening the collective.", "Pluto": "Power to the people.", "Rising": "Unique brilliance."},
-    "Pisces": {"Sun": "You are a dreamer; compassionate, artistic, and spiritual.", "Mercury": "Poetic thinking.", "Saturn": "Form to chaos.", "Jupiter": "Compassionate expansion.", "Moon": "Safety in solitude.", "Venus": "Spiritual love.", "Neptune": "Dissolving into oneness.", "Mars": "Fluid adaptability.", "Uranus": "Disrupting reality.", "Pluto": "Soul transformation.", "Rising": "Dreamy empathy."}
-}
-
-NUMEROLOGY_LORE = {
-    1: {"name": "The Pioneer", "desc": "Leading with independence."}, 2: {"name": "The Diplomat", "desc": "Thriving on partnership."},
-    3: {"name": "The Creator", "desc": "Expressing joy and optimism."}, 4: {"name": "The Builder", "desc": "Building stability through work."},
-    5: {"name": "The Adventurer", "desc": "Seeking freedom and change."}, 6: {"name": "The Nurturer", "desc": "Focusing on home and responsibility."},
-    7: {"name": "The Seeker", "desc": "Searching for deep truth."}, 8: {"name": "The Powerhouse", "desc": "Mastering abundance and success."},
-    9: {"name": "The Humanist", "desc": "Serving humanity."}, 11: {"name": "The Illuminator", "desc": "Channeling intuition."},
-    22: {"name": "The Master Builder", "desc": "Turning dreams into reality."}, 33: {"name": "The Master Teacher", "desc": "Uplifting via compassion."}
-}
-
-def get_key_data(degree):
-    if degree is None: return {"name": "Unknown", "story": ""}
-    index = int(degree / 5.625)
-    if index >= 64: index = 0
-    key_number = RAVE_ORDER[index]
-    return KEY_LORE.get(key_number, {"name": f"Key {key_number}", "story": ""})
-
-def get_hd_profile(p_degree, d_degree):
-    def get_line(deg): return int((deg % 5.625) / 0.9375) + 1
-    key = f"{get_line(p_degree)}/{get_line(d_degree)}"
-    return {"name": f"{key} Profile"}
-
-def calculate_life_path(date_str):
-    # SAFETY: Strip time from date string if present (Fixes the date crash)
-    if "T" in date_str: date_str = date_str.split("T")[0]
-    
-    digits = [int(d) for d in date_str if d.isdigit()]
-    total = sum(digits)
-    while total > 9 and total not in [11, 22, 33]:
-        total = sum(int(d) for d in str(total))
-    data = NUMEROLOGY_LORE.get(total, {"name": "Mystery", "desc": ""})
-    return {"number": total, "name": data["name"], "desc": data["desc"]}
-
-def generate_desc(planet, sign):
-    return MEGA_MATRIX.get(sign, {}).get(planet, f"Energy of {sign}")
-
-# --- SERVER-SIDE PDF GENERATOR ---
-def create_pdf_b64(data, lp, hd, keys, objs, rising):
-    from fpdf import FPDF
-    
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('Helvetica', 'B', 15)
-            self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
-            self.ln(5)
-
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=12)
-    
-    # User Info
-    pdf.set_font("Helvetica", 'I', 10)
-    pdf.cell(0, 10, f"Prepared for {data.name.upper()}", 0, 1, 'C')
-    pdf.ln(5)
-    
-    # Life Path
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(100, 50, 150)
-    pdf.cell(0, 10, f"LIFE PATH: {lp['number']} - {lp['name']}", 0, 1)
-    pdf.set_font("Helvetica", '', 12)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 8, txt=f"{lp['desc']}")
-    pdf.ln(5)
-    
-    # Cosmic Sig
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(200, 50, 100)
-    pdf.cell(0, 10, "COSMIC SIGNATURE", 0, 1)
-    pdf.set_font("Helvetica", '', 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 7, f"Sun: {objs['Sun'].sign}\nMoon: {objs['Moon'].sign}\nRising: {rising.sign}\nMercury: {objs['Mercury'].sign}\nVenus: {objs['Venus'].sign}")
-    pdf.ln(5)
-    
-    # Blueprint
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(200, 150, 0)
-    pdf.cell(0, 10, "THE BLUEPRINT", 0, 1)
-    pdf.set_font("Helvetica", '', 11)
-    pdf.set_text_color(0, 0, 0)
-    pdf.multi_cell(0, 7, f"Profile: {hd['name']}\nCalling: {keys['lw']['name']} - {keys['lw']['story']}\nGrowth: {keys['evo']['name']} - {keys['evo']['story']}")
-    pdf.ln(5)
-
-    # Vault
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.set_text_color(50, 50, 50)
-    pdf.cell(0, 10, "THE VAULT (UNCONSCIOUS)", 0, 1)
-    pdf.set_font("Helvetica", '', 11)
-    pdf.multi_cell(0, 7, f"Aura: {keys['rad']['name']} - {keys['rad']['story']}\nRoot: {keys['pur']['name']} - {keys['pur']['story']}\nMagnet: {keys['att']['name']} - {keys['att']['story']}")
-    pdf.ln(10)
-
-    # Struggle
-    pdf.set_font("Helvetica", 'I', 12)
-    pdf.multi_cell(0, 8, f"Current Struggle: {data.struggle}\nAdvice: Lean into your {rising.sign} Rising energy.")
-
-    # FIX: Correct PDF output for FPDF2 (Returns raw bytes, no encoding needed)
-    return base64.b64encode(pdf.output()).decode('utf-8')
-# --- END OF PART 2 (Safe Bumper) ---
-# --- PART 3 START (Safe Bumper) ---
+# --- END OF PART 1 (SAFETY BUMPER) ---
+# --- PART 3 START (SAFE BUMPER) ---
 # --- TIMEZONE ENGINE ---
 def resolve_location(city_input, date_str, time_str):
     city_clean = city_input.lower().strip()
@@ -295,10 +183,7 @@ def generate_reading(data: UserInput):
                 width: 100%; max-width: 300px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
                 text-decoration: none;
             }}
-            .end-marker {{ 
-                text-align: center; margin-top: 50px; margin-bottom: 50px; 
-                color: #aaa; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; border-top: 1px solid #ccc; padding-top: 15px;
-            }}
+            .end-marker {{ text-align: center; margin-top: 40px; color: #aaa; font-size: 11px; letter-spacing: 2px; }}
         </style>
         </head>
         <body>
@@ -326,8 +211,8 @@ def generate_reading(data: UserInput):
                 <div class="card blueprint">
                     <h3 style="color:#D4AF37;">🗝️ The Blueprint</h3>
                     <div class="item"><span class="label">🎭 Profile:</span> {hd['name']}</div>
-                    <div class="item"><span class="label">🧬 Calling: <span style="color:#C71585;">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
-                    <div class="item"><span class="label">🌍 Growth: <span style="color:#C71585;">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
+                    <div class="item"><span class="label">🧬 Calling: <span class="highlight">{keys['lw']['name']}</span></span> <span class="desc">"{keys['lw']['story']}"</span></div>
+                    <div class="item"><span class="label">🌍 Growth: <span class="highlight">{keys['evo']['name']}</span></span> <span class="desc">"{keys['evo']['story']}"</span></div>
                 </div>
 
                 <div class="card boardroom">
@@ -351,9 +236,9 @@ def generate_reading(data: UserInput):
 
                 <div class="card vault">
                     <h3>🔒 The Vault</h3>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span style="color:#FFD700;">{keys['rad']['name']}</span></span> <span class="vault-desc">"{keys['rad']['story']}"</span></div>
-                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span style="color:#FFD700;">{keys['pur']['name']}</span></span> <span class="vault-desc">"{keys['pur']['story']}"</span></div>
-                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span style="color:#FFD700;">{keys['att']['name']}</span></span> <span class="vault-desc">"{keys['att']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚡ Aura: <span class="highlight">{keys['rad']['name']}</span></span> <span class="vault-desc">"{keys['rad']['story']}"</span></div>
+                    <div class="item" style="border-bottom: 1px solid #444;"><span class="vault-label">⚓ Root: <span class="highlight">{keys['pur']['name']}</span></span> <span class="vault-desc">"{keys['pur']['story']}"</span></div>
+                    <div class="item" style="border-bottom: none;"><span class="vault-label">🧲 Magnet: <span class="highlight">{keys['att']['name']}</span></span> <span class="vault-desc">"{keys['att']['story']}"</span></div>
                 </div>
 
                 <div class="card" style="text-align:center; font-style:italic;">
