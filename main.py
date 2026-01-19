@@ -30,108 +30,86 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE TRANSLATOR (Descriptions) ---
+# --- 2. DATA: THE CORRECTED MAP ---
+# Starts at Aries 0° (Gate 25) to align with the math engine.
+RAVE_ORDER = [
+    25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 
+    15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 
+    46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 
+    10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36
+]
+
+# --- 3. DATA: THE TRANSLATION LAYER ---
 KEY_LORE = {
-    1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles."},
-    2: {"name": "The Receptive", "story": "The Divine Feminine. You are the blueprint that guides raw energy."},
-    3: {"name": "The Innovator", "story": "Chaos into Order. You change the rules to push evolution."},
-    4: {"name": "The Logic Master", "story": "The Answer. You resolve doubt by finding the pattern."},
-    5: {"name": "The Fixer", "story": "Patience into Timelessness. You wait for the right rhythm."},
-    6: {"name": "The Peacemaker", "story": "Conflict into Peace. You use emotional intelligence to dissolve friction."},
-    7: {"name": "The Leader", "story": "Guidance. You lead by representing the collective will."},
-    8: {"name": "The Stylist", "story": "Mediocrity into Style. You inspire others by being yourself."},
-    9: {"name": "The Focuser", "story": "Power of the Small. You tame chaos by focusing on details."},
-    10: {"name": "The Self", "story": "Being. You master the art of being yourself."},
-    11: {"name": "The Idealist", "story": "Ideas into Light. You catch images from the darkness."},
-    12: {"name": "The Articulate", "story": "The Channel. You speak words that touch the soul."},
-    13: {"name": "The Listener", "story": "The Confidant. You hold the secrets of the past."},
-    14: {"name": "The Power House", "story": "The Generator. You fuel the dreams of the collective."},
-    15: {"name": "The Humanist", "story": "Extremes into Flow. You accept all rhythms of humanity."},
-    16: {"name": "The Master", "story": "The Virtuoso. Skill becomes magical versatility."},
-    17: {"name": "The Opinion", "story": "The Eye. You see the pattern of the future."},
-    18: {"name": "The Improver", "story": "Correction. You spot the flaw so it can be healed."},
-    19: {"name": "The Sensitive", "story": "Attunement. You feel the needs of the tribe."},
-    20: {"name": "The Now", "story": "Presence. You act with pure, spontaneous clarity."},
-    21: {"name": "The Controller", "story": "Authority. You direct resources for the tribe."},
-    22: {"name": "The Grace", "story": "Emotional Grace. You listen with an open heart."},
-    23: {"name": "The Assimilator", "story": "Simplicity. You strip noise to reveal truth."},
-    24: {"name": "The Rationalizer", "story": "Invention. You revisit the past to find a new way."},
-    25: {"name": "The Spirit", "story": "Universal Love. You retain innocence despite wounds."},
-    26: {"name": "The Egoist", "story": "The Dealmaker. You direct resources where needed."},
-    27: {"name": "The Nurturer", "story": "Altruism. You care for the weak."},
-    28: {"name": "The Risk Taker", "story": "Immortality. You find a life worth living."},
-    29: {"name": "The Yes Man", "story": "Commitment. You persevere through the abyss."},
-    30: {"name": "The Passion", "story": "The Fire. You burn with a desire that teaches feeling."},
-    31: {"name": "The Voice", "story": "Influence. You speak the vision."},
-    32: {"name": "The Conservative", "story": "Veneration. You preserve what is valuable."},
-    33: {"name": "The Reteller", "story": "Retreat. You withdraw to process wisdom."},
-    34: {"name": "The Power", "story": "Majesty. You are the force of life expressing itself."},
-    35: {"name": "The Progress", "story": "Adventure. You are driven to taste every experience."},
-    36: {"name": "The Crisis", "story": "Compassion. You bring light to darkness."},
-    37: {"name": "The Family", "story": "Equality. You build community through friendship."},
-    38: {"name": "The Fighter", "story": "Honor. You fight battles that give life purpose."},
-    39: {"name": "The Provocateur", "story": "Liberation. You poke spirits to wake them up."},
-    40: {"name": "The Aloneness", "story": "Resolve. You separate to regenerate power."},
-    41: {"name": "The Fantasy", "story": "The Origin. You hold the seed of the dream."},
-    42: {"name": "The Finisher", "story": "Growth. You bring cycles to a conclusion."},
-    43: {"name": "The Insight", "story": "Breakthrough. Your voice changes the world's knowing."},
-    44: {"name": "The Alert", "story": "Teamwork. You smell potential and align success."},
-    45: {"name": "The Gatherer", "story": "Synergy. You hold resources together."},
-    46: {"name": "The Determination", "story": "Serendipity. You are in the right place at the right time."},
-    47: {"name": "The Realization", "story": "Transmutation. You find the epiphany in confusion."},
-    48: {"name": "The Depth", "story": "Wisdom. You bring fresh solutions from deep wells."},
-    49: {"name": "The Catalyst", "story": "Revolution. You reject old principles for higher order."},
-    50: {"name": "The Values", "story": "Harmony. You guard the tribe's laws."},
-    51: {"name": "The Shock", "story": "Initiation. You wake people up with thunder."},
-    52: {"name": "The Stillness", "story": "The Mountain. You wait for the perfect moment."},
-    53: {"name": "The Starter", "story": "Abundance. You pressure beginnings."},
-    54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward."},
-    55: {"name": "The Spirit", "story": "Freedom. You accept emotional highs and lows."},
-    56: {"name": "The Storyteller", "story": "Wandering. You weave the collective myth."},
-    57: {"name": "The Intuitive", "story": "Clarity. You hear truth in the now."},
-    58: {"name": "The Joy", "story": "Vitality. You challenge authority to make life better."},
-    59: {"name": "The Sexual", "story": "Intimacy. You break barriers to create union."},
-    60: {"name": "The Limitation", "story": "Realism. You accept boundaries to transcend them."},
-    61: {"name": "The Mystery", "story": "Sanctity. You dive into the unknowable."},
-    62: {"name": "The Detail", "story": "Precision. You build bridges of understanding."},
-    63: {"name": "The Doubter", "story": "Truth. You use logic to test the future."},
-    64: {"name": "The Confusion", "story": "Illumination. You resolve images into light."}
+    1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles when the old ways go stale."},
+    2: {"name": "The Receptive", "story": "The Divine Feminine. You are the architectural blueprint that guides raw energy into form."},
+    3: {"name": "The Innovator", "story": "Chaos into Order. You are the mutant who changes the rules to push evolution forward."},
+    4: {"name": "The Logic Master", "story": "The Answer. You resolve doubt by finding the perfect pattern and explaining it to the world."},
+    5: {"name": "The Fixer", "story": "Patience into Timelessness. You wait for the right rhythm to align the world's habits."},
+    6: {"name": "The Peacemaker", "story": "Conflict into Peace. You use diplomacy and emotional intelligence to dissolve friction."},
+    7: {"name": "The Leader", "story": "Guidance. You do not force; you lead by representing the collective will of the people."},
+    8: {"name": "The Stylist", "story": "Mediocrity into Style. You are the individualist who inspires others just by being yourself."},
+    9: {"name": "The Focuser", "story": "The Power of the Small. You tame the chaotic mind by focusing on one critical detail at a time."},
+    10: {"name": "The Self", "story": "Being. You are here to master the art of simply being yourself without apology."},
+    11: {"name": "The Idealist", "story": "Ideas into Light. You catch the images from the darkness and bring them to the world."},
+    12: {"name": "The Articulate", "story": "The Channel. You master your mood to speak words that touch the soul."},
+    13: {"name": "The Listener", "story": "The Confidant. You hold the secrets of the past to guide the future."},
+    14: {"name": "The Power House", "story": "The Generator. You possess the unflagging energy to fuel the dreams of the collective."},
+    15: {"name": "The Humanist", "story": "Extremes into Flow. You accept all rhythms of humanity, from the dull to the wild."},
+    16: {"name": "The Master", "story": "The Virtuoso. You practice with enthusiasm until your skill becomes magical versatility."},
+    17: {"name": "The Opinion", "story": "The Eye. You see the pattern of the future and organize it into a logical view."},
+    18: {"name": "The Improver", "story": "Correction. You spot the flaw in the system so that it can be healed and perfected."},
+    19: {"name": "The Sensitive", "story": "Attunement. You feel the needs of the tribe before they are even spoken."},
+    20: {"name": "The Now", "story": "Presence. You bypass the thinking mind to act with pure, spontaneous clarity."},
+    21: {"name": "The Controller", "story": "Authority. You take control of the resources to ensure the tribe survives and thrives."},
+    22: {"name": "The Grace", "story": "Emotional Grace. You allow others to feel deeply by listening with an open heart."},
+    23: {"name": "The Assimilator", "story": "Simplicity. You strip away the noise to reveal the essential truth."},
+    24: {"name": "The Rationalizer", "story": "Invention. You revisit the past over and over until you find a new way forward."},
+    25: {"name": "The Spirit", "story": "Universal Love. You retain the innocence of the spirit despite the wounds of the world."},
+    26: {"name": "The Egoist", "story": "The Dealmaker. You use your willpower and charisma to direct resources where they are needed."},
+    27: {"name": "The Nurturer", "story": "Altruism. You care for the weak and ensure the heritage is passed down."},
+    28: {"name": "The Risk Taker", "story": "Immortality. You confront the fear of death to find a life worth living."},
+    29: {"name": "The Yes Man", "story": "Commitment. You say 'Yes' to the experience and persevere through the abyss."},
+    30: {"name": "The Passion", "story": "The Fire. You burn with a desire that cannot be quenched, teaching the world to feel."},
+    31: {"name": "The Voice", "story": "Influence. You speak the vision that the collective is waiting to hear."},
+    32: {"name": "The Conservative", "story": "Veneration. You assess what is valuable from the past to preserve it for the future."},
+    33: {"name": "The Reteller", "story": "Retreat. You withdraw to process the memory and return with wisdom."},
+    34: {"name": "The Power", "story": "Majesty. You are the pure, independent force of life expressing itself."},
+    35: {"name": "The Progress", "story": "Adventure. You are driven to taste every experience, knowing that change is the only constant."},
+    36: {"name": "The Crisis", "story": "Compassion. You survive the emotional storm to bring light to the darkness."},
+    37: {"name": "The Family", "story": "Equality. You build the community through friendship, bargains, and affection."},
+    38: {"name": "The Fighter", "story": "Honor. You fight the battles that give life meaning and purpose."},
+    39: {"name": "The Provocateur", "story": "Liberation. You poke the spirit of others to wake them up from their slumber."},
+    40: {"name": "The Aloneness", "story": "Resolve. You separate yourself from the group to regenerate your power."},
+    41: {"name": "The Fantasy", "story": "The Origin. You hold the seed of the dream that starts the entire cycle."},
+    42: {"name": "The Finisher", "story": "Growth. You maximize the cycle and bring it to a satisfying conclusion."},
+    43: {"name": "The Insight", "story": "Breakthrough. You hear the unique voice inside that changes the world's knowing."},
+    44: {"name": "The Alert", "story": "Teamwork. You smell the potential in people and align them for success."},
+    45: {"name": "The Gatherer", "story": "Synergy. You are the King/Queen who holds the resources together for the kingdom."},
+    46: {"name": "The Determination", "story": "Serendipity. You succeed by being in the right place at the right time with your body."},
+    47: {"name": "The Realization", "story": "Transmutation. You sort through the confusion of the past to find the epiphany."},
+    48: {"name": "The Depth", "story": "Wisdom. You look into the deep well of talent to bring fresh solutions."},
+    49: {"name": "The Catalyst", "story": "Revolution. You reject the old principles to establish a higher order."},
+    50: {"name": "The Values", "story": "Harmony. You act as the guardian of the tribe's laws and values."},
+    51: {"name": "The Shock", "story": "Initiation. You wake people up with thunder, forcing them to grow."},
+    52: {"name": "The Stillness", "story": "The Mountain. You hold your energy still until the perfect moment to act."},
+    53: {"name": "The Starter", "story": "Abundance. You are the pressure to begin something new and evolve."},
+    54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward, seeking spiritual and material success."},
+    55: {"name": "The Spirit", "story": "Freedom. You accept the highs and lows of emotion to find the spirit within."},
+    56: {"name": "The Storyteller", "story": "Wandering. You travel through ideas and places to weave the collective myth."},
+    57: {"name": "The Intuitive", "story": "Clarity. You hear the truth in the acoustic vibration of the now."},
+    58: {"name": "The Joy", "story": "Vitality. You challenge authority with the joy of making life better."},
+    59: {"name": "The Sexual", "story": "Intimacy. You break down barriers to create a union that produces life."},
+    60: {"name": "The Limitation", "story": "Realism. You accept the boundaries of form to let the magic transcend them."},
+    61: {"name": "The Mystery", "story": "Sanctity. You dive into the unknowable to bring back universal truth."},
+    62: {"name": "The Detail", "story": "Precision. You name the details to build a bridge of understanding."},
+    63: {"name": "The Doubter", "story": "Truth. You use critical logic to test the validity of the future."},
+    64: {"name": "The Confusion", "story": "Illumination. You process the images of the mind until they resolve into light."}
 }
 
-# --- 3. LOGIC ENGINES ---
-
-def get_gate_from_degree(degree):
-    """
-    CORRELATION ENGINE:
-    Maps 0-360 degrees directly to Gates.
-    0° Aries = Gate 25.
-    5.625° Aries = Gate 17.
-    This prevents 'List Rotation' errors.
-    """
-    if degree is None: return 1
-    # Normalize to 0-360
-    if degree < 0 or degree >= 360: degree = degree % 360
-    
-    # Calculate "Step" (0-63) where 0 is start of Aries
-    step = int(degree / 5.625)
-    
-    # HARD CODED MAP (Aries 0 -> Pisces End)
-    # This correlates degree directly to gate. No sliding list.
-    gate_map = {
-        0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,   # Aries / Taurus
-        8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12, # Taurus / Gemini
-        16: 15, 17: 52, 18: 39, 19: 53, 20: 62, 21: 56, 22: 31, 23: 33, # Cancer / Leo
-        24: 7, 25: 4, 26: 29, 27: 59, 28: 40, 29: 64, 30: 47, 31: 6, # Leo / Virgo
-        32: 46, 33: 18, 34: 48, 35: 57, 36: 32, 37: 50, 38: 28, 39: 44, # Libra / Scorpio
-        40: 1, 41: 43, 42: 14, 43: 34, 44: 9, 45: 5, 46: 26, 47: 11, # Sag
-        48: 10, 49: 58, 50: 38, 51: 54, 52: 61, 53: 60, 54: 41, 55: 19, # Cap / Aqua
-        56: 13, 57: 49, 58: 30, 59: 55, 60: 37, 61: 63, 62: 22, 63: 36  # Pisces
-    }
-    
-    return gate_map.get(step, 1)
-
+# --- 4. LOGIC ENGINES ---
 def safe_get_date(date_input):
-    if not date_input: return None # Return None so we know it failed
+    if not date_input: return None
     s = str(date_input).strip()
     if "T" in s: s = s.split("T")[0]
     return s
@@ -141,7 +119,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix")
+        geolocator = Nominatim(user_agent="ia_fix_v2")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -160,12 +138,11 @@ def get_tz_offset(date_str, time_str, tz_name):
     except: return 0.0
 
 def get_hd_data(degree):
-    """Uses the new Correlation Engine."""
     if degree is None: return {"name": "Unknown", "story": "Mystery"}
-    
-    # Use the new explicit mapper
-    gate = get_gate_from_degree(degree)
-    
+    # Calculate Index (0-63)
+    index = int(degree / 5.625)
+    if index >= 64: index = 0
+    gate = RAVE_ORDER[index]
     info = KEY_LORE.get(gate, {"name": f"Gate {gate}", "story": "Energy"})
     return {"gate": gate, "name": info["name"], "story": info["story"]}
 
@@ -214,7 +191,7 @@ def create_pdf_b64(name, lp, hd, advice, chart):
         return base64.b64encode(pdf.output().encode('latin-1', 'ignore')).decode('utf-8')
     except: return ""
 
-# --- 4. API ENDPOINT ---
+# --- 5. API ENDPOINT ---
 @app.post("/calculate")
 async def calculate_chart(request: Request):
     data = {}
@@ -226,12 +203,13 @@ async def calculate_chart(request: Request):
     
     name = data.get("name") or "Traveler"
     
-    # --- CRITICAL FIX: CHECK BOTH "date" AND "dob" ---
+    # --- FIX IS HERE ---
+    # We check for "dob" (what I wrote) AND "date" (what your site sends)
     raw_date = data.get("dob") or data.get("date")
     dob = safe_get_date(raw_date)
     
+    # Only fallback to today if absolutely nothing came through
     if not dob: 
-        # Fallback to today ONLY if absolutely nothing was found
         dob = datetime.date.today().strftime("%Y-%m-%d")
 
     tob = data.get("tob") or "12:00"
@@ -268,7 +246,7 @@ async def calculate_chart(request: Request):
         line_sun = (hd_sun_gate % 6) + 1
         hd_profile = f"{line_sun}/?" 
         
-        # Calculate Life Path
+        # Life Path
         try:
             digits = [int(d) for d in dob if d.isdigit()]
             total = sum(digits)
