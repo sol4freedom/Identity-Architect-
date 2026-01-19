@@ -30,32 +30,108 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE TRANSLATOR (Hard Coded Map) ---
-# This ensures 0 degrees Aries ALWAYS equals Gate 25.
+# --- 2. DATA: THE TRANSLATOR (Descriptions) ---
+KEY_LORE = {
+    1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles."},
+    2: {"name": "The Receptive", "story": "The Divine Feminine. You are the blueprint that guides raw energy."},
+    3: {"name": "The Innovator", "story": "Chaos into Order. You change the rules to push evolution."},
+    4: {"name": "The Logic Master", "story": "The Answer. You resolve doubt by finding the pattern."},
+    5: {"name": "The Fixer", "story": "Patience into Timelessness. You wait for the right rhythm."},
+    6: {"name": "The Peacemaker", "story": "Conflict into Peace. You use emotional intelligence to dissolve friction."},
+    7: {"name": "The Leader", "story": "Guidance. You lead by representing the collective will."},
+    8: {"name": "The Stylist", "story": "Mediocrity into Style. You inspire others by being yourself."},
+    9: {"name": "The Focuser", "story": "Power of the Small. You tame chaos by focusing on details."},
+    10: {"name": "The Self", "story": "Being. You master the art of being yourself."},
+    11: {"name": "The Idealist", "story": "Ideas into Light. You catch images from the darkness."},
+    12: {"name": "The Articulate", "story": "The Channel. You speak words that touch the soul."},
+    13: {"name": "The Listener", "story": "The Confidant. You hold the secrets of the past."},
+    14: {"name": "The Power House", "story": "The Generator. You fuel the dreams of the collective."},
+    15: {"name": "The Humanist", "story": "Extremes into Flow. You accept all rhythms of humanity."},
+    16: {"name": "The Master", "story": "The Virtuoso. Skill becomes magical versatility."},
+    17: {"name": "The Opinion", "story": "The Eye. You see the pattern of the future."},
+    18: {"name": "The Improver", "story": "Correction. You spot the flaw so it can be healed."},
+    19: {"name": "The Sensitive", "story": "Attunement. You feel the needs of the tribe."},
+    20: {"name": "The Now", "story": "Presence. You act with pure, spontaneous clarity."},
+    21: {"name": "The Controller", "story": "Authority. You direct resources for the tribe."},
+    22: {"name": "The Grace", "story": "Emotional Grace. You listen with an open heart."},
+    23: {"name": "The Assimilator", "story": "Simplicity. You strip noise to reveal truth."},
+    24: {"name": "The Rationalizer", "story": "Invention. You revisit the past to find a new way."},
+    25: {"name": "The Spirit", "story": "Universal Love. You retain innocence despite wounds."},
+    26: {"name": "The Egoist", "story": "The Dealmaker. You direct resources where needed."},
+    27: {"name": "The Nurturer", "story": "Altruism. You care for the weak."},
+    28: {"name": "The Risk Taker", "story": "Immortality. You find a life worth living."},
+    29: {"name": "The Yes Man", "story": "Commitment. You persevere through the abyss."},
+    30: {"name": "The Passion", "story": "The Fire. You burn with a desire that teaches feeling."},
+    31: {"name": "The Voice", "story": "Influence. You speak the vision."},
+    32: {"name": "The Conservative", "story": "Veneration. You preserve what is valuable."},
+    33: {"name": "The Reteller", "story": "Retreat. You withdraw to process wisdom."},
+    34: {"name": "The Power", "story": "Majesty. You are the force of life expressing itself."},
+    35: {"name": "The Progress", "story": "Adventure. You are driven to taste every experience."},
+    36: {"name": "The Crisis", "story": "Compassion. You bring light to darkness."},
+    37: {"name": "The Family", "story": "Equality. You build community through friendship."},
+    38: {"name": "The Fighter", "story": "Honor. You fight battles that give life purpose."},
+    39: {"name": "The Provocateur", "story": "Liberation. You poke spirits to wake them up."},
+    40: {"name": "The Aloneness", "story": "Resolve. You separate to regenerate power."},
+    41: {"name": "The Fantasy", "story": "The Origin. You hold the seed of the dream."},
+    42: {"name": "The Finisher", "story": "Growth. You bring cycles to a conclusion."},
+    43: {"name": "The Insight", "story": "Breakthrough. Your voice changes the world's knowing."},
+    44: {"name": "The Alert", "story": "Teamwork. You smell potential and align success."},
+    45: {"name": "The Gatherer", "story": "Synergy. You hold resources together."},
+    46: {"name": "The Determination", "story": "Serendipity. You are in the right place at the right time."},
+    47: {"name": "The Realization", "story": "Transmutation. You find the epiphany in confusion."},
+    48: {"name": "The Depth", "story": "Wisdom. You bring fresh solutions from deep wells."},
+    49: {"name": "The Catalyst", "story": "Revolution. You reject old principles for higher order."},
+    50: {"name": "The Values", "story": "Harmony. You guard the tribe's laws."},
+    51: {"name": "The Shock", "story": "Initiation. You wake people up with thunder."},
+    52: {"name": "The Stillness", "story": "The Mountain. You wait for the perfect moment."},
+    53: {"name": "The Starter", "story": "Abundance. You pressure beginnings."},
+    54: {"name": "The Ambition", "story": "Ascension. You drive the tribe upward."},
+    55: {"name": "The Spirit", "story": "Freedom. You accept emotional highs and lows."},
+    56: {"name": "The Storyteller", "story": "Wandering. You weave the collective myth."},
+    57: {"name": "The Intuitive", "story": "Clarity. You hear truth in the now."},
+    58: {"name": "The Joy", "story": "Vitality. You challenge authority to make life better."},
+    59: {"name": "The Sexual", "story": "Intimacy. You break barriers to create union."},
+    60: {"name": "The Limitation", "story": "Realism. You accept boundaries to transcend them."},
+    61: {"name": "The Mystery", "story": "Sanctity. You dive into the unknowable."},
+    62: {"name": "The Detail", "story": "Precision. You build bridges of understanding."},
+    63: {"name": "The Doubter", "story": "Truth. You use logic to test the future."},
+    64: {"name": "The Confusion", "story": "Illumination. You resolve images into light."}
+}
+
+# --- 3. LOGIC ENGINES ---
+
 def get_gate_from_degree(degree):
+    """
+    CORRELATION ENGINE:
+    Maps 0-360 degrees directly to Gates.
+    0° Aries = Gate 25.
+    5.625° Aries = Gate 17.
+    This prevents 'List Rotation' errors.
+    """
     if degree is None: return 1
     # Normalize to 0-360
     if degree < 0 or degree >= 360: degree = degree % 360
     
-    # Each gate is 5.625 degrees
+    # Calculate "Step" (0-63) where 0 is start of Aries
     step = int(degree / 5.625)
     
-    # 0 = Aries Start, 63 = Pisces End
+    # HARD CODED MAP (Aries 0 -> Pisces End)
+    # This correlates degree directly to gate. No sliding list.
     gate_map = {
-        0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,   # Aries
-        8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12, # Taurus
-        16: 15, 17: 52, 18: 39, 19: 53, 20: 62, 21: 56, 22: 31, 23: 33, # Cancer
-        24: 7, 25: 4, 26: 29, 27: 59, 28: 40, 29: 64, 30: 47, 31: 6, # Leo
-        32: 46, 33: 18, 34: 48, 35: 57, 36: 32, 37: 50, 38: 28, 39: 44, # Libra
+        0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,   # Aries / Taurus
+        8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12, # Taurus / Gemini
+        16: 15, 17: 52, 18: 39, 19: 53, 20: 62, 21: 56, 22: 31, 23: 33, # Cancer / Leo
+        24: 7, 25: 4, 26: 29, 27: 59, 28: 40, 29: 64, 30: 47, 31: 6, # Leo / Virgo
+        32: 46, 33: 18, 34: 48, 35: 57, 36: 32, 37: 50, 38: 28, 39: 44, # Libra / Scorpio
         40: 1, 41: 43, 42: 14, 43: 34, 44: 9, 45: 5, 46: 26, 47: 11, # Sag
-        48: 10, 49: 58, 50: 38, 51: 54, 52: 61, 53: 60, 54: 41, 55: 19, # Cap
+        48: 10, 49: 58, 50: 38, 51: 54, 52: 61, 53: 60, 54: 41, 55: 19, # Cap / Aqua
         56: 13, 57: 49, 58: 30, 59: 55, 60: 37, 61: 63, 62: 22, 63: 36  # Pisces
     }
+    
     return gate_map.get(step, 1)
 
-# --- 3. LOGIC ENGINES ---
 def safe_get_date(date_input):
-    if not date_input: return datetime.date.today().strftime("%Y-%m-%d")
+    if not date_input: return None # Return None so we know it failed
     s = str(date_input).strip()
     if "T" in s: s = s.split("T")[0]
     return s
@@ -65,7 +141,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_debug_v1")
+        geolocator = Nominatim(user_agent="ia_final_fix")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -83,7 +159,62 @@ def get_tz_offset(date_str, time_str, tz_name):
         return offset
     except: return 0.0
 
-# --- 4. API ENDPOINT (THE DIAGNOSTIC) ---
+def get_hd_data(degree):
+    """Uses the new Correlation Engine."""
+    if degree is None: return {"name": "Unknown", "story": "Mystery"}
+    
+    # Use the new explicit mapper
+    gate = get_gate_from_degree(degree)
+    
+    info = KEY_LORE.get(gate, {"name": f"Gate {gate}", "story": "Energy"})
+    return {"gate": gate, "name": info["name"], "story": info["story"]}
+
+def get_strategic_advice(struggle, chart):
+    s = str(struggle).lower()
+    if any(x in s for x in ['money', 'career', 'job']):
+        jup = chart.get("Jupiter", {}).get("Sign", "?")
+        return "Wealth Architecture", f"Your path to abundance involves the expansion of **Jupiter in {jup}**."
+    elif any(x in s for x in ['love', 'relationship']):
+        ven = chart.get("Venus", {}).get("Sign", "?")
+        return "Relational Design", f"Your heart speaks the language of **Venus in {ven}**."
+    else:
+        ris = chart.get("Rising", {}).get("Sign", "?")
+        return "Core Alignment", f"Return to your **{ris} Rising**. This is your anchor."
+
+def create_pdf_b64(name, lp, hd, advice, chart):
+    from fpdf import FPDF
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Helvetica', 'B', 16)
+            self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
+            self.ln(5)
+    try:
+        pdf = PDF()
+        pdf.add_page()
+        pdf.set_font("Helvetica", size=12)
+        pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
+        pdf.cell(0, 10, f"Life Path: {lp} | Profile: {hd}", 0, 1)
+        pdf.ln(5)
+        
+        pdf.set_font("Helvetica", 'B', 14)
+        pdf.cell(0, 10, "Strategic Guidance", 0, 1)
+        pdf.set_font("Helvetica", '', 12)
+        clean_advice = advice[1].replace("**", "").replace("<br>", "\n")
+        pdf.multi_cell(0, 7, clean_advice)
+        pdf.ln(5)
+        
+        pdf.set_font("Helvetica", 'B', 14)
+        pdf.cell(0, 10, "Planetary Blueprint", 0, 1)
+        pdf.set_font("Helvetica", '', 12)
+        for k, v in chart.items():
+            sign = v.get("Sign", "?")
+            gate = v.get("Gate", "?")
+            name_txt = v.get("Name", "")
+            pdf.cell(0, 8, f"{k}: {sign} - {name_txt}", 0, 1)
+        return base64.b64encode(pdf.output().encode('latin-1', 'ignore')).decode('utf-8')
+    except: return ""
+
+# --- 4. API ENDPOINT ---
 @app.post("/calculate")
 async def calculate_chart(request: Request):
     data = {}
@@ -94,86 +225,126 @@ async def calculate_chart(request: Request):
     except: pass
     
     name = data.get("name") or "Traveler"
-    dob = safe_get_date(data.get("dob"))
+    
+    # --- CRITICAL FIX: CHECK BOTH "date" AND "dob" ---
+    raw_date = data.get("dob") or data.get("date")
+    dob = safe_get_date(raw_date)
+    
+    if not dob: 
+        # Fallback to today ONLY if absolutely nothing was found
+        dob = datetime.date.today().strftime("%Y-%m-%d")
+
     tob = data.get("tob") or "12:00"
     city = data.get("city") or "London"
     struggle = data.get("struggle") or "General"
 
-    debug_log = []
-
     try:
-        # 1. Resolve Location
+        # Calculate
         lat, lon, tz_name = resolve_location(city)
         tz_offset = get_tz_offset(dob, tob, tz_name)
         
-        debug_log.append(f"📍 Location Found: {lat}, {lon} (Timezone: {tz_name}, Offset: {tz_offset})")
-
-        # 2. Translate Input for Library
         dt_obj = Datetime(dob.replace("-", "/"), tob, tz_offset)
         geo_obj = GeoPos(lat, lon)
-        
-        debug_log.append(f"📤 Sent to Library: {dob} {tob} (Offset {tz_offset})")
-
-        # 3. Call The Library
         chart = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
-        # 4. Get the Raw Output
-        sun_obj = chart.get(const.SUN)
-        moon_obj = chart.get(const.MOON)
-        asc_obj = chart.get(const.ASC)
-
-        # 5. Translate Back (The Math Check)
-        sun_gate = get_gate_from_degree(sun_obj.lon)
-        moon_gate = get_gate_from_degree(moon_obj.lon)
-        asc_gate = get_gate_from_degree(asc_obj.lon)
-
-        debug_log.append(f"📥 Library Sun: {sun_obj.sign} at {sun_obj.lon:.2f}° --> Map says Gate {sun_gate}")
-        debug_log.append(f"📥 Library Moon: {moon_obj.sign} at {moon_obj.lon:.2f}° --> Map says Gate {moon_gate}")
-
+        chart_data = {}
+        planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+        
+        # Personality Sun Gate
+        p_sun = chart.get(const.SUN)
+        p_sun_data = get_hd_data(p_sun.lon)
+        hd_sun_gate = p_sun_data['gate']
+        
+        # Build Data
+        for p in planets:
+            obj = chart.get(getattr(const, p.upper()))
+            info = get_hd_data(obj.lon)
+            chart_data[p] = {"Sign": obj.sign, "Gate": info['gate'], "Name": info['name'], "Story": info['story']}
+            
+        asc = chart.get(const.ASC)
+        asc_info = get_hd_data(asc.lon)
+        chart_data["Rising"] = {"Sign": asc.sign, "Gate": asc_info['gate'], "Name": asc_info['name'], "Story": asc_info['story']}
+        
+        line_sun = (hd_sun_gate % 6) + 1
+        hd_profile = f"{line_sun}/?" 
+        
+        # Calculate Life Path
+        try:
+            digits = [int(d) for d in dob if d.isdigit()]
+            total = sum(digits)
+            while total > 9 and total not in [11, 22, 33]:
+                total = sum(int(d) for d in str(total))
+            lp = total
+        except: lp = 0
+        
     except Exception as e:
-        debug_log.append(f"❌ ERROR: {str(e)}")
-        sun_obj, sun_gate = None, 1
-        moon_obj, moon_gate = None, 1
-        asc_obj, asc_gate = None, 1
+        logger.error(f"Calc Error: {e}")
+        chart_data = {"Sun": {"Sign": "Unknown", "Gate": 1, "Name": "Error", "Story": ""}}
+        hd_profile = "Unknown"
+        lp = 0
 
-    # --- RENDER THE DIAGNOSTIC REPORT ---
+    topic, advice_text = get_strategic_advice(struggle, chart_data)
+    pdf_b64 = create_pdf_b64(name, lp, hd_profile, (topic, advice_text), chart_data)
+
     html = f"""
     <!DOCTYPE html>
     <html>
     <head>
     <style>
-        body {{ font-family: sans-serif; padding: 20px; line-height: 1.6; color: #333; }}
-        .card {{ background: #fff; padding: 20px; border: 1px solid #ddd; margin-bottom: 20px; border-radius: 8px; }}
-        .debug {{ background: #222; color: #0f0; padding: 15px; font-family: monospace; border-radius: 5px; }}
-        h2 {{ margin-top: 0; }}
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
+        body {{ font-family: 'Source Sans Pro', sans-serif; padding: 20px; line-height: 1.6; color: #333; }}
+        .card {{ background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }}
+        h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin-top: 0; }}
+        .gate-title {{ color: #C71585; font-weight: bold; }}
+        .gate-desc {{ font-size: 0.9em; font-style: italic; color: #666; display: block; margin-top: 4px; }}
+        .btn {{ 
+            background-color: #D4AF37; color: white; border: none; padding: 15px 30px; 
+            font-size: 16px; border-radius: 50px; cursor: pointer; display: block; 
+            width: 100%; max-width: 300px; margin: 20px auto; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-decoration: none;
+        }}
+        .spacer {{ height: 500px; }}
     </style>
     </head>
     <body>
-        <div class="card">
-            <h2>🔮 The Integrated Self (Diagnostic Mode)</h2>
-            <p><strong>Prepared for:</strong> {name}</p>
+        <div class="card" style="text-align:center;">
+            <h2>The Integrated Self</h2>
+            <p>Prepared for {name}</p>
+            <p><strong>Life Path:</strong> {lp} | <strong>Profile:</strong> {hd_profile}</p>
+        </div>
+
+        <div class="card" style="border-left: 5px solid #D4AF37;">
+            <h2>⚡ Strategic Insight: {topic}</h2>
+            <p>{advice_text}</p>
         </div>
 
         <div class="card">
-            <h3>☀️ Sun</h3>
-            <p><strong>Sign:</strong> {sun_obj.sign if sun_obj else 'Error'}</p>
-            <p><strong>Gate:</strong> {sun_gate}</p>
+            <h2>The Blueprint</h2>
+            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Sun',{}).get('Gate',0)})<br>
+            <span class="gate-title">{chart_data.get('Sun',{}).get('Name','')}</span><br>
+            <span class="gate-desc">"{chart_data.get('Sun',{}).get('Story','')}"</span></p>
             
-            <h3>🌙 Moon</h3>
-            <p><strong>Sign:</strong> {moon_obj.sign if moon_obj else 'Error'}</p>
-            <p><strong>Gate:</strong> {moon_gate}</p>
+            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Moon',{}).get('Gate',0)})<br>
+            <span class="gate-title">{chart_data.get('Moon',{}).get('Name','')}</span><br>
+            <span class="gate-desc">"{chart_data.get('Moon',{}).get('Story','')}"</span></p>
             
-            <h3>🏹 Rising</h3>
-            <p><strong>Sign:</strong> {asc_obj.sign if asc_obj else 'Error'}</p>
-            <p><strong>Gate:</strong> {asc_gate}</p>
+            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Rising',{}).get('Gate',0)})<br>
+            <span class="gate-title">{chart_data.get('Rising',{}).get('Name','')}</span><br>
+            <span class="gate-desc">"{chart_data.get('Rising',{}).get('Story','')}"</span></p>
         </div>
 
-        <div class="card debug">
-            <h3>🔧 UNDER THE HOOD (DEBUG LOG)</h3>
-            <ul style="list-style:none; padding:0;">
-                {''.join(f'<li>{line}</li>' for line in debug_log)}
-            </ul>
-        </div>
+        <button onclick="downloadPDF()" class="btn">⬇️ DOWNLOAD PDF REPORT</button>
+
+        <script>
+            function downloadPDF() {{
+                const link = document.createElement('a');
+                link.href = 'data:application/pdf;base64,{pdf_b64}';
+                link.download = 'Integrated_Self_Report.pdf';
+                link.click();
+            }}
+        </script>
+
+        <div class="spacer"></div>
     </body>
     </html>
     """
