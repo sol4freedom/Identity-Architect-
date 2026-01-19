@@ -1,7 +1,6 @@
 import sys, base64, datetime, json, logging
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from geopy.geocoders import Nominatim
 from flatlib.datetime import Datetime
@@ -31,13 +30,14 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE CORRECTED MAP (FULL 64 GATES) ---
-# Starts at Aries 0° (Gate 25) and completes the full circle
+# --- 2. DATA: THE CORRECTED MAP ---
+# CRITICAL FIX: This list MUST start with 25 (Aries Start) to match the math engine.
+# If this starts with 41, the calculations will be wrong.
 RAVE_ORDER = [
-    25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 
-    62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 
-    1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 
-    37, 63, 22, 36
+    25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12,  # Aries/Taurus/Gemini
+    15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6,  # Cancer/Leo/Virgo
+    46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11,  # Libra/Scorpio/Sag
+    10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36 # Cap/Aqua/Pisces
 ]
 
 # --- 3. DATA: THE TRANSLATION LAYER ---
@@ -151,18 +151,11 @@ def get_tz_offset(date_str, time_str, tz_name):
 def get_hd_data(degree):
     """Translates Degree -> Corrected Gate -> Drop In Language"""
     if degree is None: return {"name": "Unknown", "story": "Mystery"}
-    # 1. Calculate Index (0-63)
-    # The circle is 360 degrees. There are 64 gates.
-    # 360 / 64 = 5.625 degrees per gate.
-    index = int(degree / 5.625)
-    
-    # 2. Safety Check
+    # Math: (Degree / 360) * 64 gives index in RAVE_ORDER
+    # RAVE_ORDER now starts at 25 (Aries 0), matching Flatlib's Tropical Zodiac
+    index = int(degree / 5.625) 
     if index >= 64: index = 0
-    
-    # 3. Fetch Gate Number from CORRECTED Map
     gate = RAVE_ORDER[index]
-    
-    # 4. Fetch Story
     info = KEY_LORE.get(gate, {"name": f"Gate {gate}", "story": "Energy"})
     return {"gate": gate, "name": info["name"], "story": info["story"]}
 
