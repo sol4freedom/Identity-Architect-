@@ -1,6 +1,7 @@
 import sys, base64, datetime, json, logging
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from geopy.geocoders import Nominatim
 from flatlib.datetime import Datetime
@@ -30,8 +31,7 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE TRANSLATOR ---
-# This map links 0° Aries to Gate 25.
+# --- 2. DATA: THE TRANSLATOR (Descriptions) ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles."},
     2: {"name": "The Receptive", "story": "The Divine Feminine. You are the blueprint that guides raw energy."},
@@ -104,8 +104,7 @@ KEY_LORE = {
 def clean_time(time_input):
     """
     CRITICAL FIX: Handles '10:30 PM' -> '22:30' conversion.
-    Without this, PM times are read as AM, flipping the Rising Sign 
-    (e.g., Leo -> Capricorn).
+    This fixes the Rising Sign error (Leo vs Capricorn).
     """
     if not time_input: return "12:00"
     
@@ -166,7 +165,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v3")
+        geolocator = Nominatim(user_agent="ia_final_fix_v4")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -234,7 +233,13 @@ def create_pdf_b64(name, lp, hd, advice, chart):
         return base64.b64encode(pdf.output().encode('latin-1', 'ignore')).decode('utf-8')
     except: return ""
 
-# --- 5. API ENDPOINT ---
+# --- 4. API ROUTES ---
+
+@app.get("/")
+def root():
+    """This fixes the 404 error in the logs."""
+    return {"status": "online", "message": "Identity Architect is Running."}
+
 @app.post("/calculate")
 async def calculate_chart(request: Request):
     data = {}
@@ -246,20 +251,19 @@ async def calculate_chart(request: Request):
     
     name = data.get("name") or "Traveler"
     
-    # 1. FIX DATE (Catch date vs dob)
+    # 1. FIX DATE
     raw_date = data.get("dob") or data.get("date")
     dob = safe_get_date(raw_date)
     if not dob: dob = datetime.date.today().strftime("%Y-%m-%d")
 
-    # 2. FIX TIME (Catch AM/PM)
+    # 2. FIX TIME (Handles PM)
     raw_time = data.get("tob") or "12:00"
-    tob = clean_time(raw_time) # <--- THIS FIXES THE RISING SIGN
+    tob = clean_time(raw_time)
 
     city = data.get("city") or "London"
     struggle = data.get("struggle") or "General"
 
     try:
-        # Calculate
         lat, lon, tz_name = resolve_location(city)
         tz_offset = get_tz_offset(dob, tob, tz_name)
         
@@ -270,12 +274,10 @@ async def calculate_chart(request: Request):
         chart_data = {}
         planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
         
-        # Personality Sun Gate
         p_sun = chart.get(const.SUN)
         p_sun_data = get_hd_data(p_sun.lon)
         hd_sun_gate = p_sun_data['gate']
         
-        # Build Data
         for p in planets:
             obj = chart.get(getattr(const, p.upper()))
             info = get_hd_data(obj.lon)
@@ -288,7 +290,6 @@ async def calculate_chart(request: Request):
         line_sun = (hd_sun_gate % 6) + 1
         hd_profile = f"{line_sun}/?" 
         
-        # Life Path
         try:
             digits = [int(d) for d in dob if d.isdigit()]
             total = sum(digits)
