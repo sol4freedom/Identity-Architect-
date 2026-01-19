@@ -30,7 +30,8 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE TRANSLATOR (Descriptions) ---
+# --- 2. DATA: THE TRANSLATOR ---
+# This map links 0° Aries to Gate 25.
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles."},
     2: {"name": "The Receptive", "story": "The Divine Feminine. You are the blueprint that guides raw energy."},
@@ -98,40 +99,64 @@ KEY_LORE = {
     64: {"name": "The Confusion", "story": "Illumination. You resolve images into light."}
 }
 
-# --- 3. LOGIC ENGINES (The Fix) ---
+# --- 3. LOGIC ENGINES ---
+
+def clean_time(time_input):
+    """
+    CRITICAL FIX: Handles '10:30 PM' -> '22:30' conversion.
+    Without this, PM times are read as AM, flipping the Rising Sign 
+    (e.g., Leo -> Capricorn).
+    """
+    if not time_input: return "12:00"
+    
+    s = str(time_input).upper().strip()
+    
+    # Check for AM/PM
+    is_pm = "PM" in s
+    is_am = "AM" in s
+    
+    # Remove letters to get numbers
+    s = s.replace("PM", "").replace("AM", "").strip()
+    
+    try:
+        if ":" in s:
+            parts = s.split(":")
+            h = int(parts[0])
+            m = int(parts[1])
+        else:
+            h = int(s)
+            m = 0
+            
+        # Logic for 12-hour to 24-hour
+        if is_pm and h < 12:
+            h += 12
+        if is_am and h == 12:
+            h = 0
+            
+        return f"{h:02d}:{m:02d}"
+    except:
+        return "12:00"
 
 def get_gate_from_degree(degree):
-    """
-    CORRELATION ENGINE:
-    Maps 0-360 degrees directly to Gates.
-    0° Aries = Gate 25.
-    5.625° Aries = Gate 17.
-    This prevents 'List Rotation' errors.
-    """
     if degree is None: return 1
-    # Normalize to 0-360
     if degree < 0 or degree >= 360: degree = degree % 360
-    
-    # Calculate "Step" (0-63) where 0 is start of Aries
     step = int(degree / 5.625)
     
-    # HARD CODED MAP (Aries 0 -> Pisces End)
-    # This correlates degree directly to gate. No sliding list.
+    # Hard Coded Map (Aries 0 -> Pisces End)
     gate_map = {
-        0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,   # Aries / Taurus
-        8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12, # Taurus / Gemini
-        16: 15, 17: 52, 18: 39, 19: 53, 20: 62, 21: 56, 22: 31, 23: 33, # Cancer / Leo
-        24: 7, 25: 4, 26: 29, 27: 59, 28: 40, 29: 64, 30: 47, 31: 6, # Leo / Virgo
-        32: 46, 33: 18, 34: 48, 35: 57, 36: 32, 37: 50, 38: 28, 39: 44, # Libra / Scorpio
-        40: 1, 41: 43, 42: 14, 43: 34, 44: 9, 45: 5, 46: 26, 47: 11, # Sag
-        48: 10, 49: 58, 50: 38, 51: 54, 52: 61, 53: 60, 54: 41, 55: 19, # Cap / Aqua
-        56: 13, 57: 49, 58: 30, 59: 55, 60: 37, 61: 63, 62: 22, 63: 36  # Pisces
+        0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,
+        8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12,
+        16: 15, 17: 52, 18: 39, 19: 53, 20: 62, 21: 56, 22: 31, 23: 33,
+        24: 7, 25: 4, 26: 29, 27: 59, 28: 40, 29: 64, 30: 47, 31: 6,
+        32: 46, 33: 18, 34: 48, 35: 57, 36: 32, 37: 50, 38: 28, 39: 44,
+        40: 1, 41: 43, 42: 14, 43: 34, 44: 9, 45: 5, 46: 26, 47: 11,
+        48: 10, 49: 58, 50: 38, 51: 54, 52: 61, 53: 60, 54: 41, 55: 19,
+        56: 13, 57: 49, 58: 30, 59: 55, 60: 37, 61: 63, 62: 22, 63: 36
     }
-    
     return gate_map.get(step, 1)
 
 def safe_get_date(date_input):
-    if not date_input: return None # Return None if missing so we can catch it
+    if not date_input: return None
     s = str(date_input).strip()
     if "T" in s: s = s.split("T")[0]
     return s
@@ -141,7 +166,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix")
+        geolocator = Nominatim(user_agent="ia_final_fix_v3")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -160,12 +185,7 @@ def get_tz_offset(date_str, time_str, tz_name):
     except: return 0.0
 
 def get_hd_data(degree):
-    """Uses the new Correlation Engine."""
-    if degree is None: return {"name": "Unknown", "story": "Mystery"}
-    
-    # Use the new explicit mapper
     gate = get_gate_from_degree(degree)
-    
     info = KEY_LORE.get(gate, {"name": f"Gate {gate}", "story": "Energy"})
     return {"gate": gate, "name": info["name"], "story": info["story"]}
 
@@ -226,16 +246,15 @@ async def calculate_chart(request: Request):
     
     name = data.get("name") or "Traveler"
     
-    # --- CRITICAL FIX IS HERE ---
-    # We now check for "dob" (my test) AND "date" (your website)
+    # 1. FIX DATE (Catch date vs dob)
     raw_date = data.get("dob") or data.get("date")
     dob = safe_get_date(raw_date)
-    
-    # Only fallback to today if absolutely nothing came through
-    if not dob: 
-        dob = datetime.date.today().strftime("%Y-%m-%d")
+    if not dob: dob = datetime.date.today().strftime("%Y-%m-%d")
 
-    tob = data.get("tob") or "12:00"
+    # 2. FIX TIME (Catch AM/PM)
+    raw_time = data.get("tob") or "12:00"
+    tob = clean_time(raw_time) # <--- THIS FIXES THE RISING SIGN
+
     city = data.get("city") or "London"
     struggle = data.get("struggle") or "General"
 
