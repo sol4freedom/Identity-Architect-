@@ -370,3 +370,4 @@ async def calculate_chart(request: Request):
     </html>
     """
     return {"report": html}
+
