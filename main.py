@@ -1,4 +1,4 @@
-import sys, base64, datetime, json, logging
+import sys, base64, datetime, json, logging, re
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -31,7 +31,7 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE TRANSLATOR (Descriptions) ---
+# --- 2. DATA: THE TRANSLATOR ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Entropy into Freshness. You are the spark that initiates new cycles."},
     2: {"name": "The Receptive", "story": "The Divine Feminine. You are the blueprint that guides raw energy."},
@@ -103,45 +103,38 @@ KEY_LORE = {
 
 def clean_time(time_input):
     """
-    CRITICAL FIX: Handles '10:30 PM' -> '22:30' conversion.
-    This fixes the Rising Sign error (Leo vs Capricorn).
+    INDESTRUCTIBLE TIME CLEANER:
+    Uses Regex to find HH:MM patterns inside ANY string (like '1970-01-01T22:30:00.000Z').
+    Handles AM/PM logic correctly.
     """
     if not time_input: return "12:00"
     
     s = str(time_input).upper().strip()
     
-    # Check for AM/PM
-    is_pm = "PM" in s
-    is_am = "AM" in s
+    # 1. Regex to find basic time pattern (10:30, 22:30, 9:05)
+    match = re.search(r'(\d{1,2}):(\d{2})', s)
     
-    # Remove letters to get numbers
-    s = s.replace("PM", "").replace("AM", "").strip()
-    
-    try:
-        if ":" in s:
-            parts = s.split(":")
-            h = int(parts[0])
-            m = int(parts[1])
-        else:
-            h = int(s)
-            m = 0
-            
-        # Logic for 12-hour to 24-hour
-        if is_pm and h < 12:
+    if match:
+        h = int(match.group(1))
+        m = int(match.group(2))
+        
+        # Check for PM in the original string
+        if "PM" in s and h < 12:
             h += 12
-        if is_am and h == 12:
+        if "AM" in s and h == 12:
             h = 0
             
+        logger.info(f"Time Cleaned: {s} -> {h:02d}:{m:02d}")
         return f"{h:02d}:{m:02d}"
-    except:
-        return "12:00"
+    
+    # Fallback if no colon found
+    return "12:00"
 
 def get_gate_from_degree(degree):
     if degree is None: return 1
     if degree < 0 or degree >= 360: degree = degree % 360
     step = int(degree / 5.625)
     
-    # Hard Coded Map (Aries 0 -> Pisces End)
     gate_map = {
         0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,
         8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12,
@@ -165,7 +158,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v4")
+        geolocator = Nominatim(user_agent="ia_final_fix_v6")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -237,7 +230,6 @@ def create_pdf_b64(name, lp, hd, advice, chart):
 
 @app.get("/")
 def root():
-    """This fixes the 404 error in the logs."""
     return {"status": "online", "message": "Identity Architect is Running."}
 
 @app.post("/calculate")
@@ -256,8 +248,9 @@ async def calculate_chart(request: Request):
     dob = safe_get_date(raw_date)
     if not dob: dob = datetime.date.today().strftime("%Y-%m-%d")
 
-    # 2. FIX TIME (Handles PM)
-    raw_time = data.get("tob") or "12:00"
+    # 2. FIX TIME (REGEX VERSION)
+    # Catches 'time', 'tob', 'birth_time' AND handles messy formats
+    raw_time = data.get("tob") or data.get("time") or data.get("birth_time") or "12:00"
     tob = clean_time(raw_time)
 
     city = data.get("city") or "London"
@@ -370,4 +363,3 @@ async def calculate_chart(request: Request):
     </html>
     """
     return {"report": html}
-
