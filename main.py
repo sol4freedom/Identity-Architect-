@@ -8,6 +8,7 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
+from fpdf import FPDF # Uses fpdf2
 import pytz
 
 logging.basicConfig(level=logging.INFO)
@@ -103,38 +104,24 @@ KEY_LORE = {
 
 def clean_time(time_input):
     """
-    INDESTRUCTIBLE TIME CLEANER:
-    Uses Regex to find HH:MM patterns inside ANY string (like '1970-01-01T22:30:00.000Z').
-    Handles AM/PM logic correctly.
+    INDESTRUCTIBLE TIME CLEANER (Regex Version)
     """
     if not time_input: return "12:00"
-    
     s = str(time_input).upper().strip()
-    
-    # 1. Regex to find basic time pattern (10:30, 22:30, 9:05)
+    # Find any HH:MM pattern
     match = re.search(r'(\d{1,2}):(\d{2})', s)
-    
     if match:
         h = int(match.group(1))
         m = int(match.group(2))
-        
-        # Check for PM in the original string
-        if "PM" in s and h < 12:
-            h += 12
-        if "AM" in s and h == 12:
-            h = 0
-            
-        logger.info(f"Time Cleaned: {s} -> {h:02d}:{m:02d}")
+        if "PM" in s and h < 12: h += 12
+        if "AM" in s and h == 12: h = 0
         return f"{h:02d}:{m:02d}"
-    
-    # Fallback if no colon found
     return "12:00"
 
 def get_gate_from_degree(degree):
     if degree is None: return 1
     if degree < 0 or degree >= 360: degree = degree % 360
     step = int(degree / 5.625)
-    
     gate_map = {
         0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,
         8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12,
@@ -158,7 +145,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v6")
+        geolocator = Nominatim(user_agent="ia_final_fix_v7")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -193,21 +180,25 @@ def get_strategic_advice(struggle, chart):
         ris = chart.get("Rising", {}).get("Sign", "?")
         return "Core Alignment", f"Return to your **{ris} Rising**. This is your anchor."
 
+# --- 4. PDF ENGINE (UPDATED FOR FPDF2) ---
 def create_pdf_b64(name, lp, hd, advice, chart):
-    from fpdf import FPDF
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('Helvetica', 'B', 16)
-            self.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
-            self.ln(5)
     try:
-        pdf = PDF()
+        pdf = FPDF()
         pdf.add_page()
+        pdf.set_font("Helvetica", size=12)
+        
+        # Header
+        pdf.set_font("Helvetica", 'B', 16)
+        pdf.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
+        pdf.ln(5)
+
+        # Profile
         pdf.set_font("Helvetica", size=12)
         pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
         pdf.cell(0, 10, f"Life Path: {lp} | Profile: {hd}", 0, 1)
         pdf.ln(5)
         
+        # Advice
         pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, "Strategic Guidance", 0, 1)
         pdf.set_font("Helvetica", '', 12)
@@ -215,6 +206,7 @@ def create_pdf_b64(name, lp, hd, advice, chart):
         pdf.multi_cell(0, 7, clean_advice)
         pdf.ln(5)
         
+        # Blueprint
         pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, "Planetary Blueprint", 0, 1)
         pdf.set_font("Helvetica", '', 12)
@@ -223,10 +215,15 @@ def create_pdf_b64(name, lp, hd, advice, chart):
             gate = v.get("Gate", "?")
             name_txt = v.get("Name", "")
             pdf.cell(0, 8, f"{k}: {sign} - {name_txt}", 0, 1)
-        return base64.b64encode(pdf.output().encode('latin-1', 'ignore')).decode('utf-8')
-    except: return ""
+        
+        # OUTPUT: FPDF2 returns bytearray, so we encode strictly
+        pdf_bytes = pdf.output()
+        return base64.b64encode(pdf_bytes).decode('utf-8')
+    except Exception as e:
+        logger.error(f"PDF Error: {str(e)}")
+        return ""
 
-# --- 4. API ROUTES ---
+# --- 5. API ROUTES ---
 
 @app.get("/")
 def root():
@@ -243,13 +240,10 @@ async def calculate_chart(request: Request):
     
     name = data.get("name") or "Traveler"
     
-    # 1. FIX DATE
     raw_date = data.get("dob") or data.get("date")
     dob = safe_get_date(raw_date)
     if not dob: dob = datetime.date.today().strftime("%Y-%m-%d")
 
-    # 2. FIX TIME (REGEX VERSION)
-    # Catches 'time', 'tob', 'birth_time' AND handles messy formats
     raw_time = data.get("tob") or data.get("time") or data.get("birth_time") or "12:00"
     tob = clean_time(raw_time)
 
@@ -300,6 +294,9 @@ async def calculate_chart(request: Request):
     topic, advice_text = get_strategic_advice(struggle, chart_data)
     pdf_b64 = create_pdf_b64(name, lp, hd_profile, (topic, advice_text), chart_data)
 
+    # --- THE WIX COMPATIBLE BUTTON ---
+    # We replaced the Javascript button with a standard HTML <a> tag.
+    # This works in Wix text boxes where scripts are blocked.
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -347,16 +344,9 @@ async def calculate_chart(request: Request):
             <span class="gate-desc">"{chart_data.get('Rising',{}).get('Story','')}"</span></p>
         </div>
 
-        <button onclick="downloadPDF()" class="btn">⬇️ DOWNLOAD PDF REPORT</button>
-
-        <script>
-            function downloadPDF() {{
-                const link = document.createElement('a');
-                link.href = 'data:application/pdf;base64,{pdf_b64}';
-                link.download = 'Integrated_Self_Report.pdf';
-                link.click();
-            }}
-        </script>
+        <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self.pdf" target="_blank" class="btn">
+            ⬇️ DOWNLOAD PDF REPORT
+        </a>
 
         <div class="spacer"></div>
     </body>
