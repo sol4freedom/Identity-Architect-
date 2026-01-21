@@ -22,7 +22,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 1. DATA: LOCATIONS ---
+# --- 1. DATA: LINE ARCHETYPES (ORIENTATION) ---
+# We map the 6 Lines to "Integrated" names
+LINE_NAMES = {
+    1: "Investigator",
+    2: "Natural",
+    3: "Experimenter",
+    4: "Networker",
+    5: "Fixer",
+    6: "Role Model"
+}
+
+# --- 2. DATA: LOCATIONS ---
 CITY_DB = {
     "minneapolis": (44.9778, -93.2650, "America/Chicago"),
     "london": (51.5074, -0.1278, "Europe/London"),
@@ -31,93 +42,90 @@ CITY_DB = {
     "ashland": (42.1946, -122.7095, "America/Los_Angeles")
 }
 
-# --- 2. DATA: THE LORE (EXPANDED) ---
-
-# A. ASTROLOGY (The Container)
+# --- 3. DATA: THE LORE ---
 SIGN_LORE = {
-    "Aries": "The Initiator. You are the spark of life, driven by instinct, courage, and a need for direct action.",
-    "Taurus": "The Builder. You are the anchor of stability, valuing sensory pleasure, endurance, and material security.",
-    "Gemini": "The Messenger. You are the weaver of connections, driven by curiosity, duality, and the exchange of information.",
-    "Cancer": "The Protector. You are the emotional harbor, ruled by the tides of feeling, memory, and deep nurturing.",
-    "Leo": "The Radiant. You are the center of the solar system, born to shine, express creative will, and lead with heart.",
-    "Virgo": "The Alchemist. You are the seeker of perfection, driven to refine, analyze, and serve the higher order.",
-    "Libra": "The Harmonizer. You are the bridge between forces, seeking balance, beauty, and the reflection of self in others.",
-    "Scorpio": "The Transformer. You are the diver into the deep, unafraid of intensity, shadows, and the cycles of rebirth.",
-    "Sagittarius": "The Explorer. You are the arrow of truth, seeking meaning, wisdom, and the vastness of the horizon.",
-    "Capricorn": "The Architect. You are the climber of mountains, driven by ambition, structure, and the legacy you build.",
-    "Aquarius": "The Visionary. You are the breaker of patterns, looking toward the future, the collective, and the unique.",
-    "Pisces": "The Mystic. You are the dreamer of the zodiac, dissolving boundaries to touch the universal and the divine."
+    "Aries": "The Initiator. You are the spark of life, driven by instinct and courage.",
+    "Taurus": "The Builder. You are the anchor of stability and sensory endurance.",
+    "Gemini": "The Messenger. You are the weaver of connections and curiosity.",
+    "Cancer": "The Protector. You are the emotional harbor and nurturer.",
+    "Leo": "The Radiant. You are the center of the solar system, born to shine.",
+    "Virgo": "The Alchemist. You are the seeker of perfection and service.",
+    "Libra": "The Harmonizer. You are the bridge seeking balance and beauty.",
+    "Scorpio": "The Transformer. You are the diver into the deep and the cycles of rebirth.",
+    "Sagittarius": "The Explorer. You are the arrow of truth and vast wisdom.",
+    "Capricorn": "The Architect. You are the climber of mountains and legacy.",
+    "Aquarius": "The Visionary. You are the breaker of patterns and the futurist.",
+    "Pisces": "The Mystic. You are the dreamer dissolving boundaries."
 }
 
-# B. HUMAN DESIGN (The Content)
 KEY_LORE = {
-    1: {"name": "The Creator", "story": "Entropy into Freshness. You are the primal spark of creativity. You do not follow the path; you create it from the void."},
-    2: {"name": "The Receptive", "story": "Dislocation into Orientation. You are the divine feminine blueprint. You provide the direction for raw energy to flow."},
-    3: {"name": "The Innovator", "story": "Chaos into Innovation. You are the mutant. You break the established rules to push evolution forward into something new."},
-    4: {"name": "The Logic Master", "story": "Intolerance into Understanding. You are the answer. You resolve the anxiety of doubt by finding the perfect pattern."},
-    5: {"name": "The Fixer", "story": "Impatience into Patience. You trust the natural rhythm of life. You wait for the storm to pass before acting."},
-    6: {"name": "The Peacemaker", "story": "Conflict into Peace. You are the emotional diplomat. You dissolve friction by holding the space for resolution."},
-    7: {"name": "The Leader", "story": "Division into Guidance. You lead not by force, but by representing the collective will of the people towards the future."},
-    8: {"name": "The Stylist", "story": "Mediocrity into Style. You are the rebel of expression. You inspire others simply by having the courage to be yourself."},
-    9: {"name": "The Focuser", "story": "Inertia into Determination. You tame the chaos of the mind by focusing deeply on one critical detail at a time."},
-    10: {"name": "The Self", "story": "Self-Obsession into Being. You are here to master the art of self-love and to empower others by simply being you."},
-    11: {"name": "The Idealist", "story": "Obscurity into Light. You catch ideas from the ether. You are the vessel for the images that inspire humanity."},
-    12: {"name": "The Articulate", "story": "Vanity into Discrimination. You master the timing of your voice. You speak words that can mutate the soul."},
-    13: {"name": "The Listener", "story": "Discord into Empathy. You are the confidant. You hold the secrets of the past to guide the collective future."},
-    14: {"name": "The Power House", "story": "Compromise into Competence. You possess the unflagging fuel to drive the dreams of the world into reality."},
-    15: {"name": "The Humanist", "story": "Dullness into Magnetism. You accept all extremes of the human experience, from the lowest lows to the highest highs."},
-    16: {"name": "The Master", "story": "Indifference into Versatility. You turn raw talent into mastery through the enthusiasm of repetition."},
-    17: {"name": "The Opinion", "story": "Opinion into Far-Sightedness. You see the pattern of the future and organize it into a logical view for others."},
-    18: {"name": "The Improver", "story": "Judgment into Integrity. You spot the flaw in the system not to criticize, but so that it can be perfected."},
-    19: {"name": "The Sensitive", "story": "Co-Dependence into Sacrifice. You are the barometer of the tribe. You feel the emotional needs of those around you."},
-    20: {"name": "The Now", "story": "Superficiality into Presence. You act with pure, spontaneous clarity. You are the voice of the present moment."},
-    21: {"name": "The Controller", "story": "Control into Authority. You manage the resources. You take command to ensure the tribe survives and thrives."},
-    22: {"name": "The Grace", "story": "Dishonor into Grace. You are the artist of the emotions. You listen with an open heart that allows others to feel."},
-    23: {"name": "The Assimilator", "story": "Complexity into Simplicity. You are the remover of obstacles. You strip away the noise to reveal the essential truth."},
-    24: {"name": "The Rationalizer", "story": "Addiction into Invention. You revisit the past over and over until you find the new way forward."},
-    25: {"name": "The Spirit", "story": "Constriction into Acceptance. You are the Shaman. You retain the innocence of spirit despite the wounds of the world."},
-    26: {"name": "The Egoist", "story": "Pride into Artfulness. You are the great influencer. You use your willpower to direct resources where they are needed."},
-    27: {"name": "The Nurturer", "story": "Selfishness into Altruism. You are the guardian. You care for the weak and ensure the heritage is preserved."},
-    28: {"name": "The Risk Taker", "story": "Purposelessness into Totality. You confront the fear of death to find a life truly worth living."},
-    29: {"name": "The Yes Man", "story": "Half-Heartedness into Devotion. You say 'Yes' to the experience and persevere through the abyss to wisdom."},
-    30: {"name": "The Passion", "story": "Desire into Rapture. You burn with a fire that cannot be quenched, teaching the world how to feel deeply."},
-    31: {"name": "The Voice", "story": "Arrogance into Leadership. You are the voice of the collective. You speak the vision that others are waiting to hear."},
-    32: {"name": "The Conservative", "story": "Failure into Preservation. You assess what is valuable from the past to preserve it for the future success."},
-    33: {"name": "The Reteller", "story": "Forgetting into Mindfulness. You withdraw to process the memory. You turn experience into wisdom."},
-    34: {"name": "The Power", "story": "Force into Majesty. You are the pure, independent force of life expressing itself through activity."},
-    35: {"name": "The Progress", "story": "Hunger into Adventure. You are driven to taste every experience, knowing that change is the only constant."},
-    36: {"name": "The Crisis", "story": "Turbulence into Compassion. You survive the emotional storm to bring light to the darkness of others."},
-    37: {"name": "The Family", "story": "Weakness into Equality. You build the community through friendship, bargains, and deep affection."},
-    38: {"name": "The Fighter", "story": "Struggle into Honor. You fight the battles that give life meaning. You stand for your individual truth."},
-    39: {"name": "The Provocateur", "story": "Provocation into Liberation. You poke the spirit of others to wake them up from their slumber."},
-    40: {"name": "The Aloneness", "story": "Exhaustion into Resolve. You separate yourself from the group to regenerate your power and deliver deliverance."},
-    41: {"name": "The Fantasy", "story": "Fantasy into Emanation. You hold the seed of the dream. You are the starting point of the new cycle."},
-    42: {"name": "The Finisher", "story": "Expectation into Celebration. You maximize the cycle and bring it to a satisfying, fruitful conclusion."},
-    43: {"name": "The Insight", "story": "Deafness into Breakthrough. You hear the unique voice inside. Your insight changes the world's knowing."},
-    44: {"name": "The Alert", "story": "Interference into Teamwork. You smell potential. You align the right people to ensure success."},
-    45: {"name": "The Gatherer", "story": "Dominance into Synergy. You are the King/Queen. You hold the resources together for the kingdom."},
-    46: {"name": "The Determination", "story": "Seriousness into Delight. You succeed by being in the right place at the right time with your physical body."},
-    47: {"name": "The Realization", "story": "Oppression into Transmutation. You sort through the confusion of the past to find the sudden epiphany."},
-    48: {"name": "The Depth", "story": "Inadequacy into Wisdom. You look into the deep well of talent to bring fresh solutions to the surface."},
-    49: {"name": "The Catalyst", "story": "Reaction into Revolution. You reject the old principles to establish a higher order for the tribe."},
-    50: {"name": "The Values", "story": "Corruption into Harmony. You act as the guardian of the tribe's laws and values. You maintain the pot."},
-    51: {"name": "The Shock", "story": "Agitation into Initiation. You wake people up with thunder. You force them to jump into the new."},
-    52: {"name": "The Stillness", "story": "Stress into Restraint. You hold your energy still, like a mountain, until the perfect moment to act."},
-    53: {"name": "The Starter", "story": "Immaturity into Expansion. You are the pressure to begin. You initiate the cycle of evolution."},
-    54: {"name": "The Ambition", "story": "Greed into Ascension. You drive the tribe upward. You seek spiritual and material mastery."},
-    55: {"name": "The Spirit", "story": "Victimization into Freedom. You accept the highs and lows of emotion to find the spirit within."},
-    56: {"name": "The Storyteller", "story": "Distraction into Enrichment. You travel through ideas and places to weave the collective myth."},
-    57: {"name": "The Intuitive", "story": "Unease into Clarity. You hear the truth in the acoustic vibration of the now. You trust your instinct."},
-    58: {"name": "The Joy", "story": "Dissatisfaction into Vitality. You challenge authority with the joy of making life better and more efficient."},
-    59: {"name": "The Sexual", "story": "Dishonesty into Intimacy. You break down barriers to create a union that produces life and transparency."},
-    60: {"name": "The Limitation", "story": "Limitation into Realism. You accept the boundaries of form to let the magic transcend them."},
-    61: {"name": "The Mystery", "story": "Psychosis into Sanctity. You dive into the unknowable to bring back universal truth and inspiration."},
-    62: {"name": "The Detail", "story": "Intellect into Precision. You name the details. You build a bridge of understanding through facts."},
-    63: {"name": "The Doubter", "story": "Doubt into Truth. You use critical logic to test the validity of the future. You question to find clarity."},
-    64: {"name": "The Confusion", "story": "Confusion into Illumination. You process the images of the mind until they resolve into light."}
+    1: {"name": "The Creator", "story": "Entropy into Freshness."},
+    2: {"name": "The Receptive", "story": "The Divine Feminine Blueprint."},
+    3: {"name": "The Innovator", "story": "Chaos into Innovation."},
+    4: {"name": "The Logic Master", "story": "The Answer to Doubt."},
+    5: {"name": "The Fixer", "story": "Patience into Timelessness."},
+    6: {"name": "The Peacemaker", "story": "Conflict into Peace."},
+    7: {"name": "The Leader", "story": "Guidance by Collective Will."},
+    8: {"name": "The Stylist", "story": "Mediocrity into Style."},
+    9: {"name": "The Focuser", "story": "Power of the Small."},
+    10: {"name": "The Self", "story": "The Art of Being."},
+    11: {"name": "The Idealist", "story": "Ideas into Light."},
+    12: {"name": "The Articulate", "story": "The Channel of Voice."},
+    13: {"name": "The Listener", "story": "The Confidant of the Past."},
+    14: {"name": "The Power House", "story": "Fuel for Dreams."},
+    15: {"name": "The Humanist", "story": "Extremes into Flow."},
+    16: {"name": "The Master", "story": "Skill into Versatility."},
+    17: {"name": "The Opinion", "story": "The Eye of the Future."},
+    18: {"name": "The Improver", "story": "Correction for Perfection."},
+    19: {"name": "The Sensitive", "story": "Attunement to Needs."},
+    20: {"name": "The Now", "story": "Spontaneous Clarity."},
+    21: {"name": "The Controller", "story": "Authority over Resources."},
+    22: {"name": "The Grace", "story": "Emotional Openness."},
+    23: {"name": "The Assimilator", "story": "Complexity into Simplicity."},
+    24: {"name": "The Rationalizer", "story": "Invention from the Past."},
+    25: {"name": "The Spirit", "story": "Innocence despite Wounds."},
+    26: {"name": "The Egoist", "story": "The Great Influencer."},
+    27: {"name": "The Nurturer", "story": "Altruism and Care."},
+    28: {"name": "The Risk Taker", "story": "Purpose through Totality."},
+    29: {"name": "The Yes Man", "story": "Commitment through the Abyss."},
+    30: {"name": "The Passion", "story": "The Burning Fire."},
+    31: {"name": "The Voice", "story": "Leadership through Influence."},
+    32: {"name": "The Conservative", "story": "Preservation of Value."},
+    33: {"name": "The Reteller", "story": "Retreat into Wisdom."},
+    34: {"name": "The Power", "story": "Majesty of Force."},
+    35: {"name": "The Progress", "story": "Hunger for Experience."},
+    36: {"name": "The Crisis", "story": "Compassion through Turbulence."},
+    37: {"name": "The Family", "story": "Community and Friendship."},
+    38: {"name": "The Fighter", "story": "Struggle for Honor."},
+    39: {"name": "The Provocateur", "story": "Liberation through Provocation."},
+    40: {"name": "The Aloneness", "story": "Resolve in Separation."},
+    41: {"name": "The Fantasy", "story": "The Origin of the Dream."},
+    42: {"name": "The Finisher", "story": "Growth through Conclusion."},
+    43: {"name": "The Insight", "story": "Breakthrough of Knowing."},
+    44: {"name": "The Alert", "story": "Teamwork through Instinct."},
+    45: {"name": "The Gatherer", "story": "Synergy of the Kingdom."},
+    46: {"name": "The Determination", "story": "Serendipity of the Body."},
+    47: {"name": "The Realization", "story": "Epiphany from Confusion."},
+    48: {"name": "The Depth", "story": "Wisdom from the Well."},
+    49: {"name": "The Catalyst", "story": "Revolution of Principles."},
+    50: {"name": "The Values", "story": "Guardian of Harmony."},
+    51: {"name": "The Shock", "story": "Initiation by Thunder."},
+    52: {"name": "The Stillness", "story": "The Mountain."},
+    53: {"name": "The Starter", "story": "Pressure to Begin."},
+    54: {"name": "The Ambition", "story": "Ascension of the Tribe."},
+    55: {"name": "The Spirit", "story": "Freedom in Emotion."},
+    56: {"name": "The Storyteller", "story": "The Wandering Myth."},
+    57: {"name": "The Intuitive", "story": "Clarity in the Now."},
+    58: {"name": "The Joy", "story": "Vitality to Challenge."},
+    59: {"name": "The Sexual", "story": "Intimacy breaking Barriers."},
+    60: {"name": "The Limitation", "story": "Realism into Transcendence."},
+    61: {"name": "The Mystery", "story": "Inner Truth."},
+    62: {"name": "The Detail", "story": "Precision of Intellect."},
+    63: {"name": "The Doubter", "story": "Logic for Truth."},
+    64: {"name": "The Confusion", "story": "Illumination of Images."}
 }
 
-# --- 3. LOGIC ENGINES ---
+# --- 4. LOGIC ENGINES ---
 
 def clean_time(time_input):
     if not time_input: return "12:00"
@@ -135,6 +143,7 @@ def get_gate_from_degree(degree):
     if degree is None: return 1
     if degree < 0 or degree >= 360: degree = degree % 360
     step = int(degree / 5.625)
+    # Standard Human Design Mandala Mapping
     gate_map = {
         0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,
         8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12,
@@ -158,7 +167,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v8")
+        geolocator = Nominatim(user_agent="ia_final_fix_v9")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -193,24 +202,22 @@ def get_strategic_advice(struggle, chart):
         ris = chart.get("Rising", {}).get("Sign", "?")
         return "Core Alignment", f"Return to your **{ris} Rising**. This is your anchor."
 
-def create_pdf_b64(name, lp, hd, advice, chart):
+def create_pdf_b64(name, lp, orientation, advice, chart):
     try:
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Helvetica", size=12)
         
-        # Header
         pdf.set_font("Helvetica", 'B', 16)
         pdf.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
         pdf.ln(5)
 
-        # Profile
         pdf.set_font("Helvetica", size=12)
         pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
-        pdf.cell(0, 10, f"Life Path: {lp} | Profile: {hd}", 0, 1)
+        # CHANGED: Profile -> Orientation
+        pdf.cell(0, 10, f"Life Path: {lp} | Orientation: {orientation}", 0, 1)
         pdf.ln(5)
         
-        # Advice
         pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, "Strategic Guidance", 0, 1)
         pdf.set_font("Helvetica", '', 12)
@@ -218,7 +225,6 @@ def create_pdf_b64(name, lp, hd, advice, chart):
         pdf.multi_cell(0, 7, clean_advice)
         pdf.ln(5)
         
-        # Blueprint
         pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, "Planetary Blueprint", 0, 1)
         pdf.set_font("Helvetica", '', 12)
@@ -226,7 +232,7 @@ def create_pdf_b64(name, lp, hd, advice, chart):
             sign = v.get("Sign", "?")
             gate = v.get("Gate", "?")
             name_txt = v.get("Name", "")
-            sign_txt = v.get("SignLore", "") 
+            sign_txt = v.get("SignLore", "")
             pdf.cell(0, 8, f"{k}: {sign} - {name_txt}", 0, 1)
             pdf.set_font("Helvetica", 'I', 10)
             pdf.multi_cell(0, 5, f"   (Sign) {sign_txt}")
@@ -256,6 +262,7 @@ async def calculate_chart(request: Request):
     
     name = data.get("name") or "Traveler"
     
+    # 1. Personality Date (Conscious)
     raw_date = data.get("dob") or data.get("date")
     dob = safe_get_date(raw_date)
     if not dob: dob = datetime.date.today().strftime("%Y-%m-%d")
@@ -270,21 +277,42 @@ async def calculate_chart(request: Request):
         lat, lon, tz_name = resolve_location(city)
         tz_offset = get_tz_offset(dob, tob, tz_name)
         
+        # 2. Calculate Personality Chart (The Mind)
         dt_obj = Datetime(dob.replace("-", "/"), tob, tz_offset)
         geo_obj = GeoPos(lat, lon)
-        chart = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
+        chart_p = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
+        # 3. Calculate Design Chart (The Body - approx 88 days prior)
+        # Note: We subtract 88 days. For higher precision, solar arc is needed, but this is standard for MVP.
+        design_date_obj = datetime.datetime.strptime(dob, "%Y-%m-%d") - datetime.timedelta(days=88)
+        design_dob = design_date_obj.strftime("%Y/%m/%d")
+        dt_design = Datetime(design_dob, tob, tz_offset) # Same time/loc is close enough for lines
+        chart_d = Chart(dt_design, geo_obj, IDs=[const.SUN], hsys=const.HOUSES_PLACIDUS)
+
+        # 4. Extract Data
         chart_data = {}
         planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
         
-        p_sun = chart.get(const.SUN)
+        # Personality Sun Gate & Line
+        p_sun = chart_p.get(const.SUN)
         p_sun_data = get_hd_data(p_sun.lon)
-        hd_sun_gate = p_sun_data['gate']
-        
+        p_sun_gate = p_sun_data['gate']
+        p_line = (int(p_sun.lon / 0.9375) % 6) + 1  # Calculate Line (1-6)
+
+        # Design Sun Gate & Line
+        d_sun = chart_d.get(const.SUN)
+        d_line = (int(d_sun.lon / 0.9375) % 6) + 1
+
+        # ORIENTATION (Replaces Profile)
+        # Map numbers to text (e.g., 2 -> Natural, 4 -> Networker)
+        p_name = LINE_NAMES.get(p_line, str(p_line))
+        d_name = LINE_NAMES.get(d_line, str(d_line))
+        orientation_text = f"{p_name} / {d_name}" # e.g. "Natural / Networker"
+
         for p in planets:
-            obj = chart.get(getattr(const, p.upper()))
+            obj = chart_p.get(getattr(const, p.upper()))
             info = get_hd_data(obj.lon)
-            sign_lore = SIGN_LORE.get(obj.sign, "Energy") 
+            sign_lore = SIGN_LORE.get(obj.sign, "Energy")
             chart_data[p] = {
                 "Sign": obj.sign, 
                 "SignLore": sign_lore,
@@ -293,7 +321,7 @@ async def calculate_chart(request: Request):
                 "Story": info['story']
             }
             
-        asc = chart.get(const.ASC)
+        asc = chart_p.get(const.ASC)
         asc_info = get_hd_data(asc.lon)
         asc_sign_lore = SIGN_LORE.get(asc.sign, "Energy")
         chart_data["Rising"] = {
@@ -304,9 +332,7 @@ async def calculate_chart(request: Request):
             "Story": asc_info['story']
         }
         
-        line_sun = (hd_sun_gate % 6) + 1
-        hd_profile = f"{line_sun}/?" 
-        
+        # Life Path Calc
         try:
             digits = [int(d) for d in dob if d.isdigit()]
             total = sum(digits)
@@ -318,11 +344,11 @@ async def calculate_chart(request: Request):
     except Exception as e:
         logger.error(f"Calc Error: {e}")
         chart_data = {"Sun": {"Sign": "Unknown", "Gate": 1, "Name": "Error", "Story": ""}}
-        hd_profile = "Unknown"
+        orientation_text = "Unknown"
         lp = 0
 
     topic, advice_text = get_strategic_advice(struggle, chart_data)
-    pdf_b64 = create_pdf_b64(name, lp, hd_profile, (topic, advice_text), chart_data)
+    pdf_b64 = create_pdf_b64(name, lp, orientation_text, (topic, advice_text), chart_data)
 
     html = f"""
     <!DOCTYPE html>
@@ -336,6 +362,10 @@ async def calculate_chart(request: Request):
         .gate-title {{ color: #C71585; font-weight: bold; font-size: 1.1em; }}
         .gate-desc {{ font-size: 0.95em; color: #444; display: block; margin-top: 4px; font-style: italic; }}
         .sign-desc {{ font-size: 0.9em; color: #666; display: block; margin-bottom: 10px; border-left: 3px solid #eee; padding-left: 10px; }}
+        .orientation-tag {{ 
+            background: #eee; padding: 5px 10px; border-radius: 4px; font-weight: bold; color: #555; font-size: 0.9em;
+            display: inline-block; margin-top: 5px;
+        }}
         .btn {{ 
             background-color: #D4AF37; color: white; border: none; padding: 15px 30px; 
             font-size: 16px; border-radius: 50px; cursor: pointer; display: block; 
@@ -349,7 +379,10 @@ async def calculate_chart(request: Request):
         <div class="card" style="text-align:center;">
             <h2>The Integrated Self</h2>
             <p>Prepared for {name}</p>
-            <p><strong>Life Path:</strong> {lp} | <strong>Profile:</strong> {hd_profile}</p>
+            <p>
+                <strong>Life Path:</strong> {lp}<br>
+                <span class="orientation-tag">Orientation: {orientation_text}</span>
+            </p>
         </div>
 
         <div class="card" style="border-left: 5px solid #D4AF37;">
