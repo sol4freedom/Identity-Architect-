@@ -73,7 +73,7 @@ STRUGGLE_LORE = {
 
 # --- 4. DATA: ORIENTATION (THE AVATAR) ---
 LINE_LORE = {
-    1: {"title": "The Investigator", "desc": "The Foundation Builder. Like a master detective, you act only when you understand the ground beneath you. Certainty is your superpower."},
+    1: {"title": "The Investigator", "desc": "The Foundation Builder. Like a master detective, you act only when you understand the ground beneath your feet. Certainty is your superpower."},
     2: {"title": "The Natural", "desc": "The Reluctant Hero. You possess innate gifts you never studied for. You wait in your hermitage until the right call summons you to save the day."},
     3: {"title": "The Experimenter", "desc": "The Fearless Explorer. There are no mistakes, only discoveries. You are the scientist of life, finding what works by discovering what doesn't."},
     4: {"title": "The Networker", "desc": "The Tribal Weaver. Your power is connection. Your opportunities come not from strangers, but from the web of allies you nurture."},
@@ -350,10 +350,12 @@ async def calculate_chart(request: Request):
         lat, lon, tz_name = resolve_location(city)
         tz_offset = get_tz_offset(dob, tob, tz_name)
         
+        # Calc Personality
         dt_obj = Datetime(dob.replace("-", "/"), tob, tz_offset)
         geo_obj = GeoPos(lat, lon)
         chart_p = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
+        # Calc Design
         design_date_obj = datetime.datetime.strptime(dob, "%Y-%m-%d") - datetime.timedelta(days=88)
         design_dob = design_date_obj.strftime("%Y/%m/%d")
         dt_design = Datetime(design_dob, tob, tz_offset)
@@ -362,6 +364,7 @@ async def calculate_chart(request: Request):
         chart_data = {}
         planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
         
+        # Lines
         p_sun = chart_p.get(const.SUN)
         p_line = (int(p_sun.lon / 0.9375) % 6) + 1
         d_sun = chart_d.get(const.SUN)
