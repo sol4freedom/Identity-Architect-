@@ -22,7 +22,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 1. DATA: NUMEROLOGY (LIFE PATH) ---
+# --- 1. DATA: LOCATIONS (RESTORED) ---
+CITY_DB = {
+    "minneapolis": (44.9778, -93.2650, "America/Chicago"),
+    "london": (51.5074, -0.1278, "Europe/London"),
+    "new york": (40.7128, -74.0060, "America/New_York"),
+    "sao paulo": (-23.5558, -46.6396, "America/Sao_Paulo"),
+    "ashland": (42.1946, -122.7095, "America/Los_Angeles")
+}
+
+# --- 2. DATA: NUMEROLOGY (LIFE PATH) ---
 LIFE_PATH_LORE = {
     1: "The Primal Leader. You are the arrow that leaves the bow first. Your journey is one of independence and innovation. You are learning to stand on your own two feet and lead without looking back.",
     2: "The Peacemaker. You are the bridge between souls. Your gift is intuition and diplomacy. You are here to learn the power of cooperation and to find the divine balance between giving and receiving.",
@@ -38,7 +47,7 @@ LIFE_PATH_LORE = {
     33: "The Master Teacher. You are the avatar of compassion. Your path is to uplift the vibration of humanity through unconditional love and spiritual guidance."
 }
 
-# --- 2. DATA: STRUGGLE ADVICE ---
+# --- 3. DATA: STRUGGLE ADVICE ---
 STRUGGLE_LORE = {
     "wealth": {
         "title": "Wealth Architecture",
@@ -62,7 +71,7 @@ STRUGGLE_LORE = {
     }
 }
 
-# --- 3. DATA: ORIENTATION (LINES) ---
+# --- 4. DATA: ORIENTATION (LINES) ---
 LINE_LORE = {
     1: {"title": "The Investigator", "desc": "The Foundation. Like a detective, you need to study and understand the details before you can trust the ground beneath you. You build confidence through knowledge."},
     2: {"title": "The Natural", "desc": "The Hermit. You have innate gifts you didn't study for. You prefer to be left alone until the right person calls you out to share your genius."},
@@ -72,7 +81,7 @@ LINE_LORE = {
     6: {"title": "The Role Model", "desc": "The Sage. You live in three phases: experimenting young, observing in mid-life, and emerging as a wise example of authenticity."}
 }
 
-# --- 4. DATA: ASTROLOGY (SIGNS) ---
+# --- 5. DATA: ASTROLOGY (SIGNS) ---
 SIGN_LORE = {
     "Aries": "The Initiator. Like the first sprout of spring, you break through the soil with raw, explosive energy. You are the warrior of the zodiac, unafraid to go where no one has gone before.",
     "Taurus": "The Builder. You are the garden itself—fertile, stable, and patient. You understand the value of slow growth and sensory pleasure. You build things that last for generations.",
@@ -88,7 +97,7 @@ SIGN_LORE = {
     "Pisces": "The Mystic. You are the mist on the water. You dissolve the boundaries between self and other, dreaming the collective dream and touching the divine."
 }
 
-# --- 5. DATA: HUMAN DESIGN (GATES WITH STORIES) ---
+# --- 6. DATA: HUMAN DESIGN (GATES WITH STORIES) ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "Long ago, there was a void. Then, a spark. You are that spark. You carry the energy of pure creation, bringing something out of nothingness."},
     2: {"name": "The Receptive", "story": "The spark needs a place to land. You are the womb of the universe. You are the blueprint that guides raw energy into beautiful form."},
@@ -156,7 +165,7 @@ KEY_LORE = {
     64: {"name": "The Confusion", "story": "You stared at the stars until they formed shapes. You process the chaos of images until they resolve into illumination."}
 }
 
-# --- 6. LOGIC ENGINES ---
+# --- 7. LOGIC ENGINES ---
 
 def clean_time(time_input):
     if not time_input: return "12:00"
@@ -197,7 +206,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v12")
+        geolocator = Nominatim(user_agent="ia_final_fix_v13")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -223,7 +232,6 @@ def get_hd_data(degree):
 # --- UPDATED STRATEGIC ADVICE ENGINE ---
 def get_strategic_advice(struggle, chart):
     s = str(struggle).lower()
-    
     category = "general"
     if any(x in s for x in ['money', 'career', 'job', 'wealth', 'finance']):
         category = "wealth"
@@ -233,7 +241,6 @@ def get_strategic_advice(struggle, chart):
         category = "purpose"
     elif any(x in s for x in ['health', 'body', 'energy', 'vitality']):
         category = "health"
-    
     lore = STRUGGLE_LORE.get(category, STRUGGLE_LORE["general"])
     return lore["title"], lore["desc"]
 
