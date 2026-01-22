@@ -174,7 +174,6 @@ def get_gate_from_degree(degree):
     if degree is None: return 1
     if degree < 0 or degree >= 360: degree = degree % 360
     step = int(degree / 5.625)
-    # Standard Human Design Mandala Mapping
     gate_map = {
         0: 25, 1: 17, 2: 21, 3: 51, 4: 42, 5: 3, 6: 27, 7: 24,
         8: 2, 9: 23, 10: 8, 11: 20, 12: 16, 13: 35, 14: 45, 15: 12,
@@ -198,7 +197,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v11")
+        geolocator = Nominatim(user_agent="ia_final_fix_v12")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -218,7 +217,6 @@ def get_tz_offset(date_str, time_str, tz_name):
 
 def get_hd_data(degree):
     gate = get_gate_from_degree(degree)
-    # Default to gate 1 if missing
     info = KEY_LORE.get(gate, {"name": f"Gate {gate}", "story": "Energy"})
     return {"gate": gate, "name": info["name"], "story": info["story"]}
 
@@ -226,7 +224,6 @@ def get_hd_data(degree):
 def get_strategic_advice(struggle, chart):
     s = str(struggle).lower()
     
-    # 1. Determine Category
     category = "general"
     if any(x in s for x in ['money', 'career', 'job', 'wealth', 'finance']):
         category = "wealth"
@@ -237,7 +234,6 @@ def get_strategic_advice(struggle, chart):
     elif any(x in s for x in ['health', 'body', 'energy', 'vitality']):
         category = "health"
     
-    # 2. Get Lore
     lore = STRUGGLE_LORE.get(category, STRUGGLE_LORE["general"])
     return lore["title"], lore["desc"]
 
@@ -248,12 +244,10 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, advic
         pdf.add_page()
         pdf.set_font("Helvetica", size=12)
         
-        # TITLE
         pdf.set_font("Helvetica", 'B', 16)
         pdf.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
         pdf.ln(5)
 
-        # CLIENT INFO
         pdf.set_font("Helvetica", size=12)
         pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
         pdf.ln(2)
@@ -269,7 +263,6 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, advic
         pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, f"Orientation: {orientation_title}", 0, 1)
         pdf.set_font("Helvetica", '', 11)
-        # Handle HTML breaks
         desc_lines = orientation_body.split("<br>")
         for line in desc_lines:
              clean_line = line.replace("<b>", "").replace("</b>", "")
@@ -278,15 +271,15 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, advic
                  pdf.ln(1)
         pdf.ln(5)
         
-        # 3. STRUGGLE / ADVICE
+        # 3. STRUGGLE
         pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(0, 10, f"Insight: {advice[0]}", 0, 1) # Title
+        pdf.cell(0, 10, f"Insight: {advice[0]}", 0, 1)
         pdf.set_font("Helvetica", '', 12)
         clean_advice = advice[1].replace("**", "").replace("<br>", "\n")
         pdf.multi_cell(0, 7, clean_advice)
         pdf.ln(5)
         
-        # 4. BLUEPRINT (Planets)
+        # 4. BLUEPRINT
         pdf.set_font("Helvetica", 'B', 14)
         pdf.cell(0, 10, "Planetary Blueprint", 0, 1)
         pdf.set_font("Helvetica", '', 12)
@@ -298,15 +291,12 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, advic
             sign_txt = v.get("SignLore", "")
             gate_story = v.get("Story", "")
             
-            # Line 1: Planet in Sign (Gate)
             pdf.set_font("Helvetica", 'B', 12)
             pdf.cell(0, 8, f"{k}: {sign} (Gate {gate}) - {name_txt}", 0, 1)
             
-            # Line 2: Sign Lore
             pdf.set_font("Helvetica", 'I', 10)
             pdf.multi_cell(0, 5, f"{sign_txt}")
             
-            # Line 3: Gate Story
             pdf.set_font("Helvetica", '', 10)
             pdf.multi_cell(0, 5, f"{gate_story}")
             pdf.ln(3)
@@ -353,7 +343,7 @@ async def calculate_chart(request: Request):
         geo_obj = GeoPos(lat, lon)
         chart_p = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
-        # Calc Design (Sun only)
+        # Calc Design
         design_date_obj = datetime.datetime.strptime(dob, "%Y-%m-%d") - datetime.timedelta(days=88)
         design_dob = design_date_obj.strftime("%Y/%m/%d")
         dt_design = Datetime(design_dob, tob, tz_offset)
@@ -368,7 +358,6 @@ async def calculate_chart(request: Request):
         d_sun = chart_d.get(const.SUN)
         d_line = (int(d_sun.lon / 0.9375) % 6) + 1
 
-        # Orientation Text
         p_info = LINE_LORE.get(p_line, {"title": str(p_line), "desc": ""})
         d_info = LINE_LORE.get(d_line, {"title": str(d_line), "desc": ""})
         orientation_title = f"{p_info['title']} / {d_info['title']}"
@@ -419,7 +408,6 @@ async def calculate_chart(request: Request):
     topic, advice_text = get_strategic_advice(struggle, chart_data)
     pdf_b64 = create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, (topic, advice_text), chart_data)
 
-    # RICH HTML REPORT
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -434,4 +422,69 @@ async def calculate_chart(request: Request):
         .sign-desc {{ font-size: 0.9em; color: #666; display: block; margin-bottom: 10px; border-left: 3px solid #eee; padding-left: 10px; }}
         .orientation-tag {{ 
             background: #eee; padding: 5px 10px; border-radius: 4px; font-weight: bold; color: #555; font-size: 0.9em;
-            display: inline-block; margin-top:
+            display: inline-block; margin-top: 5px;
+        }}
+        .orientation-block {{
+            background: #fafafa; padding: 15px; border-radius: 8px; font-size: 0.95em; color: #444; margin-top: 15px;
+        }}
+        .lp-block {{
+            background: #fff8e1; padding: 15px; border-radius: 8px; font-size: 0.95em; color: #5d4037; margin-top: 10px; border: 1px solid #ffe0b2;
+        }}
+        .btn {{ 
+            background-color: #D4AF37; color: white; border: none; padding: 15px 30px; 
+            font-size: 16px; border-radius: 50px; cursor: pointer; display: block; 
+            width: 100%; max-width: 300px; margin: 20px auto; text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-decoration: none;
+        }}
+        .spacer {{ height: 500px; }}
+    </style>
+    </head>
+    <body>
+        <div class="card" style="text-align:center;">
+            <h2>The Integrated Self</h2>
+            <p>Prepared for {name}</p>
+            
+            <p><strong>Life Path: {lp}</strong></p>
+            <div class="lp-block" style="text-align: left;">
+                {lp_desc}
+            </div>
+            
+            <p style="margin-top: 20px;"><span class="orientation-tag">Orientation: {orientation_title}</span></p>
+            <div class="orientation-block" style="text-align: left;">
+                {orientation_body}
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 5px solid #D4AF37;">
+            <h2>⚡ Strategic Insight: {topic}</h2>
+            <p>{advice_text}</p>
+        </div>
+
+        <div class="card">
+            <h2>The Blueprint</h2>
+            
+            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Sun',{}).get('Gate',0)})<br>
+            <span class="sign-desc">{chart_data.get('Sun',{}).get('SignLore','')}</span>
+            <span class="gate-title">{chart_data.get('Sun',{}).get('Name','')}</span><br>
+            <span class="gate-desc">"{chart_data.get('Sun',{}).get('Story','')}"</span></p>
+            
+            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Moon',{}).get('Gate',0)})<br>
+            <span class="sign-desc">{chart_data.get('Moon',{}).get('SignLore','')}</span>
+            <span class="gate-title">{chart_data.get('Moon',{}).get('Name','')}</span><br>
+            <span class="gate-desc">"{chart_data.get('Moon',{}).get('Story','')}"</span></p>
+            
+            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Rising',{}).get('Gate',0)})<br>
+            <span class="sign-desc">{chart_data.get('Rising',{}).get('SignLore','')}</span>
+            <span class="gate-title">{chart_data.get('Rising',{}).get('Name','')}</span><br>
+            <span class="gate-desc">"{chart_data.get('Rising',{}).get('Story','')}"</span></p>
+        </div>
+
+        <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self.pdf" target="_blank" class="btn">
+            ⬇️ DOWNLOAD PDF REPORT
+        </a>
+
+        <div class="spacer"></div>
+    </body>
+    </html>
+    """
+    return {"report": html}
