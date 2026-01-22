@@ -22,150 +22,141 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- 1. DATA: LOCATIONS (RESTORED) ---
-CITY_DB = {
-    "minneapolis": (44.9778, -93.2650, "America/Chicago"),
-    "london": (51.5074, -0.1278, "Europe/London"),
-    "new york": (40.7128, -74.0060, "America/New_York"),
-    "sao paulo": (-23.5558, -46.6396, "America/Sao_Paulo"),
-    "ashland": (42.1946, -122.7095, "America/Los_Angeles")
-}
-
-# --- 2. DATA: NUMEROLOGY (LIFE PATH) ---
+# --- 1. DATA: THE HERO'S DESTINY (LIFE PATH) ---
 LIFE_PATH_LORE = {
-    1: "The Primal Leader. You are the arrow that leaves the bow first. Your journey is one of independence and innovation. You are learning to stand on your own two feet and lead without looking back.",
-    2: "The Peacemaker. You are the bridge between souls. Your gift is intuition and diplomacy. You are here to learn the power of cooperation and to find the divine balance between giving and receiving.",
-    3: "The Creative Spark. You are the child of the universe, here to express joy, art, and communication. Your path is to find your voice and scatter light into the darker corners of the world.",
-    4: "The Master Builder. You are the stone foundation. Your life is about creating stability, order, and legacy. You turn the chaotic dreams of others into solid reality through hard work and systems.",
-    5: "The Freedom Seeker. You are the wind of change. Your path is one of adventure, adaptability, and breaking chains. You are here to show the world how to embrace the unexpected.",
-    6: "The Nurturer. You are the cosmic parent. Your heart beats for justice, home, and family. Your journey is to master the art of responsibility without carrying the weight of the entire world.",
-    7: "The Seeker of Truth. You are the mystic and the analyst. Your path is a solitary climb for wisdom. You are here to look past the veil of illusion and discover the deeper spiritual mechanics of life.",
-    8: "The Powerhouse. You are the executive of the material world. Your journey involves mastering money, power, and authority. You are here to build abundance and use it to empower the collective.",
-    9: "The Humanitarian. You are the old soul. Your path is one of completion and letting go. You are here to serve the greater good, leading with compassion and wisdom for all of humanity.",
-    11: "The Illuminator (Master). You are the lightning rod. You channel high-frequency spiritual insight. Your path is to inspire others by living your truth, often walking a line between genius and madness.",
-    22: "The Master Architect. You bring heaven to earth. You have the vision of the 11 and the practicality of the 4. Your destiny is to build massive systems that change the course of history.",
-    33: "The Master Teacher. You are the avatar of compassion. Your path is to uplift the vibration of humanity through unconditional love and spiritual guidance."
+    1: "The Primal Leader. You are the first arrow fired into the unknown. Your story is one of radical independence. You are not here to follow footprints; you are here to make them. Your destiny is to stand alone, conquer your self-doubt, and lead the tribe into a new era.",
+    2: "The Peacemaker. You are the diplomat of the soul. In a world of noise, you are the whisper that brings harmony. Your hero's journey is to master the invisible threads that connect people, teaching the world that true power lies in cooperation, not dominance.",
+    3: "The Creative Spark. You are the voice of the universe expressing its joy. Your weapon is your word, your art, and your radiant optimism. Your destiny is to lift the heaviness of the world and remind humanity that life is meant to be celebrated, not just endured.",
+    4: "The Master Builder. You are the architect of the future. While others dream, you lay the bricks. Your story is one of endurance, legacy, and order. You are here to build a foundation so strong that it supports generations to come.",
+    5: "The Freedom Seeker. You are the wind that cannot be caged. Your hero's path is one of radical adaptability and adventure. You are here to break the chains of tradition and show the world what it looks like to be truly, terrifyingly free.",
+    6: "The Cosmic Guardian. You are the protector of the hearth. Your heart beats for justice and beauty. Your journey is to carry the weight of responsibility without breaking, nurturing the tribe until they are strong enough to stand on their own.",
+    7: "The Mystic Sage. You are the walker between worlds. Your path is a solitary climb up the mountain of truth. You are here to look past the veil of illusion, solving the mysteries of existence and bringing that wisdom back to the valley.",
+    8: "The Sovereign. You are the CEO of the material plane. Your destiny involves the mastery of money, power, and influence. You are here to prove that spiritual abundance can exist in the physical world, using your resources to empower the collective.",
+    9: "The Humanitarian. You are the old soul returning for one last mission. Your story is one of letting go and unconditional love. You are here to heal the wounds of the world, leading not by force, but by the overwhelming power of your compassion.",
+    11: "The Illuminator. You are the lightning rod of the divine. You walk the line between genius and madness, channeling high-frequency insights that shock the world awake. Your path is to be the visionary who sees the dawn before the sun rises.",
+    22: "The Master Builder of Dreams. You are the bridge between heaven and earth. You possess the rare ability to turn the most impossible spiritual visions into concrete reality. Your destiny is to build systems that change the course of history.",
+    33: "The Avatar of Love. You are the teacher of teachers. Your path is to uplift the vibration of humanity through pure, unadulterated service. You heal the world simply by being present within it."
 }
 
-# --- 3. DATA: STRUGGLE ADVICE ---
+# --- 2. DATA: THE DRAGON (STRUGGLE) ---
 STRUGGLE_LORE = {
     "wealth": {
-        "title": "Wealth Architecture",
-        "desc": "Your financial blocks are rarely about math; they are about energy. You are being called to look at where you are 'leaking' power. Abundance requires a container. Your chart suggests that when you align your work with your specific design (checking your Jupiter placement), the resources will flow. Stop chasing; start building a system that can hold what is coming."
+        "title": "The Quest for Abundance",
+        "desc": "Your dragon is Scarcity. You feel blocked financially not because you lack skill, but because you are fighting against your own energy flow. Your chart reveals that abundance is a frequency, not a number. When you align your work with your Jupiter placement, you stop chasing the gold and become the magnet that attracts it. Your quest is to build a container worthy of the wealth seeking you."
     },
     "relationship": {
-        "title": "Relational Design",
-        "desc": "The friction you feel in relationships is a mirror. You are trying to act from a script that isn't yours. Your chart reveals a specific way you are designed to connect (look at your Venus sign). When you honor your own energy field first, you stop pulling at others and start magnetizing the right tribe to you."
+        "title": "The Quest for Connection",
+        "desc": "Your dragon is Disharmony. The friction you feel is a signal that you are trying to read from a script that wasn't written for you. Your Venus placement reveals your true love language. Your quest is to stop contorting yourself to fit others and instead stand firmly in your own magnetic design. When you honor your own energy, the right tribe will find you."
     },
     "purpose": {
-        "title": "Purpose Alignment",
-        "desc": "You feel lost because you are looking for a 'destination' rather than a frequency. Your purpose is not a job title; it is the unique geometry of your energy field. Look to your North Node and your Sun Gate. When you simply *are* that energy, the path appears beneath your feet. Stop 'doing' and start 'being' your design."
+        "title": "The Quest for Meaning",
+        "desc": "Your dragon is The Void. You feel lost because you are looking for a 'destination' on a map that doesn't exist. Purpose is not a job; it is a geometry. Your North Node and Sun Gate define your unique frequency. Your quest is to stop 'doing' and start 'being.' When you simply emit your true signal, the path will form beneath your feet."
     },
     "health": {
-        "title": "Vitality Decoding",
-        "desc": "Your physical body is the hardware for your consciousness. If you are exhausted, it is because you are running software that contradicts your design. Check your Saturn placement for where you need boundaries. Your vitality returns when you stop pushing against your own river and start floating with it."
+        "title": "The Quest for Vitality",
+        "desc": "Your dragon is Exhaustion. Your body is the hardware for your consciousness, and it is overheating because you are running software that contradicts your design. Your Saturn placement holds the key to your boundaries. Your quest is to surrender to your own internal rhythm, honoring your need for rest as a sacred act of power."
     },
     "general": {
-        "title": "Core Alignment",
-        "desc": "The confusion you feel is simply a signal that you are out of alignment with your blueprint. You are trying to be a 'Normal' in a world designed for standardization. You are not standard. Return to your Rising Sign and your Orientation strategy. That is your anchor in the storm."
+        "title": "The Quest for Alignment",
+        "desc": "Your dragon is Confusion. You feel adrift because you are a unique design trying to function in a standardized world. You are not standard. Your Rising Sign and Orientation hold the compass you need. Your quest is to return to your core strategy, trusting that your internal navigation system is the only authority you need."
     }
 }
 
-# --- 4. DATA: ORIENTATION (LINES) ---
+# --- 3. DATA: THE AVATAR (ORIENTATION) ---
 LINE_LORE = {
-    1: {"title": "The Investigator", "desc": "The Foundation. Like a detective, you need to study and understand the details before you can trust the ground beneath you. You build confidence through knowledge."},
-    2: {"title": "The Natural", "desc": "The Hermit. You have innate gifts you didn't study for. You prefer to be left alone until the right person calls you out to share your genius."},
-    3: {"title": "The Experimenter", "desc": "The Martyr. You learn by bumping into life. There are no mistakes for you, only discoveries. You find what works by finding what doesn't."},
-    4: {"title": "The Networker", "desc": "The Opportunist. You are deeply connected to your tribe. Your best opportunities don't come from strangers, but through your close web of friends."},
-    5: {"title": "The Fixer", "desc": "The Heretic. Strangers project their hopes onto you. You provide practical, universal solutions that can 'save the day' in a crisis."},
-    6: {"title": "The Role Model", "desc": "The Sage. You live in three phases: experimenting young, observing in mid-life, and emerging as a wise example of authenticity."}
+    1: {"title": "The Investigator", "desc": "The Foundation Builder. Like a master detective, you cannot act until you understand the ground beneath your feet. Your superpower is certainty. You build your confidence through deep study and research."},
+    2: {"title": "The Natural", "desc": "The Reluctant Hero. You possess innate gifts that you never had to study for—you are simply 'good at it.' You crave solitude, waiting in your hermitage until the right person calls you out to save the day."},
+    3: {"title": "The Experimenter", "desc": "The Fearless Explorer. You learn by bumping into the walls of life. For you, there are no mistakes, only discoveries. You are the scientist of the human experience, finding what works by discovering what doesn't."},
+    4: {"title": "The Networker", "desc": "The Tribal Weaver. You are the heart of the community. Your power lies in your connections. Your greatest opportunities will never come from strangers, but from the web of friends and allies you nurture."},
+    5: {"title": "The Fixer", "desc": "The General. Strangers project their hopes onto you, seeing you as the savior in times of crisis. Your superpower is practical, universal solutions. You arrive, you fix the problem, and you vanish."},
+    6: {"title": "The Role Model", "desc": "The Sage on the Mountain. Your life is a three-act play: the reckless experimenter (youth), the observer on the roof (mid-life), and finally, the wise example of authenticity (maturity)."}
 }
 
-# --- 5. DATA: ASTROLOGY (SIGNS) ---
+# --- 4. DATA: THE STARS (SIGNS) ---
 SIGN_LORE = {
-    "Aries": "The Initiator. Like the first sprout of spring, you break through the soil with raw, explosive energy. You are the warrior of the zodiac, unafraid to go where no one has gone before.",
-    "Taurus": "The Builder. You are the garden itself—fertile, stable, and patient. You understand the value of slow growth and sensory pleasure. You build things that last for generations.",
-    "Gemini": "The Messenger. You are the wind that carries the pollen. Your mind is a kaleidoscope of ideas, connecting dots that others don't even see. You keep the air moving.",
-    "Cancer": "The Protector. You are the ocean tide—deep, rhythmic, and holding life within you. You build a shell to protect the vulnerable, leading with profound emotional intelligence.",
-    "Leo": "The Radiant. You are the sun at high noon. You don't just enter a room; you warm it. Your creativity is a life-force that reminds others of the joy of existing.",
-    "Virgo": "The Alchemist. You are the harvest maiden separating the wheat from the chaff. You see the flaw only because you love the potential for perfection. You serve by refining.",
-    "Libra": "The Harmonizer. You are the scales of justice. You exist in the space 'between' people, constantly adjusting the energy to find equilibrium, beauty, and peace.",
-    "Scorpio": "The Transformer. You are the phoenix in the fire. You are comfortable in the darkness that scares others, because you know that is where the treasure is buried.",
-    "Sagittarius": "The Explorer. You are the arrow shot toward the horizon. You seek the truth, the philosophy, and the adventure. You remind the tribe that there is more out there.",
-    "Capricorn": "The Architect. You are the mountain goat climbing the peak. You understand structure, time, and legacy. You are building an empire that will outlast you.",
-    "Aquarius": "The Visionary. You are the lightning bolt. You see the future before it arrives. You break the old structures to make room for the collective evolution.",
-    "Pisces": "The Mystic. You are the mist on the water. You dissolve the boundaries between self and other, dreaming the collective dream and touching the divine."
+    "Aries": "The Warrior. You are the spark that starts the fire. Driven by raw instinct and courage, you are here to initiate the new cycle.",
+    "Taurus": "The Builder. You are the earth itself. Patient, sensual, and unmovable, you build the structures that last for generations.",
+    "Gemini": "The Messenger. You are the wind. Your mind is a kaleidoscope of connections, weaving stories and ideas that keep the world moving.",
+    "Cancer": "The Protector. You are the tide. Deeply intuitive and fiercely loyal, you build the shell that protects the vulnerable heart of the tribe.",
+    "Leo": "The King/Queen. You are the sun. You do not just enter a room; you warm it. Your creativity is the life-force that reminds others of their own light.",
+    "Virgo": "The Alchemist. You are the perfectionist. You see the flaw only because you love the potential. You serve the world by refining it into gold.",
+    "Libra": "The Diplomat. You are the scales. You exist in the delicate balance between self and other, constantly adjusting the energy to create harmony.",
+    "Scorpio": "The Sorcerer. You are the depths. Unafraid of the dark, you dive into the mysteries of birth, death, and rebirth to find the truth.",
+    "Sagittarius": "The Philosopher. You are the arrow. Driven by a hunger for truth and adventure, you expand the horizons of what is possible.",
+    "Capricorn": "The Architect. You are the mountain peak. Driven by ambition and legacy, you climb the hard path to build an empire that outlasts you.",
+    "Aquarius": "The Revolutionary. You are the lightning bolt. You see the future before it arrives, breaking old structures to liberate the collective.",
+    "Pisces": "The Mystic. You are the ocean. Dissolving boundaries, you dream the collective dream, touching the divine and bringing it down to earth."
 }
 
-# --- 6. DATA: HUMAN DESIGN (GATES WITH STORIES) ---
+# --- 5. DATA: THE SUPERPOWERS (GATES) ---
 KEY_LORE = {
-    1: {"name": "The Creator", "story": "Long ago, there was a void. Then, a spark. You are that spark. You carry the energy of pure creation, bringing something out of nothingness."},
-    2: {"name": "The Receptive", "story": "The spark needs a place to land. You are the womb of the universe. You are the blueprint that guides raw energy into beautiful form."},
-    3: {"name": "The Innovator", "story": "In the beginning, there was order. Then you arrived. You are the necessary chaos that breaks the rules so that life can evolve into something new."},
-    4: {"name": "The Logic Master", "story": "The tribe was plagued by doubt. You stepped forward with a formula. You provide the logic that calms the anxiety of the unknown."},
-    5: {"name": "The Fixer", "story": "The storm raged, but you sat still. You understand the rhythm of nature. You teach the world that waiting is not inactivity; it is timing."},
-    6: {"name": "The Peacemaker", "story": "Two sides stood ready for war. You stood in the middle. You carry the emotional intelligence to dissolve conflict and create a third way."},
-    7: {"name": "The Leader", "story": "The army had strength but no direction. You pointed the way. You lead not by force, but by embodying the future the tribe wants to reach."},
-    8: {"name": "The Stylist", "story": "The world was gray and uniform. Then you walked in. You inspire others simply by the courage of your own unique, authentic expression."},
-    9: {"name": "The Focuser", "story": "While others looked at the mountain, you saw the loose stone. You have the power to focus on the tiny detail that determines success or failure."},
-    10: {"name": "The Self", "story": "In a world of masks, you took yours off. You are here to master the hardest art of all: the art of simply being yourself."},
-    11: {"name": "The Idealist", "story": "Darkness fell, and you lit a candle. You catch ideas from the ether, filling the collective mind with images of what *could* be."},
-    12: {"name": "The Articulate", "story": "The tribe was silent. You opened your mouth, and the soul spoke. You master the timing of voice to impact the spirit of others."},
-    13: {"name": "The Listener", "story": "They came to you with their secrets. You are the great vault of memory. You hold the past so the future can learn from it."},
-    14: {"name": "The Power House", "story": "The wagon was heavy. You picked it up. You possess the unflagging creative fuel to drive the dreams of the world into reality."},
-    15: {"name": "The Humanist", "story": "You walked with kings and beggars alike. You embrace all extremes of humanity, weaving them into a single, flowing tapestry."},
-    16: {"name": "The Master", "story": "You practiced while others slept. You turn raw talent into effortless mastery through the magic of enthusiasm and repetition."},
-    17: {"name": "The Opinion", "story": "You climbed the tower and looked ahead. You organize the chaos of the present into a logical view of the future."},
-    18: {"name": "The Improver", "story": "You saw the crack in the foundation. You critique not to hurt, but to heal. You challenge the pattern so it can be perfected."},
-    19: {"name": "The Sensitive", "story": "You felt the cold before anyone else. You are the barometer of the tribe, ensuring everyone has enough food, warmth, and love."},
-    20: {"name": "The Now", "story": "There is no past, no future. Only this breath. You operate with pure, spontaneous clarity in the present moment."},
-    21: {"name": "The Controller", "story": "The harvest was plentiful but wasted. You took charge. You manage the resources to ensure the survival and success of the tribe."},
-    22: {"name": "The Grace", "story": "You listened, and they felt heard. You carry a social grace that opens doors, allowing emotional truth to enter the room."},
-    23: {"name": "The Assimilator", "story": "The explanation was complex. You said it in three words. You strip away the noise to reveal the essential, simple truth."},
-    24: {"name": "The Rationalizer", "story": "You sat in the silence until the answer returned. You revisit the past over and over to find the new way forward."},
-    25: {"name": "The Spirit", "story": "The world was harsh, but you remained soft. You act as the Shaman, retaining universal love and innocence despite the wounds."},
-    26: {"name": "The Egoist", "story": "You sold the dream. You are the great influencer, using your willpower to direct resources and attention where they are needed."},
-    27: {"name": "The Nurturer", "story": "The child was hungry. You fed them. You are the guardian of the tribe, caring for the weak and preserving the heritage."},
-    28: {"name": "The Risk Taker", "story": "Death whispered, and you smiled. You confront the fear of the end to find a life that is truly worth living."},
-    29: {"name": "The Yes Man", "story": "The journey was dangerous. You said 'Yes' anyway. You commit to the experience, persevering through the abyss to find wisdom."},
-    30: {"name": "The Passion", "story": "You felt a hunger that could not be fed. You burn with the fire of desire, teaching the world what it means to feel deeply."},
-    31: {"name": "The Voice", "story": "The people were ready. You stood at the podium. You speak the vision of the collective, influencing the direction of the future."},
-    32: {"name": "The Conservative", "story": "The wind blew, but the roots held. You assess what is valuable from the past and preserve it for future success."},
-    33: {"name": "The Reteller", "story": "You retreated to the cave to think. You process the memories of the tribe, turning raw experience into wisdom."},
-    34: {"name": "The Power", "story": "You are the giant in the room. You are the pure, independent force of life expressing itself through individual activity."},
-    35: {"name": "The Progress", "story": "You were bored, so you started a fire. You are driven to taste every experience, knowing that change is the only constant."},
-    36: {"name": "The Crisis", "story": "The sky turned black. You found the light. You survive the emotional storm to bring compassion to the darkness of others."},
-    37: {"name": "The Family", "story": "You set the table for everyone. You build the community through friendship, bargains, and deep emotional affection."},
-    38: {"name": "The Fighter", "story": "They told you to submit. You stood up. You fight the battles that give life meaning, preserving individual honor."},
-    39: {"name": "The Provocateur", "story": "They were asleep. You poked them. You provoke the spirit of others to wake them up to their own emotional truth."},
-    40: {"name": "The Aloneness", "story": "You built the wall to save the kingdom. You separate yourself from the group to regenerate your power and deliver deliverance."},
-    41: {"name": "The Fantasy", "story": "You dreamed of a garden in the desert. You hold the seed of the fantasy that starts the new cycle of experience."},
-    42: {"name": "The Finisher", "story": "You stayed until the last page was turned. You maximize the cycle and bring it to a satisfying, fruitful conclusion."},
-    43: {"name": "The Insight", "story": "You heard a voice in the silence. You carry the breakthrough insight that changes the way the world thinks."},
-    44: {"name": "The Alert", "story": "You smelled the rain before the clouds appeared. You use instinct to align the right people and resources for success."},
-    45: {"name": "The Gatherer", "story": "You sat on the throne. You are the King/Queen who holds the resources together for the benefit of the kingdom."},
-    46: {"name": "The Determination", "story": "You were in the right place at the right time. You succeed by honoring the sanctity of the physical body and its serendipity."},
-    47: {"name": "The Realization", "story": "The puzzle was scattered. You saw the picture. You sort through the confusion of the past to find the sudden epiphany."},
-    48: {"name": "The Depth", "story": "You dropped the bucket deep into the well. You bring fresh, deep solutions to surface problems using your vast depth."},
-    49: {"name": "The Catalyst", "story": "The laws were unjust. You rewrote them. You reject old principles to establish a higher, more emotional order."},
-    50: {"name": "The Values", "story": "You guarded the pot of stew. You are the guardian of the tribe's values, ensuring the laws serve the people."},
-    51: {"name": "The Shock", "story": "Lightning struck the tower. You are the thunder. You shock people out of complacency and initiate them into the spirit."},
-    52: {"name": "The Stillness", "story": "You sat as still as a mountain. You hold your energy in deep concentration until the perfect moment to act."},
-    53: {"name": "The Starter", "story": "You planted the seed. You are the pressure to begin. You initiate the cycle of evolution without worrying about the end."},
-    54: {"name": "The Ambition", "story": "You looked up at the stars. You drive the tribe upward, seeking spiritual and material mastery through ambition."},
-    55: {"name": "The Spirit", "story": "The cup was half full. You drank it. You accept the intense highs and lows of emotion to find the spirit within."},
-    56: {"name": "The Storyteller", "story": "You traveled far and returned with a tale. You weave the collective myth, teaching through distraction and wandering."},
-    57: {"name": "The Intuitive", "story": "A twig snapped. You knew. You hear the truth in the acoustic vibration of the now. You survive by instinct."},
-    58: {"name": "The Joy", "story": "You saw a better way. You challenge authority with the joy of making life better and more efficient for everyone."},
-    59: {"name": "The Sexual", "story": "You broke down the wall. You use life-force energy to break barriers and create intimate union that produces life."},
-    60: {"name": "The Limitation", "story": "The river needs banks to flow. You accept the boundaries of form so that the magic can transcend them."},
-    61: {"name": "The Mystery", "story": "You asked 'Why?'. You dive into the unknowable mystery to bring back universal truth and inspiration."},
-    62: {"name": "The Detail", "story": "You named the animals. You build a bridge of understanding through precise facts and details."},
-    63: {"name": "The Doubter", "story": "You questioned the answer. You use critical logic to test the validity of the future. You doubt so we can know."},
-    64: {"name": "The Confusion", "story": "You stared at the stars until they formed shapes. You process the chaos of images until they resolve into illumination."}
+    1: {"name": "The Creator", "story": "In the void, there was nothing. Then, you arrived. You are the primal spark of creativity, here to birth something entirely new into the universe."},
+    2: {"name": "The Receptive", "story": "You are the cosmic womb. You provide the direction and the blueprint that guides raw, chaotic energy into beautiful form."},
+    3: {"name": "The Innovator", "story": "Order is stagnant. You are the necessary chaos. You break the established rules so that life can mutate and evolve into something better."},
+    4: {"name": "The Logic Master", "story": "The world is full of doubt. You bring the formula. Your superpower is providing the logic and patterns that calm the anxiety of the tribe."},
+    5: {"name": "The Fixer", "story": "The storm rages, but you wait. You understand the rhythm of nature. You teach the world that waiting is not inactivity; it is perfect timing."},
+    6: {"name": "The Peacemaker", "story": "Where there is conflict, you bring flow. You use your profound emotional intelligence to dissolve friction and create resolution."},
+    7: {"name": "The Leader", "story": "You do not force; you guide. You are the true leader who represents the collective hope of the tribe, pointing them toward the future."},
+    8: {"name": "The Stylist", "story": "You are the rebel of expression. You inspire others not by telling them what to do, but by having the courage to be authentically you."},
+    9: {"name": "The Focuser", "story": "You see the needle in the haystack. Your power is the ability to focus on the one tiny detail that determines the success or failure of the whole."},
+    10: {"name": "The Self", "story": "In a world of masks, you are the face. Your journey is to master the hardest art of all: the art of self-love and authentic being."},
+    11: {"name": "The Idealist", "story": "You catch ideas from the heavens. You are the vessel for the images and light that inspire humanity to strive for something greater."},
+    12: {"name": "The Articulate", "story": "When you speak, the world listens. You master the timing of the voice, channeling words that can mutate the soul of the listener."},
+    13: {"name": "The Listener", "story": "You are the keeper of secrets. The past whispers to you, and you hold the collective memory so the tribe can learn from history."},
+    14: {"name": "The Power House", "story": "You are the fuel tank. You possess the unflagging creative energy and wealth to drive the dreams of the world into reality."},
+    15: {"name": "The Humanist", "story": "You embrace the extremes. From the gutters to the stars, you accept the full rhythm of humanity, weaving it into a single flow."},
+    16: {"name": "The Master", "story": "You are the virtuoso. Through enthusiasm and repetition, you turn raw talent into effortless mastery that dazzles the world."},
+    17: {"name": "The Opinion", "story": "You see the pattern. You organize the chaos of the present into a logical, farsighted view of what is coming next."},
+    18: {"name": "The Improver", "story": "You see what is broken. You critique not to hurt, but to heal. Your gift is the relentless drive to perfect the world."},
+    19: {"name": "The Sensitive", "story": "You feel the need before it is spoken. You are the barometer of the tribe, ensuring that everyone has food, warmth, and a place to belong."},
+    20: {"name": "The Now", "story": "There is no past. There is no future. There is only this breath. You operate with pure, spontaneous clarity in the present moment."},
+    21: {"name": "The Controller", "story": "You take the reins. In a chaotic world, you manage the resources and the people to ensure the survival and success of the kingdom."},
+    22: {"name": "The Grace", "story": "You open the door. Your social grace and emotional openness create a space where others feel safe to express their truth."},
+    23: {"name": "The Assimilator", "story": "You cut through the noise. You are the remover of obstacles, stripping away complexity to reveal the simple, essential truth."},
+    24: {"name": "The Rationalizer", "story": "You act as the silence between the notes. You revisit the past, thinking in circles until the breakthrough of invention arrives."},
+    25: {"name": "The Spirit", "story": "You are the Shaman. Despite the wounds of the world, you retain a spirit of universal love and innocence that heals others."},
+    26: {"name": "The Egoist", "story": "You are the dealmaker. You use your willpower and charm to direct resources and attention exactly where they are needed."},
+    27: {"name": "The Nurturer", "story": "You are the guardian. You protect the weak and feed the hungry, ensuring that the heritage and values of the tribe survive."},
+    28: {"name": "The Risk Taker", "story": "You look death in the eye. You confront the darkest fears to find a purpose that makes life truly worth living."},
+    29: {"name": "The Devoted", "story": "You say 'Yes.' When you commit, you commit all the way, persevering through the abyss to find the wisdom on the other side."},
+    30: {"name": "The Passion", "story": "You burn. You carry the fire of desire and emotion, teaching the world what it means to feel life with absolute intensity."},
+    31: {"name": "The Voice", "story": "You stand at the podium. You are the elected voice of the collective, speaking the vision that moves the tribe forward."},
+    32: {"name": "The Conservative", "story": "You are the root. You assess what is valuable from the past and preserve it, ensuring that success is enduring and stable."},
+    33: {"name": "The Reteller", "story": "You retreat to the cave. You process the memories of the tribe, turning raw experience into the wisdom of history."},
+    34: {"name": "The Power", "story": "You are the giant. You are the pure, independent force of life expressing itself through individual power and activity."},
+    35: {"name": "The Progress", "story": "You ignite the change. Driven by a hunger for experience, you ensure that the human story never becomes stagnant."},
+    36: {"name": "The Crisis", "story": "You walk through the fire. You survive the emotional darkness to bring the light of compassion to a suffering world."},
+    37: {"name": "The Family", "story": "You build the home. You are the glue of the community, holding the tribe together through friendship, touch, and affection."},
+    38: {"name": "The Fighter", "story": "You stand your ground. You fight the battles that give life meaning, preserving your individual honor against all odds."},
+    39: {"name": "The Provocateur", "story": "You poke the bear. You provoke the spirit of others, shaking them out of their slumber and forcing them to feel."},
+    40: {"name": "The Aloneness", "story": "You build the wall to save the city. You separate yourself from the tribe to regenerate your power and deliver deliverance."},
+    41: {"name": "The Fantasy", "story": "You hold the seed. You are the dreamer who imagines a new world, starting the cycle of experience with a single fantasy."},
+    42: {"name": "The Finisher", "story": "You close the book. You maximize the cycle of experience, bringing things to a satisfying and fruitful conclusion."},
+    43: {"name": "The Insight", "story": "You hear the voice within. You carry the breakthrough insight that creates a new knowing, changing the world's mind."},
+    44: {"name": "The Alert", "story": "You smell the future. Your instinct allows you to align the right people and resources to ensure the success of the tribe."},
+    45: {"name": "The Gatherer", "story": "You sit on the throne. You are the King/Queen who holds the tribe's resources together, ruling through education and synergy."},
+    46: {"name": "The Determination", "story": "You are the vessel. You succeed by being in the right place at the right time, honoring the sanctity of the physical body."},
+    47: {"name": "The Realization", "story": "You connect the dots. You sort through the confusion of the past to find the sudden epiphany that makes sense of it all."},
+    48: {"name": "The Depth", "story": "You draw from the well. You possess a depth of talent and wisdom that provides fresh solutions to the world's problems."},
+    49: {"name": "The Catalyst", "story": "You rewrite the contract. You reject the old, unfair principles to establish a higher, more emotional order for the tribe."},
+    50: {"name": "The Values", "story": "You guard the cauldron. You are the custodian of the tribe's laws and values, ensuring that the community thrives."},
+    51: {"name": "The Shock", "story": "You are the thunder. You shock people out of their complacency, initiating them into the power of the individual spirit."},
+    52: {"name": "The Stillness", "story": "You are the mountain. You hold your energy in deep, focused stillness, waiting for the perfect moment to act."},
+    53: {"name": "The Starter", "story": "You plant the seed. You are the pressure to begin. You initiate the new cycle without worrying about how it will end."},
+    54: {"name": "The Ambition", "story": "You climb the ladder. You drive the tribe upward, seeking spiritual and material mastery through ambition and drive."},
+    55: {"name": "The Spirit", "story": "You drink the cup. You accept the intense highs and lows of emotion to find the abundance of the spirit within."},
+    56: {"name": "The Storyteller", "story": "You are the wanderer. You travel through ideas and places, weaving the collective myth that teaches the tribe who they are."},
+    57: {"name": "The Intuitive", "story": "You hear the silence. You possess a penetrating intuition that hears the truth in the now, ensuring your survival."},
+    58: {"name": "The Joy", "story": "You fix what is broken. You challenge authority with the joy of making life better, healthier, and more efficient."},
+    59: {"name": "The Sexual", "story": "You break the barrier. You use life-force energy to penetrate the walls between people, creating intimacy and new life."},
+    60: {"name": "The Limitation", "story": "You accept the walls. You understand that magic needs a container. You accept the boundaries of form to transcend them."},
+    61: {"name": "The Mystery", "story": "You ask 'Why?'. You dive into the unknowable mystery to bring back universal truths that inspire the world."},
+    62: {"name": "The Detail", "story": "You name the animals. You build a bridge of understanding through precise facts, details, and logical language."},
+    63: {"name": "The Doubter", "story": "You question the answer. You use critical logic to test the future, doubting everything until the truth is proven."},
+    64: {"name": "The Confusion", "story": "You watch the movie. You process the chaos of mental images until they resolve into a moment of pure illumination."}
 }
 
-# --- 7. LOGIC ENGINES ---
+# --- 6. LOGIC ENGINES ---
 
 def clean_time(time_input):
     if not time_input: return "12:00"
@@ -206,7 +197,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v13")
+        geolocator = Nominatim(user_agent="ia_final_fix_v14")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -229,7 +220,17 @@ def get_hd_data(degree):
     info = KEY_LORE.get(gate, {"name": f"Gate {gate}", "story": "Energy"})
     return {"gate": gate, "name": info["name"], "story": info["story"]}
 
-# --- UPDATED STRATEGIC ADVICE ENGINE ---
+# --- STORY ENGINE: THE LEGEND OF YOU ---
+def generate_hero_narrative(chart_data, orientation_title):
+    sun_sign = chart_data['Sun']['Sign']
+    sun_gate_name = chart_data['Sun']['Name']
+    ris_sign = chart_data['Rising']['Sign']
+    
+    story = f"The Legend begins with a {sun_sign}. You were born with the heart of {sun_sign}, carrying the superpower of '{sun_gate_name}.' "
+    story += f"But the world does not always see this inner fire immediately. To the world, you appear as a {ris_sign}, walking the path of {orientation_title}. "
+    story += "Your journey is to integrate these two worlds: to use your outer mask to protect your inner light, and to master your unique strategy to slay the dragons of resistance."
+    return story
+
 def get_strategic_advice(struggle, chart):
     s = str(struggle).lower()
     category = "general"
@@ -244,31 +245,35 @@ def get_strategic_advice(struggle, chart):
     lore = STRUGGLE_LORE.get(category, STRUGGLE_LORE["general"])
     return lore["title"], lore["desc"]
 
-# --- UPDATED PDF ENGINE ---
-def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, advice, chart):
+# --- PDF ENGINE ---
+def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_story, advice, chart):
     try:
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Helvetica", size=12)
         
+        # TITLE
         pdf.set_font("Helvetica", 'B', 16)
-        pdf.cell(0, 10, 'THE INTEGRATED SELF', 0, 1, 'C')
+        pdf.cell(0, 10, 'THE LEGEND OF YOU', 0, 1, 'C')
         pdf.ln(5)
 
-        pdf.set_font("Helvetica", size=12)
-        pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
-        pdf.ln(2)
-
-        # 1. LIFE PATH
+        # 1. THE HERO (Intro)
         pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(0, 10, f"Life Path: {lp}", 0, 1)
+        pdf.cell(0, 10, f"Prepared for: {name}", 0, 1)
+        pdf.set_font("Helvetica", '', 12)
+        pdf.multi_cell(0, 7, hero_story)
+        pdf.ln(5)
+
+        # 2. THE DESTINY (Life Path)
+        pdf.set_font("Helvetica", 'B', 14)
+        pdf.cell(0, 10, f"Your Destiny (Life Path {lp})", 0, 1)
         pdf.set_font("Helvetica", '', 11)
         pdf.multi_cell(0, 6, lp_desc)
         pdf.ln(5)
 
-        # 2. ORIENTATION
+        # 3. THE AVATAR (Orientation)
         pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(0, 10, f"Orientation: {orientation_title}", 0, 1)
+        pdf.cell(0, 10, f"Your Avatar: {orientation_title}", 0, 1)
         pdf.set_font("Helvetica", '', 11)
         desc_lines = orientation_body.split("<br>")
         for line in desc_lines:
@@ -278,17 +283,17 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, advic
                  pdf.ln(1)
         pdf.ln(5)
         
-        # 3. STRUGGLE
+        # 4. THE QUEST (Struggle)
         pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(0, 10, f"Insight: {advice[0]}", 0, 1)
+        pdf.cell(0, 10, f"Current Quest: {advice[0]}", 0, 1)
         pdf.set_font("Helvetica", '', 12)
         clean_advice = advice[1].replace("**", "").replace("<br>", "\n")
         pdf.multi_cell(0, 7, clean_advice)
         pdf.ln(5)
         
-        # 4. BLUEPRINT
+        # 5. SUPERPOWERS (Planets)
         pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(0, 10, "Planetary Blueprint", 0, 1)
+        pdf.cell(0, 10, "Your Inventory (Planetary Blueprint)", 0, 1)
         pdf.set_font("Helvetica", '', 12)
         
         for k, v in chart.items():
@@ -404,6 +409,9 @@ async def calculate_chart(request: Request):
         
         lp_desc = LIFE_PATH_LORE.get(lp, "A path of unique discovery.")
         
+        # HERO STORY GENERATION
+        hero_story = generate_hero_narrative(chart_data, orientation_title)
+        
     except Exception as e:
         logger.error(f"Calc Error: {e}")
         chart_data = {"Sun": {"Sign": "Unknown", "Gate": 1, "Name": "Error", "Story": ""}}
@@ -411,9 +419,10 @@ async def calculate_chart(request: Request):
         orientation_body = ""
         lp = 0
         lp_desc = "Unknown"
+        hero_story = "The mists of time obscure your legend. Please try again."
 
     topic, advice_text = get_strategic_advice(struggle, chart_data)
-    pdf_b64 = create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, (topic, advice_text), chart_data)
+    pdf_b64 = create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_story, (topic, advice_text), chart_data)
 
     html = f"""
     <!DOCTYPE html>
@@ -425,73 +434,4 @@ async def calculate_chart(request: Request):
         .card {{ background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }}
         h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin-top: 0; }}
         .gate-title {{ color: #C71585; font-weight: bold; font-size: 1.1em; }}
-        .gate-desc {{ font-size: 0.95em; color: #444; display: block; margin-top: 4px; font-style: italic; }}
-        .sign-desc {{ font-size: 0.9em; color: #666; display: block; margin-bottom: 10px; border-left: 3px solid #eee; padding-left: 10px; }}
-        .orientation-tag {{ 
-            background: #eee; padding: 5px 10px; border-radius: 4px; font-weight: bold; color: #555; font-size: 0.9em;
-            display: inline-block; margin-top: 5px;
-        }}
-        .orientation-block {{
-            background: #fafafa; padding: 15px; border-radius: 8px; font-size: 0.95em; color: #444; margin-top: 15px;
-        }}
-        .lp-block {{
-            background: #fff8e1; padding: 15px; border-radius: 8px; font-size: 0.95em; color: #5d4037; margin-top: 10px; border: 1px solid #ffe0b2;
-        }}
-        .btn {{ 
-            background-color: #D4AF37; color: white; border: none; padding: 15px 30px; 
-            font-size: 16px; border-radius: 50px; cursor: pointer; display: block; 
-            width: 100%; max-width: 300px; margin: 20px auto; text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-decoration: none;
-        }}
-        .spacer {{ height: 500px; }}
-    </style>
-    </head>
-    <body>
-        <div class="card" style="text-align:center;">
-            <h2>The Integrated Self</h2>
-            <p>Prepared for {name}</p>
-            
-            <p><strong>Life Path: {lp}</strong></p>
-            <div class="lp-block" style="text-align: left;">
-                {lp_desc}
-            </div>
-            
-            <p style="margin-top: 20px;"><span class="orientation-tag">Orientation: {orientation_title}</span></p>
-            <div class="orientation-block" style="text-align: left;">
-                {orientation_body}
-            </div>
-        </div>
-
-        <div class="card" style="border-left: 5px solid #D4AF37;">
-            <h2>⚡ Strategic Insight: {topic}</h2>
-            <p>{advice_text}</p>
-        </div>
-
-        <div class="card">
-            <h2>The Blueprint</h2>
-            
-            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Sun',{}).get('Gate',0)})<br>
-            <span class="sign-desc">{chart_data.get('Sun',{}).get('SignLore','')}</span>
-            <span class="gate-title">{chart_data.get('Sun',{}).get('Name','')}</span><br>
-            <span class="gate-desc">"{chart_data.get('Sun',{}).get('Story','')}"</span></p>
-            
-            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Moon',{}).get('Gate',0)})<br>
-            <span class="sign-desc">{chart_data.get('Moon',{}).get('SignLore','')}</span>
-            <span class="gate-title">{chart_data.get('Moon',{}).get('Name','')}</span><br>
-            <span class="gate-desc">"{chart_data.get('Moon',{}).get('Story','')}"</span></p>
-            
-            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Rising',{}).get('Gate',0)})<br>
-            <span class="sign-desc">{chart_data.get('Rising',{}).get('SignLore','')}</span>
-            <span class="gate-title">{chart_data.get('Rising',{}).get('Name','')}</span><br>
-            <span class="gate-desc">"{chart_data.get('Rising',{}).get('Story','')}"</span></p>
-        </div>
-
-        <a href="data:application/pdf;base64,{pdf_b64}" download="Integrated_Self.pdf" target="_blank" class="btn">
-            ⬇️ DOWNLOAD PDF REPORT
-        </a>
-
-        <div class="spacer"></div>
-    </body>
-    </html>
-    """
-    return {"report": html}
+        .gate-desc {{ font-size: 0.95em; color: #44
