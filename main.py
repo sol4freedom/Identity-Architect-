@@ -97,7 +97,7 @@ SIGN_LORE = {
     "Pisces": "The Mystic. You are the ocean. Dissolving boundaries, you dream the collective dream and touch the divine."
 }
 
-# --- 6. DATA: GATES (THE SUPERPOWERS) ---
+# --- 6. DATA: ARCHETYPES (THE SUPERPOWERS) ---
 KEY_LORE = {
     1: {"name": "The Creator", "story": "The primal spark of creativity. You bring something out of nothingness."},
     2: {"name": "The Receptive", "story": "The cosmic womb. You guide raw chaos into beautiful form."},
@@ -206,7 +206,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v15")
+        geolocator = Nominatim(user_agent="ia_final_fix_v17")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -305,10 +305,13 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_
             sign_txt = v.get("SignLore", "")
             gate_story = v.get("Story", "")
             
+            # CHANGED: "Key" -> "Archetype" in PDF
             pdf.set_font("Helvetica", 'B', 12)
-            pdf.cell(0, 8, f"{k}: {sign} (Gate {gate}) - {name_txt}", 0, 1)
+            pdf.cell(0, 8, f"{k}: {sign} (Archetype {gate}) - {name_txt}", 0, 1)
+            
             pdf.set_font("Helvetica", 'I', 10)
             pdf.multi_cell(0, 5, f"{sign_txt}")
+            
             pdf.set_font("Helvetica", '', 10)
             pdf.multi_cell(0, 5, f"{gate_story}")
             pdf.ln(3)
@@ -422,6 +425,7 @@ async def calculate_chart(request: Request):
     topic, advice_text = get_strategic_advice(struggle, chart_data)
     pdf_b64 = create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_story, (topic, advice_text), chart_data)
 
+    # UPDATED HTML: "ARCHETYPE" REPLACES "GATE"
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -468,17 +472,17 @@ async def calculate_chart(request: Request):
         <div class="card">
             <h2>Your Superpowers</h2>
             
-            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Sun',{}).get('Gate',0)})<br>
+            <p><strong>☀️ Sun in {chart_data.get('Sun',{}).get('Sign','?')}</strong> (Archetype {chart_data.get('Sun',{}).get('Gate',0)})<br>
             <span class="sign-desc">{chart_data.get('Sun',{}).get('SignLore','')}</span>
             <span class="gate-title">{chart_data.get('Sun',{}).get('Name','')}</span><br>
             <span class="gate-desc">"{chart_data.get('Sun',{}).get('Story','')}"</span></p>
             
-            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Moon',{}).get('Gate',0)})<br>
+            <p><strong>🌙 Moon in {chart_data.get('Moon',{}).get('Sign','?')}</strong> (Archetype {chart_data.get('Moon',{}).get('Gate',0)})<br>
             <span class="sign-desc">{chart_data.get('Moon',{}).get('SignLore','')}</span>
             <span class="gate-title">{chart_data.get('Moon',{}).get('Name','')}</span><br>
             <span class="gate-desc">"{chart_data.get('Moon',{}).get('Story','')}"</span></p>
             
-            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong> (Gate {chart_data.get('Rising',{}).get('Gate',0)})<br>
+            <p><strong>🏹 Rising in {chart_data.get('Rising',{}).get('Sign','?')}</strong> (Archetype {chart_data.get('Rising',{}).get('Gate',0)})<br>
             <span class="sign-desc">{chart_data.get('Rising',{}).get('SignLore','')}</span>
             <span class="gate-title">{chart_data.get('Rising',{}).get('Name','')}</span><br>
             <span class="gate-desc">"{chart_data.get('Rising',{}).get('Story','')}"</span></p>
