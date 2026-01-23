@@ -206,7 +206,7 @@ def resolve_location(city_name):
     for key in CITY_DB:
         if key in city_lower: return CITY_DB[key]
     try:
-        geolocator = Nominatim(user_agent="ia_final_fix_v25")
+        geolocator = Nominatim(user_agent="ia_final_fix_v26")
         loc = geolocator.geocode(city_name)
         if loc:
             from timezonefinder import TimezoneFinder
@@ -243,8 +243,9 @@ def get_strategic_advice(struggle, chart):
     lore = STRUGGLE_LORE.get(category, STRUGGLE_LORE["general"])
     return lore["title"], lore["desc"]
 
-def generate_hero_narrative(name, chart_data, orientation_title, lp, struggle_advice):
-    # Retrieve all raw data
+# --- THE EPIC STORY ENGINE ---
+# Now returns a LIST of chapters (Dicts) instead of a single string
+def generate_hero_chapters(name, chart_data, orientation_title, lp, struggle_advice):
     sun_sign = chart_data['Sun']['Sign']
     sun_lore = SIGN_LORE.get(sun_sign, "The Hero")
     
@@ -263,47 +264,63 @@ def generate_hero_narrative(name, chart_data, orientation_title, lp, struggle_ad
     dragon_name = struggle_advice[0].replace("The Quest for ", "")
     dragon_desc = struggle_advice[1]
     
-    story = []
+    chapters = []
     
-    # CHAPTER 1: THE ORIGIN (Sun & Rising)
-    story.append(f"🌟 CHAPTER 1: THE ORIGIN\n\nLong ago, the universe conspired to create a unique frequency, and it named that frequency {name}. You were born under the blazing sun of {sun_sign}. {sun_lore} This is your core, your fuel, and your inevitable nature. It is the fire that burns within you, demanding expression.\n\nBut to protect this intense light, you donned a mask. To the world, you first appear as {ris_sign}. {ris_lore} This is your armor and your first impression, the vehicle you drive through the physical world. Your journey begins by reconciling these two: the inner fire of the {sun_sign} and the outer shield of the {ris_sign}.")
+    # CHAP 1
+    chapters.append({
+        "title": "🌟 THE ORIGIN",
+        "body": f"Long ago, the universe conspired to create a unique frequency, and it named that frequency {name}. You were born under the blazing sun of {sun_sign}. {sun_lore} This is your core, your fuel, and your inevitable nature. It is the fire that burns within you, demanding expression.\n\nBut to protect this intense light, you donned a mask. To the world, you first appear as {ris_sign}. {ris_lore} This is your armor and your first impression, the vehicle you drive through the physical world. Your journey begins by reconciling these two: the inner fire of the {sun_sign} and the outer shield of the {ris_sign}."
+    })
     
-    # CHAPTER 2: THE HEART (Moon)
-    story.append(f"❤️ CHAPTER 2: THE HEART\n\nBeneath the armor lies a secret engine: your Moon in {moon_sign}. While others see your actions, only you feel this pull. {moon_lore} This is what nourishes you. When you are alone, in the quiet dark, this is the voice that speaks. Ignoring this voice is what leads to exhaustion; honoring it is the secret to your endless regeneration.")
+    # CHAP 2
+    chapters.append({
+        "title": "❤️ THE HEART",
+        "body": f"Beneath the armor lies a secret engine: your Moon in {moon_sign}. While others see your actions, only you feel this pull. {moon_lore} This is what nourishes you. When you are alone, in the quiet dark, this is the voice that speaks. Ignoring this voice is what leads to exhaustion; honoring it is the secret to your endless regeneration."
+    })
     
-    # CHAPTER 3: THE PATH (Life Path)
-    story.append(f"🏔️ CHAPTER 3: THE PATH\n\nEvery hero needs a road to walk. Yours is the Path of the {lp}. {lp_lore} This is not a random walk; it is a destiny. The universe will constantly test you with challenges that force you to embody this number. It is a steep climb, but the view from the top is the purpose you have been searching for.")
+    # CHAP 3
+    chapters.append({
+        "title": "🏔️ THE PATH",
+        "body": f"Every hero needs a road to walk. Yours is the Path of the {lp}. {lp_lore} This is not a random walk; it is a destiny. The universe will constantly test you with challenges that force you to embody this number. It is a steep climb, but the view from the top is the purpose you have been searching for."
+    })
     
-    # CHAPTER 4: THE WEAPON (Sun Archetype)
-    story.append(f"⚔️ CHAPTER 4: THE WEAPON\n\nTo aid you on this path, you were gifted a specific superpower. In the language of the Archetypes, you carry the energy of Archetype {sun_gate_id}: {sun_gate_name}. {sun_gate_story} This is not a skill you learned in school; it is a frequency you emit naturally. When you trust this power, doors open without force. When you doubt it, you meet resistance. It is the sword in your hand.")
+    # CHAP 4
+    chapters.append({
+        "title": "⚔️ THE WEAPON",
+        "body": f"To aid you on this path, you were gifted a specific superpower. In the language of the Archetypes, you carry the energy of Archetype {sun_gate_id}: {sun_gate_name}. {sun_gate_story} This is not a skill you learned in school; it is a frequency you emit naturally. When you trust this power, doors open without force. When you doubt it, you meet resistance. It is the sword in your hand."
+    })
     
-    # CHAPTER 5: THE STRATEGY (Orientation)
-    story.append(f"🗺️ CHAPTER 5: THE STRATEGY\n\nBut power without control is dangerous. Your operating manual is defined by your Orientation: {orientation_title}. You are not designed to move like everyone else. Your specific strategy requires you to honor your nature - whether that is to wait in your hermitage, to experiment fearlessly, or to network with your tribe. Deviation from this strategy is the root of your frustration. Trust your style.")
+    # CHAP 5
+    chapters.append({
+        "title": "🗺️ THE STRATEGY",
+        "body": f"But power without control is dangerous. Your operating manual is defined by your Orientation: {orientation_title}. You are not designed to move like everyone else. Your specific strategy requires you to honor your nature—whether that is to wait in your hermitage, to experiment fearlessly, or to network with your tribe. Deviation from this strategy is the root of your frustration. Trust your style."
+    })
     
-    # CHAPTER 6: THE DRAGON (Struggle)
-    story.append(f"🐉 CHAPTER 6: THE DRAGON\n\nEvery story has an antagonist. Yours takes the form of {dragon_name}. {dragon_desc} This struggle you feel is not a punishment. It is the friction necessary to sharpen your blade. The dragon guards the treasure. By facing your Shadow and applying your Archetype, you do not just slay the dragon; you integrate it, turning your greatest weakness into your greatest wisdom.")
+    # CHAP 6
+    chapters.append({
+        "title": "🐉 THE DRAGON",
+        "body": f"Every story has an antagonist. Yours takes the form of {dragon_name}. {dragon_desc} This struggle you feel is not a punishment. It is the friction necessary to sharpen your blade. The dragon guards the treasure. By facing your Shadow and applying your Archetype, you do not just slay the dragon; you integrate it, turning your greatest weakness into your greatest wisdom."
+    })
     
     # OUTRO
-    story.append(f"This is the Legend of {name}. The map is in your hands. The stars have done their part; the rest of the story is yours to write.")
+    chapters.append({
+        "title": "📜 THE MAP",
+        "body": f"This is the Legend of {name}. The map is in your hands. The stars have done their part; the rest of the story is yours to write."
+    })
     
-    return "\n\n".join(story)
+    return chapters
 
-# --- CLEANER FUNCTION FOR PDF ---
+# --- UTILS ---
 def clean_text_for_pdf(text):
     if not text: return ""
-    # 1. Remove Emojis (Simple regex approach for range)
-    # This strips characters outside the basic Latin range to safe PDF font crashes
-    text = re.sub(r'[^\x00-\x7F]+', '', text) 
-    
-    # 2. Clean fancy punctuation
+    text = re.sub(r'[^\x00-\x7F]+', '', text) # Strip emojis
     replacements = {"—": "-", "–": "-", "’": "'", "‘": "'", "“": '"', "”": '"', "…": "..."}
     for char, replacement in replacements.items():
         text = text.replace(char, replacement)
-        
     return text
 
 # --- PDF ENGINE ---
-def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_story, advice, chart):
+def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_chapters, advice, chart):
     try:
         pdf = FPDF()
         pdf.add_page()
@@ -316,22 +333,20 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_
         pdf.cell(0, 10, clean_text_for_pdf(f"The Epic of {name}"), 0, 1, 'C')
         pdf.ln(10)
 
-        # THE STORY LOOP (Formatted)
-        # We split by double newline to handle chapters
-        chapters = hero_story.split("\n\n")
+        # STORY LOOP (Iterate through list)
+        for chap in hero_chapters:
+            # Title (Bold)
+            clean_title = clean_text_for_pdf(chap['title'])
+            pdf.set_font("Helvetica", 'B', 14)
+            pdf.cell(0, 10, clean_title, 0, 1)
+            
+            # Body (Regular)
+            clean_body = clean_text_for_pdf(chap['body'])
+            pdf.set_font("Helvetica", '', 11)
+            pdf.multi_cell(0, 6, clean_body)
+            pdf.ln(8) # Space between chapters
         
-        for para in chapters:
-            clean_para = clean_text_for_pdf(para)
-            if "CHAPTER" in clean_para:
-                pdf.ln(5)
-                pdf.set_font("Helvetica", 'B', 14)
-                pdf.cell(0, 10, clean_para.strip(), 0, 1) # Title
-                pdf.set_font("Helvetica", '', 12)
-            else:
-                pdf.multi_cell(0, 6, clean_para)
-                pdf.ln(5) # Space between paragraphs
-        
-        pdf.ln(10)
+        pdf.ln(5)
         
         # BLUEPRINT SECTION (Page Break if needed)
         pdf.add_page()
@@ -346,156 +361,3 @@ def create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_
             name_txt = v.get("Name", "")
             sign_txt = v.get("SignLore", "") # We use the short name now
             gate_story = v.get("Story", "")
-            
-            clean_name = clean_text_for_pdf(name_txt)
-            clean_sign_txt = clean_text_for_pdf(sign_txt)
-            clean_gate_story = clean_text_for_pdf(gate_story)
-            
-            pdf.set_font("Helvetica", 'B', 12)
-            pdf.cell(0, 8, f"{k}: {sign} (Archetype {gate}) - {clean_name}", 0, 1)
-            
-            pdf.set_font("Helvetica", '', 10)
-            pdf.multi_cell(0, 5, f"{clean_gate_story}")
-            pdf.ln(3)
-            
-        pdf_bytes = pdf.output()
-        return base64.b64encode(pdf_bytes).decode('utf-8')
-    except Exception as e:
-        logger.error(f"PDF Error: {str(e)}")
-        return ""
-
-# --- 5. API ROUTES ---
-
-@app.get("/")
-def root():
-    return {"status": "online", "message": "Identity Architect is Running."}
-
-@app.post("/calculate")
-async def calculate_chart(request: Request):
-    data = {}
-    try:
-        ct = request.headers.get("content-type", "")
-        if "application/json" in ct: data = await request.json()
-        else: data = dict(await request.form())
-    except: pass
-    
-    name = data.get("name") or "Traveler"
-    
-    raw_date = data.get("dob") or data.get("date")
-    dob = safe_get_date(raw_date)
-    if not dob: dob = datetime.date.today().strftime("%Y-%m-%d")
-
-    raw_time = data.get("tob") or data.get("time") or data.get("birth_time") or "12:00"
-    tob = clean_time(raw_time)
-
-    city = data.get("city") or "London"
-    struggle = data.get("struggle") or "General"
-
-    try:
-        lat, lon, tz_name = resolve_location(city)
-        tz_offset = get_tz_offset(dob, tob, tz_name)
-        
-        # Calc Personality
-        dt_obj = Datetime(dob.replace("-", "/"), tob, tz_offset)
-        geo_obj = GeoPos(lat, lon)
-        chart_p = Chart(dt_obj, geo_obj, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
-        
-        # Calc Design
-        design_date_obj = datetime.datetime.strptime(dob, "%Y-%m-%d") - datetime.timedelta(days=88)
-        design_dob = design_date_obj.strftime("%Y/%m/%d")
-        dt_design = Datetime(design_dob, tob, tz_offset)
-        chart_d = Chart(dt_design, geo_obj, IDs=[const.SUN], hsys=const.HOUSES_PLACIDUS)
-
-        chart_data = {}
-        planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
-        
-        # Lines
-        p_sun = chart_p.get(const.SUN)
-        p_line = (int(p_sun.lon / 0.9375) % 6) + 1
-        d_sun = chart_d.get(const.SUN)
-        d_line = (int(d_sun.lon / 0.9375) % 6) + 1
-
-        p_info = LINE_LORE.get(p_line, {"title": str(p_line), "desc": ""})
-        d_info = LINE_LORE.get(d_line, {"title": str(d_line), "desc": ""})
-        orientation_title = f"{p_info['title']} / {d_info['title']}"
-        orientation_body = f"<b>{p_info['title']}:</b> {p_info['desc']}<br><br><b>{d_info['title']}:</b> {d_info['desc']}"
-
-        for p in planets:
-            obj = chart_p.get(getattr(const, p.upper()))
-            info = get_hd_data(obj.lon)
-            sign_lore = SIGN_LORE.get(obj.sign, "Energy")
-            chart_data[p] = {
-                "Sign": obj.sign, 
-                "SignLore": sign_lore,
-                "Gate": info['gate'], 
-                "Name": info['name'], 
-                "Story": info['story']
-            }
-            
-        asc = chart_p.get(const.ASC)
-        asc_info = get_hd_data(asc.lon)
-        asc_sign_lore = SIGN_LORE.get(asc.sign, "Energy")
-        chart_data["Rising"] = {
-            "Sign": asc.sign, 
-            "SignLore": asc_sign_lore,
-            "Gate": asc_info['gate'], 
-            "Name": asc_info['name'], 
-            "Story": asc_info['story']
-        }
-        
-        try:
-            digits = [int(d) for d in dob if d.isdigit()]
-            total = sum(digits)
-            while total > 9 and total not in [11, 22, 33]:
-                total = sum(int(d) for d in str(total))
-            lp = total
-        except: lp = 0
-        
-        lp_desc = LIFE_PATH_LORE.get(lp, "A path of unique discovery.")
-        
-        topic, advice_text = get_strategic_advice(struggle, chart_data)
-        hero_story = generate_hero_narrative(name, chart_data, orientation_title, lp, (topic, advice_text))
-        
-    except Exception as e:
-        logger.error(f"Calc Error: {e}")
-        chart_data = {"Sun": {"Sign": "Unknown", "Gate": 1, "Name": "Error", "Story": ""}}
-        orientation_title = "Unknown"
-        orientation_body = ""
-        lp = 0
-        lp_desc = "Unknown"
-        hero_story = "The mists of time obscure your legend. Please try again."
-        topic, advice_text = ("Unknown", "Unknown")
-
-    pdf_b64 = create_pdf_b64(name, lp, lp_desc, orientation_title, orientation_body, hero_story, (topic, advice_text), chart_data)
-
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap');
-        body {{ font-family: 'Source Sans Pro', sans-serif; padding: 20px; line-height: 1.6; color: #333; }}
-        .card {{ background: #fff; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }}
-        h2 {{ font-family: 'Playfair Display', serif; color: #D4AF37; margin-top: 0; }}
-        .story-text {{ white-space: pre-wrap; font-size: 1.05em; color: #444; }}
-        .btn {{ 
-            background-color: #D4AF37; color: white; border: none; padding: 15px 30px; 
-            font-size: 16px; border-radius: 50px; cursor: pointer; display: block; 
-            width: 100%; max-width: 300px; margin: 20px auto; text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-decoration: none;
-        }}
-    </style>
-    </head>
-    <body>
-        <div class="card">
-            <h2 style="text-align:center;">The Legend of {name}</h2>
-            <div class="story-text">{hero_story}</div>
-        </div>
-
-        <a href="data:application/pdf;base64,{pdf_b64}" download="The_Legend_of_You.pdf" target="_blank" class="btn">
-            ⬇️ DOWNLOAD FULL LEGEND (PDF)
-        </a>
-    </body>
-    </html>
-    """
-    return {"report": html}
