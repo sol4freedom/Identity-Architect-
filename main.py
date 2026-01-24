@@ -77,6 +77,12 @@ KEY_LORE = {
 }
 
 # --- HELPERS ---
+def safe_get_date(date_input):
+    if not date_input: return None
+    s = str(date_input).strip()
+    if "T" in s: s = s.split("T")[0]
+    return s
+
 def clean_time(t):
     if not t: return "12:00"
     s = str(t).upper().strip()
@@ -90,7 +96,6 @@ def clean_time(t):
 
 def get_gate(d):
     if d is None: return 1
-    # Simple map for MVP
     return {0:25, 1:17, 2:21, 3:51, 4:42, 5:3, 6:27, 7:24, 8:2, 9:23, 10:8, 11:20, 12:16, 13:35, 14:45, 15:12, 16:15, 17:52, 18:39, 19:53, 20:62, 21:56, 22:31, 23:33, 24:7, 25:4, 26:29, 27:59, 28:40, 29:64, 30:47, 31:6, 32:46, 33:18, 34:48, 35:57, 36:32, 37:50, 38:28, 39:44, 40:1, 41:43, 42:14, 43:34, 44:9, 45:5, 46:26, 47:11, 48:10, 49:58, 50:38, 51:54, 52:61, 53:60, 54:41, 55:19, 56:13, 57:49, 58:30, 59:55, 60:37, 61:63, 62:22, 63:36}.get(int((d%360)/5.625), 1)
 
 def resolve_loc(c):
@@ -128,7 +133,6 @@ def gen_chapters(name, chart, orient, lp, struggle):
 
 def clean_txt(t):
     if not t: return ""
-    # Brutal cleaning to prevent PDF crashes
     t = re.sub(r'[^\x00-\x7F]+', '', t) 
     return t.replace("—", "-").replace("’", "'").encode('latin-1', 'replace').decode('latin-1')
 
