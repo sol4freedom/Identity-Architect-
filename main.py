@@ -16,26 +16,22 @@ logger = logging.getLogger("uvicorn")
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- DATA ---
-CITY_DB = {
-    "minneapolis": (44.9778, -93.2650, "America/Chicago"), "london": (51.5074, -0.1278, "Europe/London"),
-    "new york": (40.7128, -74.0060, "America/New_York"), "sao paulo": (-23.5558, -46.6396, "America/Sao_Paulo"),
-    "ashland": (42.1946, -122.7095, "America/Los_Angeles")
-}
+# --- COMPACT DATA ---
+CITY_DB = {"london": (51.5, -0.12, "Europe/London"), "new york": (40.7, -74.0, "America/New_York")}
 
 LIFE_PATH_LORE = {
-    1: "The Primal Leader. The arrow leaving the bow. A destiny of independence.",
-    2: "The Peacemaker. The diplomat of the soul. A journey of cooperation.",
-    3: "The Creative Spark. The voice of the universe. A destiny of expression.",
-    4: "The Master Builder. The architect of the future. A story of legacy.",
-    5: "The Freedom Seeker. The wind uncaged. A path of radical adaptability.",
-    6: "The Cosmic Guardian. The protector. A journey of responsibility.",
-    7: "The Mystic Sage. The walker between worlds. A climb for truth.",
-    8: "The Sovereign. The CEO of material planes. A destiny of mastery.",
-    9: "The Humanitarian. The old soul. A story of compassion and release.",
-    11: "The Illuminator. The lightning rod. Walking the line of genius.",
-    22: "The Master Architect. The bridge between heaven and earth.",
-    33: "The Avatar of Love. The teacher of teachers. Uplifting humanity."
+    1: "The Primal Leader. A destiny of independence and leading the tribe into a new era.",
+    2: "The Peacemaker. A hero's journey to master the invisible threads of cooperation.",
+    3: "The Creative Spark. A destiny to lift the heaviness of the world through expression.",
+    4: "The Master Builder. A story of endurance, legacy, and building strong foundations.",
+    5: "The Freedom Seeker. A path of radical adaptability and breaking chains.",
+    6: "The Cosmic Guardian. A journey of responsibility and nurturing the tribe.",
+    7: "The Mystic Sage. A solitary climb up the mountain of truth to find wisdom.",
+    8: "The Sovereign. A destiny involving the mastery of money, power, and influence.",
+    9: "The Humanitarian. A story of letting go and healing the world with compassion.",
+    11: "The Illuminator. The lightning rod. Walking the line between genius and madness.",
+    22: "The Master Architect. The bridge between heaven and earth, turning visions to reality.",
+    33: "The Avatar of Love. The teacher of teachers, uplifting humanity through service."
 }
 
 STRUGGLE_LORE = {
@@ -47,8 +43,8 @@ STRUGGLE_LORE = {
 }
 
 LINE_LORE = {
-    1: "Investigator / Foundation Builder", 2: "Natural / Reluctant Hero", 3: "Experimenter / Fearless Explorer",
-    4: "Networker / Tribal Weaver", 5: "Fixer / The General", 6: "Role Model / The Sage"
+    1: "Investigator (Foundation)", 2: "Natural (Hermit)", 3: "Experimenter (Explorer)",
+    4: "Networker (Weaver)", 5: "Fixer (General)", 6: "Role Model (Sage)"
 }
 
 SIGN_LORE = {
@@ -208,15 +204,9 @@ async def calculate(request: Request):
         chaps = gen_chapters(name, c_data, orient, lp, s_data)
         pdf = create_pdf(name, chaps, c_data)
         
-        # HTML GRID LAYOUT
         grid_html = ""
         for c in chaps:
-            grid_html += f"""
-            <div class="card">
-                <h3>{c['title']}</h3>
-                <p>{c['body']}</p>
-            </div>
-            """
+            grid_html += f"<div class='card'><h3>{c['title']}</h3><p>{c['body']}</p></div>"
             
         html = f"""
         <html><head><style>
