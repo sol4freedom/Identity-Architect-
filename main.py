@@ -16,11 +16,12 @@ logger = logging.getLogger("uvicorn")
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- DATA LIBRARIES (FULL VERSION) ---
+# --- DATA LIBRARIES ---
+# We keep a small local DB for speed, but the app will search real maps if not found here.
 CITY_DB = {
     "minneapolis": (44.9778, -93.2650, "America/Chicago"), "london": (51.5074, -0.1278, "Europe/London"),
     "new york": (40.7128, -74.0060, "America/New_York"), "sao paulo": (-23.5558, -46.6396, "America/Sao_Paulo"),
-    "ashland": (42.1946, -122.7095, "America/Los_Angeles")
+    "ashland": (42.1946, -122.7095, "America/Los_Angeles"), "los angeles": (34.0522, -118.2437, "America/Los_Angeles")
 }
 
 LIFE_PATH_LORE = {
@@ -52,7 +53,7 @@ LINE_LORE = {
 }
 
 SIGN_LORE = {
-    "Aries": "The Warrior. You are the spark that starts the fire.", "Taurus": "The Builder. You are the earth itself; patient, sensual, and unmovable.", "Gemini": "The Messenger. You are the wind; a kaleidoscope of stories and ideas.", "Cancer": "The Protector. You are the tide; deeply intuitive and fiercely loyal.", "Leo": "The Radiant. You are the sun; you do not just enter a room, you warm it.", "Virgo": "The Alchemist. You are the perfectionist; you see the flaw because you love the potential.", "Libra": "The Diplomat. You are the scales; existing in the delicate balance of harmony.", "Scorpio": "The Sorcerer. You are the depths; unafraid to dive into the dark to find the truth.", "Sagittarius": "The Philosopher. You are the arrow; driven by a hunger for truth and adventure.", "Capricorn": "The Architect. You are the mountain peak; driven by ambition and legacy.", "Aquarius": "The Revolutionary. You are the lightning bolt; breaking old structures.", "Pisces": "The Mystic. You are the ocean; dissolving boundaries and dreaming the collective dream."
+    "Aries": "The Warrior. You are the spark that starts the fire.", "Taurus": "The Builder. You are the earth; patient and unmovable.", "Gemini": "The Messenger. You are the wind; a kaleidoscope of stories and ideas.", "Cancer": "The Protector. You are the tide; deeply intuitive and fiercely loyal.", "Leo": "The Radiant. You are the sun; you do not just enter a room, you warm it.", "Virgo": "The Alchemist. You are the perfectionist; you see the flaw because you love the potential.", "Libra": "The Diplomat. You are the scales; existing in the delicate balance of harmony.", "Scorpio": "The Sorcerer. You are the depths; unafraid to dive into the dark to find the truth.", "Sagittarius": "The Philosopher. You are the arrow; driven by a hunger for truth and adventure.", "Capricorn": "The Architect. You are the mountain peak; driven by ambition and legacy.", "Aquarius": "The Revolutionary. You are the lightning bolt; breaking old structures.", "Pisces": "The Mystic. You are the ocean; dissolving boundaries and dreaming the collective dream."
 }
 
 KEY_LORE = {
@@ -86,15 +87,20 @@ def get_gate(d):
     except: return 1
 
 def resolve_loc(c):
+    # 1. Try Dictionary Match
     for k in CITY_DB:
         if k in str(c).lower(): return CITY_DB[k]
+    
+    # 2. Real Geocoding (NO Defaults)
     try:
-        g = Nominatim(user_agent="ia_v99_final")
+        g = Nominatim(user_agent="ia_v99_final_2")
         l = g.geocode(c)
         if l:
             from timezonefinder import TimezoneFinder
             return l.latitude, l.longitude, TimezoneFinder().timezone_at(lng=l.longitude, lat=l.latitude) or "UTC"
     except: pass
+    
+    # 3. Last Resort (Only if input is totally broken)
     return 51.50, -0.12, "Europe/London"
 
 def get_tz(d, t, z):
@@ -103,33 +109,24 @@ def get_tz(d, t, z):
         return pytz.timezone(z).utcoffset(dt).total_seconds() / 3600.0
     except: return 0.0
 
-# --- THE EPIC STORY ENGINE (FULL VERSION) ---
+# --- THE EPIC STORY ENGINE (RESTORED) ---
 def gen_chapters(name, chart, orient, lp, struggle):
     sun, moon, ris = chart['Sun'], chart['Moon'], chart['Rising']
-    s_lore, m_lore, r_lore = SIGN_LORE.get(sun['Sign']), SIGN_LORE.get(moon['Sign']), SIGN_LORE.get(ris['Sign'])
+    s_lore = SIGN_LORE.get(sun['Sign'], "The Hero")
+    m_lore = SIGN_LORE.get(moon['Sign'], "The Soul")
+    r_lore = SIGN_LORE.get(ris['Sign'], "The Mask")
+    
     gate_name = KEY_LORE.get(sun['Gate'], "Energy")
     dragon, d_desc = struggle[0].replace("The Quest for ", ""), struggle[1]
     
     c1 = f"It is said that before a soul enters the world, it chooses a specific geometry of energy. For you, {name}, that geometry began with the **Sun in {sun['Sign']}**. This is not merely a zodiac sign; it is your fuel source. As **{s_lore}**, you are designed to burn with a specific intensity. However, raw energy requires a vessel. To navigate the physical plane, you adopted the mask of the **{ris['Sign']} Rising**. To the outside world, you appear as **{r_lore}**. This is your armor, your style, and your first line of defense. The tension between your inner {sun['Sign']} fire and your outer {ris['Sign']} shield is the primary dynamic of your origin story."
-    
     c2 = f"But a warrior is nothing without a reason to fight. Beneath the armor lies a secret engine: your **Moon in {moon['Sign']}**. While the world sees your actions, only you feel the pull of **{m_lore}**. This is what nourishes you. When you are alone, in the quiet dark, this is the voice that speaks. It governs your emotional tides and your deepest needs. Ignoring this voice is what leads to burnout and exhaustion; honoring it is the secret to your endless regeneration and emotional power."
-    
     c3 = f"Every hero needs a road to walk. Yours is the **Path of the {lp}**. This is not a random wander; it is a destiny defined as: **{LIFE_PATH_LORE.get(lp, '')}** The universe will constantly test you with challenges that force you to embody this number. It is a steep climb, and at times it will feel lonely, but the view from the top is the purpose you have been searching for. You are here to master this specific lesson."
-    
     c4 = f"To aid you on this path, you were gifted a specific weapon—a superpower woven into your DNA. In the language of the Archetypes, you carry the energy of **Archetype {sun['Gate']}: {gate_name}**. This is not a skill you learned in school; it is a frequency you emit naturally. When you trust this power, doors open without force. It is the sword in your hand. When you try to be someone else, you dull this blade. Your task is to wield it with precision."
-    
     c5 = f"But power without control is dangerous. Your operating manual is defined by your Orientation: **{orient}**. You are not designed to move like everyone else. Your specific strategy requires you to honor your nature—whether that is to wait in your hermitage, to experiment fearlessly, or to network with your tribe. Deviation from this strategy is the root of your frustration. You must trust your unique style of engagement."
-    
     c6 = f"Every story has an antagonist. Yours takes the form of **{dragon}**. {d_desc} This struggle you feel—whether in wealth, love, or purpose—is not a punishment from the universe. It is the friction necessary to sharpen your blade. The dragon guards the treasure. By facing your Shadow and applying your Archetype, you do not just slay the dragon; you integrate it, turning your greatest weakness into your greatest wisdom."
 
-    return [
-        {"title": "🌟 THE ORIGIN", "body": c1},
-        {"title": "❤️ THE HEART", "body": c2},
-        {"title": "🏔️ THE PATH", "body": c3},
-        {"title": "⚔️ THE WEAPON", "body": c4},
-        {"title": "🗺️ THE STRATEGY", "body": c5},
-        {"title": "🐉 THE DRAGON", "body": c6}
-    ]
+    return [{"title": "🌟 THE ORIGIN", "body": c1}, {"title": "❤️ THE HEART", "body": c2}, {"title": "🏔️ THE PATH", "body": c3}, {"title": "⚔️ THE WEAPON", "body": c4}, {"title": "🗺️ THE STRATEGY", "body": c5}, {"title": "🐉 THE DRAGON", "body": c6}]
 
 def clean_txt(t):
     if not t: return ""
@@ -169,11 +166,9 @@ def create_pdf(name, chaps, chart):
 @app.post("/calculate")
 async def calculate(request: Request):
     d = await request.json()
-    name = d.get("name", "Traveler")
-    dob = safe_get_date(d.get("dob") or d.get("date")) or datetime.date.today().strftime("%Y-%m-%d")
-    tob = clean_time(d.get("tob") or d.get("time"))
-    city = d.get("city", "London")
-    struggle = d.get("struggle", "general")
+    name, dob, tob = d.get("name", "Traveler"), safe_get_date(d.get("dob") or d.get("date")), clean_time(d.get("tob") or d.get("time"))
+    if not dob: dob = datetime.date.today().strftime("%Y-%m-%d")
+    city, struggle = d.get("city", "London"), d.get("struggle", "general")
 
     try:
         lat, lon, tz = resolve_loc(city)
@@ -205,16 +200,10 @@ async def calculate(request: Request):
         chaps = gen_chapters(name, c_data, orient, lp, s_data)
         pdf = create_pdf(name, chaps, c_data)
         
-        # HTML GRID LAYOUT
         grid_html = ""
         for c in chaps:
             body_html = c['body'].replace("**", "<b>").replace("**", "</b>").replace("\n", "<br>")
-            grid_html += f"""
-            <div class="card">
-                <h3>{c['title']}</h3>
-                <p>{body_html}</p>
-            </div>
-            """
+            grid_html += f"<div class='card'><h3>{c['title']}</h3><p>{body_html}</p></div>"
             
         html = f"""
         <html><head><style>
@@ -237,3 +226,4 @@ async def calculate(request: Request):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"report": "<h3>The stars are cloudy. Please try again.</h3>"}
+
