@@ -1,4 +1,4 @@
- import sys, base64, datetime, json, logging, re
+import sys, base64, datetime, json, logging, re
 from typing import Optional, Dict, Any
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -250,3 +250,4 @@ async def calculate(request: Request):
         logger.error(f"Error: {e}")
         return {"report": "<h3>The stars are cloudy. Please try again.</h3>"}
  
+
