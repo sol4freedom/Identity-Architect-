@@ -16,6 +16,7 @@ logger = logging.getLogger("uvicorn")
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+# --- DATA LORE ---
 CITY_DB = {
     "minneapolis": (44.97, -93.26, "America/Chicago"), "london": (51.50, -0.12, "Europe/London"),
     "new york": (40.71, -74.00, "America/New_York"), "sao paulo": (-23.55, -46.63, "America/Sao_Paulo"),
@@ -69,6 +70,7 @@ KEY_LORE = {
     61: "The Mystery", 62: "The Detail", 63: "The Doubter", 64: "The Confusion"
 }
 
+# --- HELPERS ---
 def safe_get_date(date_input):
     if not date_input: return None
     s = str(date_input).strip()
