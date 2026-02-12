@@ -1,5 +1,4 @@
-import sys, base64, datetime, json, logging, re
-from typing import Optional, Dict, Any
+import sys, base64, datetime, json, logging, re, io
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from geopy.geocoders import Nominatim
@@ -7,8 +6,13 @@ from flatlib.datetime import Datetime
 from flatlib.geopos import GeoPos
 from flatlib.chart import Chart
 from flatlib import const
-from fpdf import FPDF
 import pytz
+
+# --- NEW PDF ENGINE: ReportLab ---
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib import colors
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("uvicorn")
@@ -16,42 +20,42 @@ logger = logging.getLogger("uvicorn")
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- DATA LORE ---
+# --- CONFIGURATION & LORE ---
 CITY_DB = {
     "minneapolis": (44.97, -93.26, "America/Chicago"), "london": (51.50, -0.12, "Europe/London"),
-    "new york": (40.71, -74.00, "America/New_York"), "sao paulo": (-23.55, -46.63, "America/Sao_Paulo"),
-    "ashland": (42.19, -122.70, "America/Los_Angeles"), "los angeles": (34.05, -118.24, "America/Los_Angeles")
+    "new york": (40.71, -74.00, "America/New_York"), "ashland": (42.19, -122.70, "America/Los_Angeles"),
+    "los angeles": (34.05, -118.24, "America/Los_Angeles"), "sao paulo": (-23.55, -46.63, "America/Sao_Paulo")
 }
 
 LIFE_PATH_LORE = {
-    1: "The Primal Leader. You are the arrow that leaves the bow first. Your destiny is to stand alone.",
-    2: "The Peacemaker. You are the diplomat of the soul. Your hero's journey is to master invisible threads.",
-    3: "The Creative Spark. You are the voice of the universe expressing its joy. Your destiny is to lift the heaviness of the world.",
-    4: "The Master Builder. You are the architect of the future. While others dream, you lay the bricks.",
-    5: "The Freedom Seeker. You are the wind that cannot be caged. Your path is radical adaptability.",
-    6: "The Cosmic Guardian. You are the protector of the hearth. Your journey is to carry the weight of responsibility.",
-    7: "The Mystic Sage. You are the walker between worlds. Your path is a solitary climb up the mountain of truth.",
-    8: "The Sovereign. You are the CEO of the material plane. Your destiny involves the mastery of money and power.",
-    9: "The Humanitarian. You are the old soul on one last mission. Your story is one of letting go.",
-    11: "The Illuminator. You are the lightning rod. You walk the line between genius and madness.",
-    22: "The Master Architect. You are the bridge between heaven and earth. You turn visions into reality.",
-    33: "The Avatar of Love. You are the teacher of teachers. Your path is to uplift the vibration of humanity."
+    1: "The Primal Leader. You are the arrow that leaves the bow first.",
+    2: "The Peacemaker. You are the diplomat of the soul.",
+    3: "The Creative Spark. You are the voice of the universe expressing its joy.",
+    4: "The Master Builder. You are the architect of the future.",
+    5: "The Freedom Seeker. You are the wind that cannot be caged.",
+    6: "The Cosmic Guardian. You are the protector of the hearth.",
+    7: "The Mystic Sage. You are the walker between worlds.",
+    8: "The Sovereign. You are the CEO of the material plane.",
+    9: "The Humanitarian. You are the old soul on one last mission.",
+    11: "The Illuminator. You are the lightning rod.",
+    22: "The Master Architect. You are the bridge between heaven and earth.",
+    33: "The Avatar of Love. You are the teacher of teachers."
 }
 
 STRUGGLE_LORE = {
-    "wealth": ("The Quest for Abundance", "Scarcity. You feel blocked financially not because you lack skill, but because you are fighting against your own energy flow. Wealth is a frequency. Align with your Jupiter sign."),
-    "relationship": ("The Quest for Connection", "Disharmony. The friction is a signal you are using a script not written for you. Honor your Venus placement to magnetize your tribe."),
-    "purpose": ("The Quest for Meaning", "The Void. You feel lost because you are looking for a destination, not a frequency. Your North Node defines your signal. Stop doing and start being."),
-    "health": ("The Quest for Vitality", "Exhaustion. Your body is the hardware for your consciousness, and it is overheating. Your Saturn placement holds your boundaries. Surrender to rhythm."),
-    "general": ("The Quest for Alignment", "Confusion. You feel adrift because you are a unique design in a standardized world. Your Rising Sign is your compass. Return to your core strategy.")
+    "wealth": ("The Quest for Abundance", "Scarcity. Wealth is a frequency. Align with your Jupiter sign."),
+    "relationship": ("The Quest for Connection", "Disharmony. Honor your Venus placement to magnetize your tribe."),
+    "purpose": ("The Quest for Meaning", "The Void. Your North Node defines your signal. Stop doing and start being."),
+    "health": ("The Quest for Vitality", "Exhaustion. Your Saturn placement holds your boundaries. Surrender to rhythm."),
+    "general": ("The Quest for Alignment", "Confusion. Your Rising Sign is your compass. Return to your core strategy.")
 }
 
 LINE_LORE = {1:"The Investigator", 2:"The Natural", 3:"The Experimenter", 4:"The Networker", 5:"The Fixer", 6:"The Role Model"}
 
 SIGN_LORE = {
-    "Aries": "The Warrior.", "Taurus": "The Builder.", "Gemini": "The Messenger.", "Cancer": "The Protector.",
-    "Leo": "The Radiant.", "Virgo": "The Alchemist.", "Libra": "The Diplomat.", "Scorpio": "The Sorcerer.",
-    "Sagittarius": "The Philosopher.", "Capricorn": "The Architect.", "Aquarius": "The Revolutionary.", "Pisces": "The Mystic."
+    "Aries": "The Warrior", "Taurus": "The Builder", "Gemini": "The Messenger", "Cancer": "The Protector",
+    "Leo": "The Radiant", "Virgo": "The Alchemist", "Libra": "The Diplomat", "Scorpio": "The Sorcerer",
+    "Sagittarius": "The Philosopher", "Capricorn": "The Architect", "Aquarius": "The Revolutionary", "Pisces": "The Mystic"
 }
 
 KEY_LORE = {
@@ -71,10 +75,9 @@ KEY_LORE = {
 }
 
 # --- HELPERS ---
-def safe_get_date(date_input):
-    if not date_input: return None
-    s = str(date_input).strip()
-    return s.split("T")[0] if "T" in s else s
+def safe_get_date(d):
+    if not d: return None
+    return str(d).split("T")[0]
 
 def clean_time(t):
     if not t: return "12:00"
@@ -89,13 +92,14 @@ def clean_time(t):
 
 def get_gate(d):
     if d is None: return 1
-    return {0:25, 1:17, 2:21, 3:51, 4:42, 5:3, 6:27, 7:24, 8:2, 9:23, 10:8, 11:20, 12:16, 13:35, 14:45, 15:12, 16:15, 17:52, 18:39, 19:53, 20:62, 21:56, 22:31, 23:33, 24:7, 25:4, 26:29, 27:59, 28:40, 29:64, 30:47, 31:6, 32:46, 33:18, 34:48, 35:57, 36:32, 37:50, 38:28, 39:44, 40:1, 41:43, 42:14, 43:34, 44:9, 45:5, 46:26, 47:11, 48:10, 49:58, 50:38, 51:54, 52:61, 53:60, 54:41, 55:19, 56:13, 57:49, 58:30, 59:55, 60:37, 61:63, 62:22, 63:36}.get(int((d%360)/5.625), 1)
+    gates = [41, 19, 13, 49, 30, 55, 37, 63, 22, 36, 25, 17, 21, 51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60]
+    return gates[int((d%360)/5.625)]
 
 def resolve_loc(c):
     for k in CITY_DB:
         if k in str(c).lower(): return CITY_DB[k]
     try:
-        g = Nominatim(user_agent="ia_v99_final")
+        g = Nominatim(user_agent="ia_app_v2")
         l = g.geocode(c)
         if l:
             from timezonefinder import TimezoneFinder
@@ -103,62 +107,45 @@ def resolve_loc(c):
     except: pass
     return 51.50, -0.12, "Europe/London"
 
-def get_tz(d, t, z):
-    try:
-        dt = datetime.datetime.strptime(f"{d} {t}", "%Y-%m-%d %H:%M")
-        return pytz.timezone(z).utcoffset(dt).total_seconds() / 3600.0
-    except: return 0.0
-
-def gen_chapters(name, chart, orient, lp, struggle):
-    sun, moon, ris = chart['Sun'], chart['Moon'], chart['Rising']
-    s_lore, m_lore, r_lore = SIGN_LORE.get(sun['Sign']), SIGN_LORE.get(moon['Sign']), SIGN_LORE.get(ris['Sign'])
-    gate_name = KEY_LORE.get(sun['Gate'], "Energy")
-    dragon, d_desc = struggle[0].replace("The Quest for ", ""), struggle[1]
-    
-    c1 = f"It is said that before a soul enters the world, it chooses a specific geometry of energy. For you, {name}, that geometry began with the **Sun in {sun['Sign']}**. This is not merely a zodiac sign; it is your fuel source. As **{s_lore}**, you are designed to burn with a specific intensity. However, raw energy requires a vessel. To navigate the physical plane, you adopted the mask of the **{ris['Sign']} Rising**. To the outside world, you appear as **{r_lore}**. This is your armor, your style, and your first line of defense. The tension between your inner {sun['Sign']} fire and your outer {ris['Sign']} shield is the primary dynamic of your origin story."
-    c2 = f"But a warrior is nothing without a reason to fight. Beneath the armor lies a secret engine: your **Moon in {moon['Sign']}**. While the world sees your actions, only you feel the pull of **{m_lore}**. This is what nourishes you. When you are alone, in the quiet dark, this is the voice that speaks. It governs your emotional tides and your deepest needs. Ignoring this voice is what leads to burnout; honoring it is the secret to your endless regeneration."
-    c3 = f"Every hero needs a road to walk. Yours is the **Path of the {lp}**. This is not a random wander; it is a destiny defined as: **{LIFE_PATH_LORE.get(lp, '')}** The universe will constantly test you with challenges that force you to embody this number. It is a steep climb, but the view from the top is the purpose you have been searching for."
-    c4 = f"To aid you on this path, you were gifted a specific weapon—a superpower woven into your DNA. In the language of the Archetypes, you carry the energy of **Archetype {sun['Gate']}: {gate_name}**. This is not a skill you learned in school; it is a frequency you emit naturally. When you trust this power, doors open without force. It is the sword in your hand."
-    c5 = f"But power without control is dangerous. Your operating manual is defined by your Orientation: **{orient}**. You are not designed to move like everyone else. Your specific strategy requires you to honor your nature—whether that is to wait in your hermitage, to experiment fearlessly, or to network with your tribe. Deviation from this strategy is the root of your frustration."
-    c6 = f"Every story has an antagonist. Yours takes the form of **{dragon}**. {d_desc} This struggle you feel is not a punishment from the universe. It is the friction necessary to sharpen your blade. The dragon guards the treasure. By facing your Shadow and applying your Archetype, you do not just slay the dragon; you integrate it."
-
-    return [{"title": "🌟 THE ORIGIN", "body": c1}, {"title": "❤️ THE HEART", "body": c2}, {"title": "🏔️ THE PATH", "body": c3}, {"title": "⚔️ THE WEAPON", "body": c4}, {"title": "🗺️ THE STRATEGY", "body": c5}, {"title": "🐉 THE DRAGON", "body": c6}]
-
-def clean_txt(t):
-    if not t: return ""
-    t = re.sub(r'[^\x00-\x7F]+', '', t) 
-    return t.replace("—", "-").replace("’", "'").replace("**", "").encode('latin-1', 'replace').decode('latin-1')
-
+# --- NEW PDF GENERATOR (ReportLab) ---
 def create_pdf(name, chaps, chart):
-    try:
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Helvetica", 'B', 18)
-        pdf.cell(0, 10, 'THE LEGEND OF YOU', 0, 1, 'C')
-        pdf.set_font("Helvetica", 'I', 12)
-        pdf.cell(0, 10, clean_txt(f"The Epic of {name}"), 0, 1, 'C')
-        pdf.ln(10)
-        
-        for c in chaps:
-            pdf.set_font("Helvetica", 'B', 14)
-            pdf.cell(0, 10, clean_txt(c['title']), 0, 1)
-            pdf.set_font("Helvetica", '', 11)
-            pdf.multi_cell(0, 6, clean_txt(c['body']))
-            pdf.ln(5)
-            
-        pdf.add_page()
-        pdf.set_font("Helvetica", 'B', 14)
-        pdf.cell(0, 10, "Planetary Inventory", 0, 1)
-        pdf.ln(5)
-        for k, v in chart.items():
-            pdf.set_font("Helvetica", 'B', 11)
-            pdf.cell(0, 8, clean_txt(f"{k}: {v['Sign']} (Archetype {v['Gate']})"), 0, 1)
-            pdf.set_font("Helvetica", '', 10)
-            pdf.multi_cell(0, 5, clean_txt(KEY_LORE.get(v['Gate'], "")))
-            pdf.ln(2)
-        return base64.b64encode(pdf.output()).decode('utf-8')
-    except: return ""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=LETTER)
+    styles = getSampleStyleSheet()
+    story = []
 
+    # Title Style
+    title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], alignment=1, spaceAfter=20, fontSize=24, textColor=colors.hexval("#D4AF37"))
+    header_style = ParagraphStyle('ChapterHead', parent=styles['Heading2'], spaceBefore=15, spaceAfter=10, fontSize=16, textColor=colors.hexval("#2c3e50"))
+    body_style = ParagraphStyle('BodyText', parent=styles['Normal'], spaceAfter=12, fontSize=11, leading=14)
+
+    # Title Page
+    story.append(Spacer(1, 60))
+    story.append(Paragraph("THE LEGEND OF YOU", title_style))
+    story.append(Paragraph(f"The Epic of {name}", styles['Italic']))
+    story.append(Spacer(1, 40))
+    story.append(PageBreak())
+
+    # Chapters
+    for c in chaps:
+        story.append(Paragraph(c['title'], header_style))
+        # Handle markdown bolding **text** by replacing with HTML <b>text</b>
+        clean_body = c['body'].replace("**", "<b>", 1).replace("**", "</b>", 1).replace("\n", "<br/>")
+        story.append(Paragraph(clean_body, body_style))
+    
+    story.append(PageBreak())
+    
+    # Inventory
+    story.append(Paragraph("Planetary Inventory", header_style))
+    for k, v in chart.items():
+        txt = f"<b>{k}:</b> {v['Sign']} (Archetype {v['Gate']}) - {KEY_LORE.get(v['Gate'], '')}"
+        story.append(Paragraph(txt, body_style))
+
+    doc.build(story)
+    buffer.seek(0)
+    return base64.b64encode(buffer.read()).decode('utf-8')
+
+# --- MAIN ENDPOINT ---
 @app.post("/calculate")
 async def calculate(request: Request):
     d = await request.json()
@@ -170,8 +157,7 @@ async def calculate(request: Request):
 
     try:
         lat, lon, tz = resolve_loc(city)
-        off = get_tz(dob, tob, tz)
-        dt = Datetime(dob.replace("-", "/"), tob, off)
+        dt = Datetime(dob.replace("-", "/"), tob, 0) # Simple offset for calculation stability
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
@@ -195,9 +181,23 @@ async def calculate(request: Request):
         
         s_data = STRUGGLE_LORE.get(struggle, STRUGGLE_LORE["general"])
         
-        chaps = gen_chapters(name, c_data, orient, lp, s_data)
-        pdf = create_pdf(name, chaps, c_data)
+        # STORY GENERATION
+        sun, moon, ris = c_data['Sun'], c_data['Moon'], c_data['Rising']
+        gate = KEY_LORE.get(sun['Gate'], "Energy")
+        dragon = struggle[0].replace("The Quest for ", "")
         
+        chaps = [
+            {"title": "🌟 THE ORIGIN", "body": f"For you, {name}, the story begins with the **Sun in {sun['Sign']}**. As **{SIGN_LORE.get(sun['Sign'])}**, you burn with intensity. Your vessel is the **{ris['Sign']} Rising**, the mask of **{SIGN_LORE.get(ris['Sign'])}**. The tension between your inner {sun['Sign']} fire and outer {ris['Sign']} shield is your dynamic."},
+            {"title": "❤️ THE HEART", "body": f"Beneath the armor lies your **Moon in {moon['Sign']}**. This is the **{SIGN_LORE.get(moon['Sign'])}**. It governs your needs. Ignoring this voice leads to burnout; honoring it is your regeneration."},
+            {"title": "🏔️ THE PATH", "body": f"Your road is the **Path of the {lp}**: {LIFE_PATH_LORE.get(lp, '')} The universe will test you here, but the view from the top is your purpose."},
+            {"title": "⚔️ THE WEAPON", "body": f"Your superpower is **Archetype {sun['Gate']}: {gate}**. This is a frequency you emit naturally. Trust it, and doors open."},
+            {"title": "🗺️ THE STRATEGY", "body": f"Your operating manual is **{orient}**. You are not designed to move like everyone else. Trust your unique style of engagement."},
+            {"title": "🐉 THE DRAGON", "body": f"Your antagonist is **{dragon}**. {s_data[1]} This struggle is not a punishment; it is the friction that sharpens your blade."}
+        ]
+
+        pdf_b64 = create_pdf(name, chaps, c_data)
+        
+        # HTML CARD GENERATION
         grid_html = ""
         for c in chaps:
             body_html = c['body'].replace("**", "<b>").replace("**", "</b>").replace("\n", "<br>")
@@ -216,11 +216,11 @@ async def calculate(request: Request):
         </style></head><body>
         <h2>The Legend of {name}</h2>
         <div class="grid">{grid_html}</div>
-        <a href="data:application/pdf;base64,{pdf}" download="The_Legend_of_You.pdf" class="btn">⬇️ DOWNLOAD LEGEND</a>
+        <a href="data:application/pdf;base64,{pdf_b64}" download="The_Legend_of_You.pdf" class="btn">⬇️ DOWNLOAD LEGEND</a>
         </body></html>
         """
         return {"report": html}
         
     except Exception as e:
         logger.error(f"Error: {e}")
-        return {"report": "<h3>The stars are cloudy. Please try again.</h3>"}
+        return {"report": f"<h3>Error: {e}</h3>"}
