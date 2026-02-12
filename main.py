@@ -8,7 +8,7 @@ from flatlib.chart import Chart
 from flatlib import const
 import pytz
 
-# --- NEW PDF ENGINE: ReportLab ---
+# --- REPORTLAB PDF ENGINE ---
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
@@ -21,7 +21,7 @@ logger = logging.getLogger("uvicorn")
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# --- CONFIGURATION & LORE ---
+# --- LORE DATABASES ---
 CITY_DB = {
     "minneapolis": (44.97, -93.26, "America/Chicago"), "london": (51.50, -0.12, "Europe/London"),
     "new york": (40.71, -74.00, "America/New_York"), "ashland": (42.19, -122.70, "America/Los_Angeles"),
@@ -108,35 +108,32 @@ def resolve_loc(c):
     except: pass
     return 51.50, -0.12, "Europe/London"
 
-# --- NEW PDF GENERATOR (ReportLab) ---
+# --- PDF BUILDER ---
 def create_pdf(name, chaps, chart):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=LETTER)
     styles = getSampleStyleSheet()
     story = []
 
-    # Title Style
+    # Title
     title_style = ParagraphStyle('MainTitle', parent=styles['Heading1'], alignment=1, spaceAfter=20, fontSize=24, textColor=HexColor("#D4AF37"))
     header_style = ParagraphStyle('ChapterHead', parent=styles['Heading2'], spaceBefore=15, spaceAfter=10, fontSize=16, textColor=HexColor("#2c3e50"))
     body_style = ParagraphStyle('BodyText', parent=styles['Normal'], spaceAfter=12, fontSize=11, leading=14)
 
-    # Title Page
     story.append(Spacer(1, 60))
     story.append(Paragraph("THE LEGEND OF YOU", title_style))
     story.append(Paragraph(f"The Epic of {name}", styles['Italic']))
     story.append(Spacer(1, 40))
     story.append(PageBreak())
 
-    # Chapters
     for c in chaps:
         story.append(Paragraph(c['title'], header_style))
-        # Handle markdown bolding **text** by replacing with HTML <b>text</b>
+        # Support bolding and line breaks in PDF
         clean_body = c['body'].replace("**", "<b>", 1).replace("**", "</b>", 1).replace("\n", "<br/>")
         story.append(Paragraph(clean_body, body_style))
     
     story.append(PageBreak())
     
-    # Inventory
     story.append(Paragraph("Planetary Inventory", header_style))
     for k, v in chart.items():
         txt = f"<b>{k}:</b> {v['Sign']} (Archetype {v['Gate']}) - {KEY_LORE.get(v['Gate'], '')}"
@@ -158,7 +155,7 @@ async def calculate(request: Request):
 
     try:
         lat, lon, tz = resolve_loc(city)
-        dt = Datetime(dob.replace("-", "/"), tob, 0) # Simple offset for calculation stability
+        dt = Datetime(dob.replace("-", "/"), tob, 0)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
@@ -176,52 +173,4 @@ async def calculate(request: Request):
         orient = f"{LINE_LORE.get(p_line, '')} / {LINE_LORE.get(d_line, '')}"
         
         try:
-            lp = sum([int(n) for n in dob if n.isdigit()])
-            while lp > 9 and lp not in [11, 22, 33]: lp = sum(int(n) for n in str(lp))
-        except: lp = 0
-        
-        s_data = STRUGGLE_LORE.get(struggle, STRUGGLE_LORE["general"])
-        
-        # STORY GENERATION
-        sun, moon, ris = c_data['Sun'], c_data['Moon'], c_data['Rising']
-        gate = KEY_LORE.get(sun['Gate'], "Energy")
-        dragon = struggle[0].replace("The Quest for ", "")
-        
-        chaps = [
-            {"title": "🌟 THE ORIGIN", "body": f"For you, {name}, the story begins with the **Sun in {sun['Sign']}**. As **{SIGN_LORE.get(sun['Sign'])}**, you burn with intensity. Your vessel is the **{ris['Sign']} Rising**, the mask of **{SIGN_LORE.get(ris['Sign'])}**. The tension between your inner {sun['Sign']} fire and outer {ris['Sign']} shield is your dynamic."},
-            {"title": "❤️ THE HEART", "body": f"Beneath the armor lies your **Moon in {moon['Sign']}**. This is the **{SIGN_LORE.get(moon['Sign'])}**. It governs your needs. Ignoring this voice leads to burnout; honoring it is your regeneration."},
-            {"title": "🏔️ THE PATH", "body": f"Your road is the **Path of the {lp}**: {LIFE_PATH_LORE.get(lp, '')} The universe will test you here, but the view from the top is your purpose."},
-            {"title": "⚔️ THE WEAPON", "body": f"Your superpower is **Archetype {sun['Gate']}: {gate}**. This is a frequency you emit naturally. Trust it, and doors open."},
-            {"title": "🗺️ THE STRATEGY", "body": f"Your operating manual is **{orient}**. You are not designed to move like everyone else. Trust your unique style of engagement."},
-            {"title": "🐉 THE DRAGON", "body": f"Your antagonist is **{dragon}**. {s_data[1]} This struggle is not a punishment; it is the friction that sharpens your blade."}
-        ]
-
-        pdf_b64 = create_pdf(name, chaps, c_data)
-        
-        # HTML CARD GENERATION
-        grid_html = ""
-        for c in chaps:
-            body_html = c['body'].replace("**", "<b>").replace("**", "</b>").replace("\n", "<br>")
-            grid_html += f"<div class='card'><h3>{c['title']}</h3><p>{body_html}</p></div>"
-            
-        html = f"""
-        <html><head><style>
-        body {{ font-family: 'Helvetica', sans-serif; padding: 20px; background: #fdfdfd; }}
-        h2 {{ text-align: center; color: #D4AF37; font-size: 2rem; margin-bottom: 30px; }}
-        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }}
-        .card {{ background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); border-top: 5px solid #D4AF37; }}
-        .card h3 {{ margin-top: 0; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }}
-        .card p {{ color: #555; line-height: 1.6; font-size: 1rem; }}
-        .btn {{ display: block; width: 220px; margin: 40px auto; padding: 15px; background: #D4AF37; color: white; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }}
-        .btn:hover {{ background: #b8952b; }}
-        </style></head><body>
-        <h2>The Legend of {name}</h2>
-        <div class="grid">{grid_html}</div>
-        <a href="data:application/pdf;base64,{pdf_b64}" download="The_Legend_of_You.pdf" class="btn">⬇️ DOWNLOAD LEGEND</a>
-        </body></html>
-        """
-        return {"report": html}
-        
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        return {"report": f"<h3>Error: {e}</h3>"}
+            lp = sum([int(n) for n in dob if n
