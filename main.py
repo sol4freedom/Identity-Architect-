@@ -173,4 +173,67 @@ async def calculate(request: Request):
         orient = f"{LINE_LORE.get(p_line, '')} / {LINE_LORE.get(d_line, '')}"
         
         try:
-            lp = sum([int(n) for n in dob if n
+            lp = sum([int(n) for n in dob if n.isdigit()])
+            while lp > 9 and lp not in [11, 22, 33]: lp = sum(int(n) for n in str(lp))
+        except: lp = 0
+        
+        s_data = STRUGGLE_LORE.get(struggle, STRUGGLE_LORE["general"])
+        
+        # --- NEW STORY STRUCTURE ---
+        sun, moon, ris = c_data['Sun'], c_data['Moon'], c_data['Rising']
+        gate = KEY_LORE.get(sun['Gate'], "Energy")
+        dragon = struggle[0].replace("The Quest for ", "")
+        
+        # 1. The Breakdown (Explicitly requested)
+        trinity_text = f"""Before we begin your legend, you must understand your geometric pillars. These are the three coordinates that define your frequency:<br>
+        <br>
+        **☀️ The Sun in {sun['Sign']} ({SIGN_LORE.get(sun['Sign'])})**<br>
+        This is your Core Essence. It is your fuel, your conscious purpose, and the way you shine when you are most alive.<br>
+        <br>
+        **🌙 The Moon in {moon['Sign']} ({SIGN_LORE.get(moon['Sign'])})**<br>
+        This is your Inner World. It governs your emotional needs, your instincts, and what you need to feel safe.<br>
+        <br>
+        **🏹 The Rising in {ris['Sign']} ({SIGN_LORE.get(ris['Sign'])})**<br>
+        This is your Vessel. It is the mask you wear, your style of engagement, and the first impression you make on the universe."""
+
+        # 2. The Dynamic
+        origin_text = f"The primary tension in your chart exists between your inner **{sun['Sign']}** fire and your outer **{ris['Sign']}** shield. While the world meets you as the {SIGN_LORE.get(ris['Sign'])}, you know that beneath the armor burns the intensity of the {SIGN_LORE.get(sun['Sign'])}. Balancing these two forces is your first great mission."
+
+        chaps = [
+            {"title": "🔮 YOUR COSMIC TRINITY", "body": trinity_text},
+            {"title": "🌟 THE ORIGIN STORY", "body": origin_text},
+            {"title": "🏔️ THE PATH", "body": f"Your road is the **Path of the {lp}**: {LIFE_PATH_LORE.get(lp, '')} The universe will test you here, but the view from the top is your purpose."},
+            {"title": "⚔️ THE WEAPON", "body": f"Your superpower is **Archetype {sun['Gate']}: {gate}**. This is a frequency you emit naturally. Trust it, and doors open."},
+            {"title": "🗺️ THE STRATEGY", "body": f"Your operating manual is **{orient}**. You are not designed to move like everyone else. Trust your unique style of engagement."},
+            {"title": "🐉 THE DRAGON", "body": f"Your antagonist is **{dragon}**. {s_data[1]} This struggle is not a punishment; it is the friction that sharpens your blade."}
+        ]
+
+        pdf_b64 = create_pdf(name, chaps, c_data)
+        
+        # HTML GENERATION
+        grid_html = ""
+        for c in chaps:
+            body_html = c['body'].replace("**", "<b>").replace("**", "</b>").replace("\n", "<br>")
+            grid_html += f"<div class='card'><h3>{c['title']}</h3><p>{body_html}</p></div>"
+            
+        html = f"""
+        <html><head><style>
+        body {{ font-family: 'Helvetica', sans-serif; padding: 20px; background: #fdfdfd; }}
+        h2 {{ text-align: center; color: #D4AF37; font-size: 2rem; margin-bottom: 30px; }}
+        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }}
+        .card {{ background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); border-top: 5px solid #D4AF37; }}
+        .card h3 {{ margin-top: 0; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }}
+        .card p {{ color: #555; line-height: 1.6; font-size: 1rem; }}
+        .btn {{ display: block; width: 220px; margin: 40px auto; padding: 15px; background: #D4AF37; color: white; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }}
+        .btn:hover {{ background: #b8952b; }}
+        </style></head><body>
+        <h2>The Legend of {name}</h2>
+        <div class="grid">{grid_html}</div>
+        <a href="data:application/pdf;base64,{pdf_b64}" download="The_Legend_of_You.pdf" class="btn">⬇️ DOWNLOAD LEGEND</a>
+        </body></html>
+        """
+        return {"report": html}
+        
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"report": f"<h3>Error: {e}</h3>"}
