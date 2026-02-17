@@ -128,8 +128,9 @@ def create_pdf(name, chaps, chart):
 
     for c in chaps:
         story.append(Paragraph(c['title'], header_style))
-        # Support bolding and line breaks in PDF
-        clean_body = c['body'].replace("**", "<b>", 1).replace("**", "</b>", 1).replace("\n", "<br/>")
+        # FIXED: Proper regex to catch all bold words and proper PDF line breaks
+        clean_body = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', c['body'])
+        clean_body = clean_body.replace("\n", "<br/>")
         story.append(Paragraph(clean_body, body_style))
     
     story.append(PageBreak())
@@ -184,17 +185,17 @@ async def calculate(request: Request):
         gate = KEY_LORE.get(sun['Gate'], "Energy")
         dragon = struggle[0].replace("The Quest for ", "")
         
-        # 1. The Breakdown (Explicitly requested)
-        trinity_text = f"""Before we begin your legend, you must understand your geometric pillars. These are the three coordinates that define your frequency:<br>
-        <br>
-        **☀️ The Sun in {sun['Sign']} ({SIGN_LORE.get(sun['Sign'])})**<br>
-        This is your Core Essence. It is your fuel, your conscious purpose, and the way you shine when you are most alive.<br>
-        <br>
-        **🌙 The Moon in {moon['Sign']} ({SIGN_LORE.get(moon['Sign'])})**<br>
-        This is your Inner World. It governs your emotional needs, your instincts, and what you need to feel safe.<br>
-        <br>
-        **🏹 The Rising in {ris['Sign']} ({SIGN_LORE.get(ris['Sign'])})**<br>
-        This is your Vessel. It is the mask you wear, your style of engagement, and the first impression you make on the universe."""
+        # FIXED: Removed bad HTML tags. Using standard newlines.
+        trinity_text = f"""Before we begin your legend, you must understand your geometric pillars. These are the three coordinates that define your frequency:
+
+**☀️ The Sun in {sun['Sign']} ({SIGN_LORE.get(sun['Sign'])})**
+This is your Core Essence. It is your fuel, your conscious purpose, and the way you shine when you are most alive.
+
+**🌙 The Moon in {moon['Sign']} ({SIGN_LORE.get(moon['Sign'])})**
+This is your Inner World. It governs your emotional needs, your instincts, and what you need to feel safe.
+
+**🏹 The Rising in {ris['Sign']} ({SIGN_LORE.get(ris['Sign'])})**
+This is your Vessel. It is the mask you wear, your style of engagement, and the first impression you make on the universe."""
 
         # 2. The Dynamic
         origin_text = f"The primary tension in your chart exists between your inner **{sun['Sign']}** fire and your outer **{ris['Sign']}** shield. While the world meets you as the {SIGN_LORE.get(ris['Sign'])}, you know that beneath the armor burns the intensity of the {SIGN_LORE.get(sun['Sign'])}. Balancing these two forces is your first great mission."
@@ -210,10 +211,11 @@ async def calculate(request: Request):
 
         pdf_b64 = create_pdf(name, chaps, c_data)
         
-        # HTML GENERATION
+        # FIXED: Use regex for HTML bolding too
         grid_html = ""
         for c in chaps:
-            body_html = c['body'].replace("**", "<b>").replace("**", "</b>").replace("\n", "<br>")
+            body_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', c['body'])
+            body_html = body_html.replace("\n", "<br>")
             grid_html += f"<div class='card'><h3>{c['title']}</h3><p>{body_html}</p></div>"
             
         html = f"""
@@ -237,3 +239,4 @@ async def calculate(request: Request):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"report": f"<h3>Error: {e}</h3>"}
+1
