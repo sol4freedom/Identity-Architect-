@@ -128,7 +128,6 @@ def create_pdf(name, chaps, chart):
 
     for c in chaps:
         story.append(Paragraph(c['title'], header_style))
-        # FIXED: Proper regex to catch all bold words and proper PDF line breaks
         clean_body = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', c['body'])
         clean_body = clean_body.replace("\n", "<br/>")
         story.append(Paragraph(clean_body, body_style))
@@ -155,8 +154,15 @@ async def calculate(request: Request):
     struggle = d.get("struggle", "general")
 
     try:
-        lat, lon, tz = resolve_loc(city)
-        dt = Datetime(dob.replace("-", "/"), tob, 0)
+        lat, lon, tz_str = resolve_loc(city)
+        
+        # Calculate exact timezone offset for their birth city and date
+        local_tz = pytz.timezone(tz_str)
+        birth_dt = datetime.datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
+        localized_dt = local_tz.localize(birth_dt)
+        utc_offset = localized_dt.utcoffset().total_seconds() / 3600.0
+        
+        dt = Datetime(dob.replace("-", "/"), tob, utc_offset)
         geo = GeoPos(lat, lon)
         chart = Chart(dt, geo, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
         
@@ -180,12 +186,10 @@ async def calculate(request: Request):
         
         s_data = STRUGGLE_LORE.get(struggle, STRUGGLE_LORE["general"])
         
-        # --- NEW STORY STRUCTURE ---
         sun, moon, ris = c_data['Sun'], c_data['Moon'], c_data['Rising']
         gate = KEY_LORE.get(sun['Gate'], "Energy")
         dragon = struggle[0].replace("The Quest for ", "")
         
-        # FIXED: Removed bad HTML tags. Using standard newlines.
         trinity_text = f"""Before we begin your legend, you must understand your geometric pillars. These are the three coordinates that define your frequency:
 
 **☀️ The Sun in {sun['Sign']} ({SIGN_LORE.get(sun['Sign'])})**
@@ -197,7 +201,6 @@ This is your Inner World. It governs your emotional needs, your instincts, and w
 **🏹 The Rising in {ris['Sign']} ({SIGN_LORE.get(ris['Sign'])})**
 This is your Vessel. It is the mask you wear, your style of engagement, and the first impression you make on the universe."""
 
-        # 2. The Dynamic
         origin_text = f"The primary tension in your chart exists between your inner **{sun['Sign']}** fire and your outer **{ris['Sign']}** shield. While the world meets you as the {SIGN_LORE.get(ris['Sign'])}, you know that beneath the armor burns the intensity of the {SIGN_LORE.get(sun['Sign'])}. Balancing these two forces is your first great mission."
 
         chaps = [
@@ -211,7 +214,6 @@ This is your Vessel. It is the mask you wear, your style of engagement, and the 
 
         pdf_b64 = create_pdf(name, chaps, c_data)
         
-        # FIXED: Use regex for HTML bolding too
         grid_html = ""
         for c in chaps:
             body_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', c['body'])
@@ -239,4 +241,3 @@ This is your Vessel. It is the mask you wear, your style of engagement, and the 
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"report": f"<h3>Error: {e}</h3>"}
-1
