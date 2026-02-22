@@ -462,5 +462,93 @@ async def calculate_free(request: Request):
         logger.error(f"Error: {e}")
         return {"report": f"<h3>Error: {e}</h3>"}
 
+# --- COSMIC CLARITY BUNDLE ENDPOINT ---
+@app.post("/calculate-bundle")
+async def calculate_bundle(request: Request):
+    d = await request.json()
+    name = d.get("name", "Traveler")
+    dob = safe_get_date(d.get("dob") or d.get("date")) or datetime.date.today().strftime("%Y-%m-%d")
+    tob = clean_time(d.get("tob") or d.get("time"))
+    city = d.get("city", "London")
 
+    try:
+        lat, lon, tz_str = resolve_loc(city)
+        
+        local_tz = pytz.timezone(tz_str)
+        birth_dt = datetime.datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
+        localized_dt = local_tz.localize(birth_dt)
+        utc_offset = localized_dt.utcoffset().total_seconds() / 3600.0
+        
+        dt = Datetime(dob.replace("-", "/"), tob, utc_offset)
+        geo = GeoPos(lat, lon)
+        chart = Chart(dt, geo, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
+        
+        c_data = {}
+        for p in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]:
+            obj = chart.get(getattr(const, p.upper()))
+            c_data[p] = {"Sign": obj.sign, "Gate": get_gate(obj.lon)}
+        
+        asc = chart.get(const.ASC)
+        c_data["Rising"] = {"Sign": asc.sign, "Gate": get_gate(asc.lon)}
+        
+        p_sun = chart.get(const.SUN)
+        p_line = (int(p_sun.lon / 0.9375) % 6) + 1
+        d_line = (int(((p_sun.lon - 88) % 360) / 0.9375) % 6) + 1
+        
+        try:
+            lp = sum([int(n) for n in dob if n.isdigit()])
+            while lp > 9 and lp not in [11, 22, 33]: lp = sum(int(n) for n in str(lp))
+        except: lp = 0
+        
+        sun, moon, ris = c_data['Sun'], c_data['Moon'], c_data['Rising']
+        
+        # --- THE 5 QUESTIONS CONTENT ---
+        q1_text = f"Your purpose is a frequency, not a job title. You do not need to 'find' your purpose; you just need to embody your geometry. As a **{sun['Sign']} Sun**, {SUN_LORE.get(sun['Sign'], '')}<br/><br/>You are simultaneously walking the **Path of the {lp}**: {LIFE_PATH_LORE.get(lp, '')}"
+        
+        q2_text = f"We repeat cycles when our nervous system mistakes familiar chaos for safety. Your emotional world is ruled by your **{moon['Sign']} Moon**. {MOON_LORE.get(moon['Sign'], '')}<br/><br/>To break painful relationship patterns, you must fiercely protect this specific emotional sanctuary and only invite in those who honor it."
+        
+        q3_text = f"Abundance requires you to operate using your specific energetic mechanics. As a **{ris['Sign']} Rising**, {RISING_LORE.get(ris['Sign'], '')}<br/><br/>Furthermore, your conscious strategy in the material world is the **Line {p_line}**. {LINE_LORE.get(p_line, '')}"
+        
+        q4_text = f"Burnout happens when you carry armor that isn't yours. To survive your early environment, you built a very specific shield based on your **{ris['Sign']} Rising**: {ORIGIN_RISING_LORE.get(ris['Sign'], '')}<br/><br/>This is the root of your exhaustion. It is time to put this heavy armor down."
+        
+        q5_text = f"To break mental static and paralysis, you must apply the R.I.D. Wave (Recognize, Identify, Decide) through the lens of your unconscious strategy.<br/><br/>Recognize the pattern of overwhelm. Identify the root cause. Then, Decide to act based on your **Line {d_line}** operating manual: {LINE_LORE.get(d_line, '')}"
 
+        chaps = [
+            {"title": "1. What is my true life purpose?", "body": q1_text},
+            {"title": "2. Why do I attract painful relationships?", "body": q2_text},
+            {"title": "3. How can I attract true abundance?", "body": q3_text},
+            {"title": "4. Why am I so exhausted and burned out?", "body": q4_text},
+            {"title": "5. How do I get unstuck and make a decision?", "body": q5_text}
+        ]
+
+        # Generate the Bundle PDF
+        pdf_b64 = create_pdf(name, chaps, c_data)
+        
+        # Build the HTML Grid
+        grid_html = ""
+        for c in chaps:
+            body_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', c['body'])
+            body_html = body_html.replace("\n", "<br>")
+            grid_html += f"<div class='card'><h3>{c['title']}</h3><p>{body_html}</p></div>"
+            
+        html = f"""
+        <html><head><style>
+        body {{ font-family: 'Helvetica', sans-serif; padding: 20px; background: #fdfdfd; }}
+        h2 {{ text-align: center; color: #D4AF37; font-size: 2rem; margin-bottom: 30px; }}
+        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }}
+        .card {{ background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); border-top: 5px solid #D4AF37; }}
+        .card h3 {{ margin-top: 0; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }}
+        .card p {{ color: #555; line-height: 1.6; font-size: 1rem; }}
+        .btn {{ display: block; width: 250px; margin: 30px auto; padding: 15px; background: #D4AF37; color: white; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }}
+        .btn:hover {{ background: #b8952b; }}
+        </style></head><body>
+        <h2>The Cosmic Clarity Bundle for {name}</h2>
+        <div class="grid">{grid_html}</div>
+        <a href="data:application/pdf;base64,{pdf_b64}" download="Cosmic_Clarity_Bundle.pdf" class="btn">⬇️ DOWNLOAD BUNDLE</a>
+        </body></html>
+        """
+        return {"report": html}
+        
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"report": f"<h3>Error: {e}</h3>"}
