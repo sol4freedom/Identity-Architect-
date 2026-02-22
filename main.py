@@ -366,3 +366,101 @@ async def calculate(request: Request):
         logger.error(f"Error: {e}")
         return {"report": f"<h3>Error: {e}</h3>"}
 
+# --- FREE SNAPSHOT ENDPOINT (LEAD MAGNET) ---
+@app.post("/calculate-free")
+async def calculate_free(request: Request):
+    d = await request.json()
+    name = d.get("name", "Traveler")
+    dob = safe_get_date(d.get("dob") or d.get("date")) or datetime.date.today().strftime("%Y-%m-%d")
+    tob = clean_time(d.get("tob") or d.get("time"))
+    city = d.get("city", "London")
+    struggle = d.get("struggle", "general")
+
+    try:
+        lat, lon, tz_str = resolve_loc(city)
+        
+        local_tz = pytz.timezone(tz_str)
+        birth_dt = datetime.datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
+        localized_dt = local_tz.localize(birth_dt)
+        utc_offset = localized_dt.utcoffset().total_seconds() / 3600.0
+        
+        dt = Datetime(dob.replace("-", "/"), tob, utc_offset)
+        geo = GeoPos(lat, lon)
+        chart = Chart(dt, geo, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
+        
+        c_data = {}
+        for p in ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]:
+            obj = chart.get(getattr(const, p.upper()))
+            c_data[p] = {"Sign": obj.sign, "Gate": get_gate(obj.lon)}
+        
+        asc = chart.get(const.ASC)
+        c_data["Rising"] = {"Sign": asc.sign, "Gate": get_gate(asc.lon)}
+        
+        try:
+            lp = sum([int(n) for n in dob if n.isdigit()])
+            while lp > 9 and lp not in [11, 22, 33]: lp = sum(int(n) for n in str(lp))
+        except: lp = 0
+        
+        sun, moon, ris = c_data['Sun'], c_data['Moon'], c_data['Rising']
+        dragon = struggle[0].replace("The Quest for ", "")
+        
+        # --- THE FREE CONTENT (TITLES ONLY) ---
+        snapshot_text = f"""Welcome to your Cosmic Snapshot. Here are the geometric pillars that define your baseline frequency:<br/><br/>
+        **☀️ The Sun in {sun['Sign']} ({SIGN_LORE.get(sun['Sign'])})**<br/>
+        This is your Core Essence and conscious purpose.<br/><br/>
+        **🌙 The Moon in {moon['Sign']} ({SIGN_LORE.get(moon['Sign'])})**<br/>
+        This is your Inner World and emotional sanctuary.<br/><br/>
+        **🏹 The Rising in {ris['Sign']} ({SIGN_LORE.get(ris['Sign'])})**<br/>
+        This is your Vessel and style of engagement."""
+
+        cta_text = f"""This snapshot is just the surface.<br/><br/>
+        Locked inside your full chart is your **Archetype {sun['Gate']}** superpower, your exact Human Design Strategy, and the profound, multi-page Origin Story of your {sun['Sign']} Sun and {ris['Sign']} Rising.<br/><br/>
+        You are currently facing the **Dragon of {dragon}**.<br/><br/>
+        To discover how to tame this Dragon and unlock your ultimate behavioral blueprint, upgrade to the Full Epic Legend through The Integrated Self."""
+
+        chaps = [
+            {"title": "✨ YOUR COSMIC SNAPSHOT", "body": snapshot_text},
+            {"title": "🏔️ YOUR LIFE PATH", "body": f"You are walking the **Path of the {lp}**: {LIFE_PATH_LORE.get(lp, '').split('.')[0]}."},
+            {"title": "🔓 THE MYSTERY AWAITS", "body": cta_text}
+        ]
+
+        # Generate the shorter PDF
+        pdf_b64 = create_pdf(name, chaps, c_data)
+        
+        # Build the HTML Grid
+        grid_html = ""
+        for c in chaps:
+            body_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', c['body'])
+            body_html = body_html.replace("\n", "<br>")
+            grid_html += f"<div class='card'><h3>{c['title']}</h3><p>{body_html}</p></div>"
+            
+        html = f"""
+        <html><head><style>
+        body {{ font-family: 'Helvetica', sans-serif; padding: 20px; background: #fdfdfd; }}
+        h2 {{ text-align: center; color: #D4AF37; font-size: 2rem; margin-bottom: 30px; }}
+        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }}
+        .card {{ background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); border-top: 5px solid #D4AF37; }}
+        .card h3 {{ margin-top: 0; color: #2c3e50; font-size: 1.2rem; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }}
+        .card p {{ color: #555; line-height: 1.6; font-size: 1rem; }}
+        .cta-box {{ background: #2c3e50; color: white; padding: 25px; border-radius: 12px; margin-top: 30px; text-align: center; box-shadow: 0 6px 15px rgba(0,0,0,0.2); }}
+        .cta-box h3 {{ color: #D4AF37; margin-top: 0; }}
+        .btn {{ display: block; width: 250px; margin: 30px auto; padding: 15px; background: #D4AF37; color: white; text-align: center; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }}
+        .btn:hover {{ background: #b8952b; }}
+        </style></head><body>
+        <h2>The Snapshot of {name}</h2>
+        <div class="grid">{grid_html}</div>
+        <div class="cta-box">
+            <h3>Ready for the Deep Dive?</h3>
+            <p>Upgrade to the Full Epic Legend to unlock your Origin Story, your Archetype, and the secret to taming your Dragon.</p>
+        </div>
+        <a href="data:application/pdf;base64,{pdf_b64}" download="Cosmic_Snapshot.pdf" class="btn">⬇️ DOWNLOAD SNAPSHOT</a>
+        </body></html>
+        """
+        return {"report": html}
+        
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return {"report": f"<h3>Error: {e}</h3>"}
+
+
+
