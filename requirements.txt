@@ -9,3 +9,4 @@ pyswisseph==2.8.0.post1
 timezonefinder==6.2.0
 pytz==2023.3.post1
 reportlab==4.0.8
+google-generativeai
