@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import os
 import sys, base64, datetime, json, logging, re, io
 from fastapi import FastAPI, Request
@@ -554,10 +554,10 @@ async def calculate_bundle(request: Request):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"report": f"<h3>Error: {e}</h3>"}
-# --- THE ORACLE CHAT ENDPOINT (TIER 4) ---
-
-# Configure Gemini using your secure environment variable
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+        
+# --- THE ORACLE CHAT ENDPOINT ---
+# The new client automatically finds your GEMINI_API_KEY in Render's environment
+client = genai.Client()
 
 @app.post("/ask-oracle")
 async def ask_oracle(request: Request):
@@ -570,7 +570,7 @@ async def ask_oracle(request: Request):
     struggle = d.get("struggle", "general")
 
     try:
-        # 1. CALCULATE THEIR EXACT CHART (The Context)
+        # 1. Calculate Chart Context
         lat, lon, tz_str = resolve_loc(city)
         local_tz = pytz.timezone(tz_str)
         birth_dt = datetime.datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
@@ -585,27 +585,21 @@ async def ask_oracle(request: Request):
         moon_obj = chart.get(const.MOON)
         asc_obj = chart.get(const.ASC)
         
-        sun_sign = sun_obj.sign
-        moon_sign = moon_obj.sign
-        ris_sign = asc_obj.sign
         gate = get_gate(sun_obj.lon)
-        
         p_line = (int(sun_obj.lon / 0.9375) % 6) + 1
         d_line = (int(((sun_obj.lon - 88) % 360) / 0.9375) % 6) + 1
-        
-        dragon = struggle[0].replace("The Quest for ", "")
+        dragon = struggle[0].replace("The Quest for ", "") if struggle else "general"
 
-        # 2. UPLOAD THE MASTER BOOK TO GEMINI
-        # (Gemini will read the PDF from your GitHub repo)
-        oracle_document = genai.upload_file(path="Integrated_Self_Reference.pdf", display_name="Master Reference")
+        # 2. Upload the Master Book to Gemini using the new syntax
+        oracle_document = client.files.upload(file="Integrated_Self_Reference.pdf")
 
-        # 3. BUILD THE SECRET SYSTEM PROMPT
+        # 3. Build the Secret System Prompt
         system_prompt = f"""
         You are the Oracle for 'The Integrated Self'. You are an expert psychological guide.
         You are speaking to {name}. Their cosmic geometry is:
-        - Sun: {sun_sign} (Archetype {gate})
-        - Moon: {moon_sign}
-        - Rising: {ris_sign}
+        - Sun: {sun_obj.sign} (Archetype {gate})
+        - Moon: {moon_obj.sign}
+        - Rising: {asc_obj.sign}
         - Integration Vector: {p_line} / {d_line}
         - Current Dragon (Struggle): {dragon}
         
@@ -615,9 +609,11 @@ async def ask_oracle(request: Request):
         Do not give generic self-help advice. Be clinical, mystical, and direct.
         """
 
-        # 4. GENERATE THE CUSTOM RESPONSE
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content([oracle_document, system_prompt, user_question])
+        # 4. Generate the Custom Response using the new syntax
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[oracle_document, system_prompt, user_question]
+        )
         
         return {"answer": response.text}
         
