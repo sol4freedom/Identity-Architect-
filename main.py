@@ -1,3 +1,5 @@
+import google.generativeai as genai
+import os
 import sys, base64, datetime, json, logging, re, io
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -552,3 +554,73 @@ async def calculate_bundle(request: Request):
     except Exception as e:
         logger.error(f"Error: {e}")
         return {"report": f"<h3>Error: {e}</h3>"}
+# --- THE ORACLE CHAT ENDPOINT (TIER 4) ---
+
+# Configure Gemini using your secure environment variable
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+
+@app.post("/ask-oracle")
+async def ask_oracle(request: Request):
+    d = await request.json()
+    user_question = d.get("question", "What do I need to know today?")
+    name = d.get("name", "Traveler")
+    dob = safe_get_date(d.get("dob") or d.get("date")) or datetime.date.today().strftime("%Y-%m-%d")
+    tob = clean_time(d.get("tob") or d.get("time"))
+    city = d.get("city", "London")
+    struggle = d.get("struggle", "general")
+
+    try:
+        # 1. CALCULATE THEIR EXACT CHART (The Context)
+        lat, lon, tz_str = resolve_loc(city)
+        local_tz = pytz.timezone(tz_str)
+        birth_dt = datetime.datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
+        localized_dt = local_tz.localize(birth_dt)
+        utc_offset = localized_dt.utcoffset().total_seconds() / 3600.0
+        
+        dt = Datetime(dob.replace("-", "/"), tob, utc_offset)
+        geo = GeoPos(lat, lon)
+        chart = Chart(dt, geo, IDs=const.LIST_OBJECTS, hsys=const.HOUSES_PLACIDUS)
+        
+        sun_obj = chart.get(const.SUN)
+        moon_obj = chart.get(const.MOON)
+        asc_obj = chart.get(const.ASC)
+        
+        sun_sign = sun_obj.sign
+        moon_sign = moon_obj.sign
+        ris_sign = asc_obj.sign
+        gate = get_gate(sun_obj.lon)
+        
+        p_line = (int(sun_obj.lon / 0.9375) % 6) + 1
+        d_line = (int(((sun_obj.lon - 88) % 360) / 0.9375) % 6) + 1
+        
+        dragon = struggle[0].replace("The Quest for ", "")
+
+        # 2. UPLOAD THE MASTER BOOK TO GEMINI
+        # (Gemini will read the PDF from your GitHub repo)
+        oracle_document = genai.upload_file(path="Integrated_Self_Reference.pdf", display_name="Master Reference")
+
+        # 3. BUILD THE SECRET SYSTEM PROMPT
+        system_prompt = f"""
+        You are the Oracle for 'The Integrated Self'. You are an expert psychological guide.
+        You are speaking to {name}. Their cosmic geometry is:
+        - Sun: {sun_sign} (Archetype {gate})
+        - Moon: {moon_sign}
+        - Rising: {ris_sign}
+        - Integration Vector: {p_line} / {d_line}
+        - Current Dragon (Struggle): {dragon}
+        
+        Using the provided 'Integrated Self Master Reference Book', answer their question directly, profoundly, and practically.
+        Filter all your advice strictly through their specific energetic mechanics.
+        If they are stuck, instruct them using the R.I.D. Wave framework.
+        Do not give generic self-help advice. Be clinical, mystical, and direct.
+        """
+
+        # 4. GENERATE THE CUSTOM RESPONSE
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        response = model.generate_content([oracle_document, system_prompt, user_question])
+        
+        return {"answer": response.text}
+        
+    except Exception as e:
+        logger.error(f"Oracle Error: {e}")
+        return {"answer": "The Oracle is currently recalibrating. Please try again in a moment."}
