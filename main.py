@@ -557,7 +557,7 @@ async def calculate_bundle(request: Request):
         
 # --- THE ORACLE CHAT ENDPOINT ---
 # The new client automatically finds your GEMINI_API_KEY in Render's environment
-client = genai.Client()
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY))
 
 @app.post("/ask-oracle")
 async def ask_oracle(request: Request):
@@ -620,3 +620,4 @@ async def ask_oracle(request: Request):
     except Exception as e:
         logger.error(f"Oracle Error: {e}")
         return {"answer": "The Oracle is currently recalibrating. Please try again in a moment."}
+
