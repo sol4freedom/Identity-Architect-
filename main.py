@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 import os
 import sys, base64, datetime, json, logging, re, io
@@ -620,5 +621,6 @@ async def ask_oracle(request: Request):
     except Exception as e:
         logger.error(f"Oracle Error: {e}")
         return {"answer": "The Oracle is currently recalibrating. Please try again in a moment."}
+
 
 
