@@ -13,10 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Authenticate using the CLEANED API Key
+# 1. Connects using your CLEAN API Key (No spaces!)
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
-# PRE-LOAD THE MANUAL
+# 2. Pre-loads your 55-page manual
 try:
     oracle_document = client.files.upload(file="Integrated_Self_Reference.pdf")
     print("Oracle Manual Loaded Successfully")
@@ -33,12 +33,13 @@ async def ask_oracle(request: Request):
         return {"answer": "The Oracle cannot find its manual. Check the PDF on GitHub."}
     
     try:
-        # Generate the response using the new library standard
+        # 3. This is the part that generates the REAL answer
         response = client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=[oracle_document, "You are the Oracle for The Integrated Self. Answer profoundly.", user_question]
+            contents=[oracle_document, "You are the Oracle for The Integrated Self. Use the manual to answer profoundly.", user_question]
         )
         return {"answer": response.text}
     except Exception as e:
+        # This is where your "Matrix" message currently lives
         print(f"AI Error: {e}")
-        return {"answer": "You're glitching the Matrix! Hold for Integration."}
+        return {"answer": "The Oracle is currently recalibrating."}
