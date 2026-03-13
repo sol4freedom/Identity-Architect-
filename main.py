@@ -13,16 +13,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize the client
+# Authenticate using the CLEANED API Key
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
-# 1. PRE-LOAD THE BOOK (Do this outside the function)
-# This ensures the Oracle already has the manual open before the question arrives
+# PRE-LOAD THE MANUAL
 try:
     oracle_document = client.files.upload(file="Integrated_Self_Reference.pdf")
     print("Oracle Manual Loaded Successfully")
 except Exception as e:
-    print(f"Error loading manual: {e}")
+    print(f"Manual Load Error: {e}")
     oracle_document = None
 
 @app.post("/ask-oracle")
@@ -31,17 +30,15 @@ async def ask_oracle(request: Request):
     user_question = d.get("question")
     
     if not oracle_document:
-        return {"answer": "The Oracle cannot find its reference manual. Check GitHub for the PDF."}
+        return {"answer": "The Oracle cannot find its manual. Check the PDF on GitHub."}
     
     try:
-        # 2. GENERATE RESPONSE (The actual brain work)
+        # Generate the response using the new library standard
         response = client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=[oracle_document, "You are the Oracle for The Integrated Self. Use the provided PDF to answer profoundly.", user_question]
+            contents=[oracle_document, "You are the Oracle for The Integrated Self. Answer profoundly.", user_question]
         )
         return {"answer": response.text}
     except Exception as e:
-        # This will now tell us the REAL error in the Render logs
-        print(f"Generation Error: {e}")
-        return {"answer": "The Oracle is currently recalibrating."}
-
+        print(f"AI Error: {e}")
+        return {"answer": "You're glitching the Matrix! Hold for Integration."}
