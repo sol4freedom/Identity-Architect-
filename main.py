@@ -19,7 +19,7 @@ client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 # 1. PRE-LOAD THE BOOK (Do this outside the function)
 # This ensures the Oracle already has the manual open before the question arrives
 try:
-    oracle_document = client.files.upload(path="Integrated_Self_Reference.pdf")
+    oracle_document = client.files.upload(file="Integrated_Self_Reference.pdf")
     print("Oracle Manual Loaded Successfully")
 except Exception as e:
     print(f"Error loading manual: {e}")
@@ -44,3 +44,4 @@ async def ask_oracle(request: Request):
         # This will now tell us the REAL error in the Render logs
         print(f"Generation Error: {e}")
         return {"answer": "The Oracle is currently recalibrating."}
+
