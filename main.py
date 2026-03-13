@@ -13,10 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Connects using your CLEAN API Key (No spaces!)
+# Use the cleaned API Key from Render
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
-# 2. Pre-loads your 55-page manual
+# 1. PRE-LOAD THE MANUAL
 try:
     oracle_document = client.files.upload(file="Integrated_Self_Reference.pdf")
     print("Oracle Manual Loaded Successfully")
@@ -30,16 +30,20 @@ async def ask_oracle(request: Request):
     user_question = d.get("question")
     
     if not oracle_document:
-        return {"answer": "The Oracle cannot find its manual. Check the PDF on GitHub."}
+        return {"answer": "The Oracle cannot find its manual."}
     
     try:
-        # 3. This is the part that generates the REAL answer
+        # 2. GENERATE THE PROFOUND RESPONSE
+        # This uses the new 2.0 Flash model which is lightning fast
         response = client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=[oracle_document, "You are the Oracle for The Integrated Self. Use the manual to answer profoundly.", user_question]
+            contents=[
+                oracle_document, 
+                "You are the Oracle for The Integrated Self. Use the manual to give a direct, mystical, and practical answer to the user.", 
+                user_question
+            ]
         )
         return {"answer": response.text}
     except Exception as e:
-        # This is where your "Matrix" message currently lives
-        print(f"AI Error: {e}")
+        print(f"AI Generation Error: {e}")
         return {"answer": "The Oracle is currently recalibrating."}
